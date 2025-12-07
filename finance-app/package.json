@@ -11,9 +11,24 @@
   },
   "dependencies": {
     "@nuxt/ui": "^4.2.1",
+    "@prisma/adapter-pg": "^7.1.0",
+    "@prisma/client": "^7.1.0",
     "csv-parse": "^6.1.0",
     "nuxt": "^4.2.1",
+    "pg": "^8.16.3",
     "vue": "^3.5.25",
     "vue-router": "^4.6.3"
-  }
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "prisma": "^7.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "version": "1.0.0",
+  "description": "Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

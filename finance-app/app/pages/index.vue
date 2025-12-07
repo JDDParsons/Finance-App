@@ -1,4 +1,6 @@
-<script setup></script>
+<script setup>
+
+</script>
 <template>
     <div>
         <UHeader title="Personal Finance App" />
