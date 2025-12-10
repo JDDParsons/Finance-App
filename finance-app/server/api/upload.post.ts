@@ -1,32 +1,29 @@
 // server/api/upload.post.ts
-import { parse } from 'csv-parse/sync'
-import { parseFinanceData } from '../../utils/parse'
-import { deterministicUuid } from '../../utils/uuid'
+import { TransactionService } from '../services/transaction.service'
 
 
 export default defineEventHandler(async (event) => {
 
   // Parse the multipart form data to get the uploaded file
-  const form = await readMultipartFormData(event)
+  const form = await readMultipartFormData(event);
+  const file = form?.find(f => f.name === 'file');
 
-  const file = form?.find(f => f.name === 'file')
+  // Handle missing file
+  if (!file) throw createError({ statusCode: 400, statusMessage: "No file uploaded" });
 
-  if (!file) throw createError({ statusCode: 400, statusMessage: "No file uploaded" })
+  // Initialize the transaction service
+  const service = new TransactionService();
 
-  const csvString = file.data.toString('utf8')
+  // Parse the CSV content
+  const parsedData = service.parseCsv(file.data.toString('utf8'), file?.filename || '');
 
-  const records = parse(csvString, {
-    columns: true,       // Interpret first row as headers
-    skip_empty_lines: true,
-    trim: true
-  })
-
-  const parsedData = parseFinanceData(records, file?.filename || '');
-  console.log(JSON.stringify(parsedData, null, 2))
+  // Insert parsed rows into the database
+  const insertResult = await service.insertTransactions(parsedData as any[]);
 
   return {
-    message: "File parsed successfully",
+    message: "File parsed and inserted successfully",
     rows: parsedData.length,
+    inserted: insertResult,
     preview: parsedData.slice(0, 3) // first few rows
   }
 })

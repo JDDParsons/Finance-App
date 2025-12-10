@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output = "./generated"
 }
 
 datasource db {
@@ -24,8 +23,13 @@ model User {
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model Transactions {
-  id         BigInt   @id @default(autoincrement())
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  Amount     BigInt?
+model Transaction {
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  amount_added     Decimal? @db.Decimal
+  amount_deducted  Decimal? @db.Decimal
+  text_id          String   @unique
+  description      String
+  transaction_date DateTime @db.Date
+  category         String?
+  id               String   @id @db.Uuid
 }
