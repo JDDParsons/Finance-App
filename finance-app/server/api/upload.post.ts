@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
   const parsedData = service.parseCsv(file.data.toString('utf8'), file?.filename || '');
 
   // Insert parsed rows into the database
-  const insertResult = await service.insertTransactions(parsedData as any[]);
+  const insertResult = await service.insertTransactions(parsedData);
 
   return {
     message: "File parsed and inserted successfully",
