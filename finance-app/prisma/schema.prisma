@@ -6,22 +6,6 @@ datasource db {
   provider = "postgresql"
 }
 
-model Post {
-  id        Int     @id @default(autoincrement())
-  title     String
-  content   String?
-  published Boolean @default(false)
-  authorId  Int?
-  author    User?   @relation(fields: [authorId], references: [id])
-}
-
-model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
-  posts Post[]
-}
-
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model Transaction {
   created_at       DateTime @default(now()) @db.Timestamptz(6)
@@ -31,4 +15,21 @@ model Transaction {
   group            String?
   group_id         Decimal? @db.Decimal
   amount           Decimal? @db.Decimal
+}
+
+model Balance {
+  id                     String   @id @db.Uuid
+  created_at             DateTime @default(now()) @db.Timestamptz(6)
+  bmo_chequing_1         Decimal? @db.Decimal
+  bmo_chequing_2         Decimal? @db.Decimal
+  bmo_mastercard         Decimal? @db.Decimal
+  questrade_tfsa         Decimal? @db.Decimal
+  questrade_rrsp         Decimal? @db.Decimal
+  questrade_lrsp         Decimal? @db.Decimal
+  questrade_fhsa         Decimal? @db.Decimal
+  scotiabank_chequing    Decimal? @db.Decimal
+  scotiabank_savings     Decimal? @db.Decimal
+  scotiabank_visa        Decimal? @db.Decimal
+  pcfinancial_mastercard Decimal? @db.Decimal
+  total                  Decimal? @db.Decimal
 }
