@@ -1,10 +1,11 @@
 <script setup>
-
-import { form } from '#build/ui';
 import { ref } from 'vue'
 
 const formSubmitted = ref(false);
+const submitFailure = ref(false);
 const formState = ref({});
+const response = ref({});
+
 resetFormState();
 
 const progress = computed(() => {
@@ -53,13 +54,21 @@ const total = computed(() =>
 );
 
 async function handleSubmit() {
-    const response = await $fetch('/api/form', {
+    submitFailure.value = false; 
+    formSubmitted.value = true;
+    formState.value.total = Number(total.value);
+    response.value = await $fetch('/api/form', {
         method: 'POST',
         body: formState.value
-    })
-    formSubmitted.value = true;
-    resetFormState();
-}
+    })  
+    if (response.value.message == "Balance saved") {
+        resetFormState();
+    }
+    else {
+        alert("There was an error submitting the form. Please try again.");
+        submitFailure.value = true;
+    }
+}  
 
 </script>
 <template>
@@ -68,13 +77,23 @@ async function handleSubmit() {
         <UMain>
             <UContainer>
                 <div v-if="formSubmitted">
-                    <div class="flex flex-col items-center justify-center p-8 mb-12 space-y-4">
+                    <div v-if="!submitFailure" class="flex flex-col items-center justify-center p-8 mb-12 space-y-4">
                         <h1 class="text-xl font-bold">Balances saved successfully!</h1>
                         <p>Your account balances have been recorded.</p>
+                        <p>The total value for this snapshot is ${{ response.record?.total || 'null' }}</p>
                         <div class="flex space-x-4 mt-8">
                             <UButton to="/" color="neutral" variant="outline" size="xl">Go to Home</UButton>
                         </div>
                     </div>
+                    <!--
+                    <div v-else class="flex flex-col items-center justify-center p-8 mb-12 space-y-4">
+                        <h1 class="text-xl font-bold">Error submitting form</h1>
+                        <p>There was an error submitting your balances. Please try again.</p>
+                        <div class="flex space-x-4 mt-8">
+                            <UButton to="/snap" color="primary" variant="outline" size="xl" @click="formSubmitted=false; submitFailure=false;">Try Again</UButton>  
+                        </div>
+                    </div>
+                    --->
                 </div>
                 <div v-else class="divider mb-8">
                     <div class="grid grid-cols-2 pt-8 space-y-4"> 

@@ -16,17 +16,6 @@ export type BalanceInput = {
   total: number | string | null
 }
 
-function balanceTotal(input: BalanceInput): number {
-  let total = 0;
-    for (const key in input) {
-        const value = input[key as keyof BalanceInput];
-        if (value !== null && value !== undefined) {
-            total += Number(value);
-        }
-    }
-    return total;
-};
-
 export class FormService {
   /**
    * Save a balance snapshot to the Balance table.
@@ -48,7 +37,7 @@ export class FormService {
       scotiabank_savings: input.scotiabankSavings ?? null,
       scotiabank_visa: input.scotiabankVisa ?? null,
       pcfinancial_mastercard: input.pcMastercard ?? null,
-      total: balanceTotal(input)
+      total: input.total ?? null
     }
 
     const created = await prisma.balance.create({ data: payload as any })
