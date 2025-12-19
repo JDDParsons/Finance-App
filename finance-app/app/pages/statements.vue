@@ -25,6 +25,9 @@ onMounted(async () => {
 
     <UMain>
       <UContainer>
+        <div class="flex justify-start pt-6 mb-4">
+          <UButton to="/upload" color="neutral" variant="outline" size="xl">Back to Upload</UButton>
+        </div>
         <div class="mt-6">
           <div v-if="loading">Loading statements…</div>
           <div v-else-if="error">{{ error }}</div>

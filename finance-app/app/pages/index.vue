@@ -39,16 +39,6 @@
                             <p class="text-sm text-center"> Browse annual and monthly reports </p>
                         </UCard>
                     </NuxtLink>
-
-                    <NuxtLink to="/statements">
-                        <UCard
-                            class="cursor-pointer transition transform hover:scale-105 hover:shadow-xl active:scale-95
-                                flex flex-col items-center justify-center mt-8 p-4 h-48"
-                        >
-                            <h2 class="text-lg font-semibold text-center">Statements</h2>
-                            <p class="text-sm text-center"> Browse groups and their transaction counts </p>
-                        </UCard>
-                    </NuxtLink>
                 </div>
             </UContainer>
         </UMain>

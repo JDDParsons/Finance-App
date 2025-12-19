@@ -1,5 +1,6 @@
 <script setup>
 
+const toast = useToast();
 const fileInput = ref(null);
 const fileUploaded = ref(false);
 
@@ -20,6 +21,12 @@ async function upload() {
         })
 
         fileUploaded.value = true;
+
+        toast.add({
+            title: 'Bank statement uploaded successfully',
+            description: 'Your transactions are being processed.'
+        })
+
     } else {
         alert("Please upload a CSV file before submitting.");
     }
@@ -47,7 +54,10 @@ async function upload() {
                     </div>
                     <div class="flex flex-col items-center justify-center space-y-8">
                         <UFileUpload v-model="fileInput" accept="text/csv" label="Drop your file here" description="Single CSV only" class="w-96 min-h-48" />
-                        <UButton active color="primary" variant="outline" active-color="primary" active-variant="outline" size="xl" @click="upload()">Submit</UButton>
+                        <div class="flex space-x-4">
+                            <UButton to="/statements" color="neutral" variant="outline" size="xl">View uploaded statements</UButton>
+                            <UButton active color="primary" variant="outline" active-color="primary" active-variant="outline" size="xl" @click="upload()">Submit</UButton>
+                        </div>
                     </div>
                 </div>
             </UContainer>

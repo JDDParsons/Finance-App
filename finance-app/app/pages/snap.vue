@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 
+const toast = useToast();
 const formSubmitted = ref(false);
 const submitFailure = ref(false);
 const formState = ref({});
@@ -63,6 +64,11 @@ async function handleSubmit() {
     })  
     if (response.value.message == "Balance saved") {
         resetFormState();
+
+        toast.add({
+            title: 'Balances saved successfully',
+            description: 'Your total balance is $' + response.value.record?.total || 'null'
+        })
     }
     else {
         alert("There was an error submitting the form. Please try again.");
