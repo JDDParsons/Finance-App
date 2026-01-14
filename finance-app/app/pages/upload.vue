@@ -46,6 +46,7 @@ async function upload() {
                         <UButton to="/" color="neutral" variant="outline" size="xl">Go to Home</UButton>
                         <UButton to="/upload" color="primary" variant="outline" size="xl" @click="resetForm()">Upload Another File</UButton>
                     </div>
+                    <UButton to="/transactions" color="secondary" variant="outline" size="xl">View transaction data</UButton>
                 </div>
                 <div v-else class="divider mb-8">
                     <div class="flex flex-col items-center justify-center p-8 mb-12 space-y-4">                     
@@ -56,8 +57,9 @@ async function upload() {
                         <UFileUpload v-model="fileInput" accept="text/csv" label="Drop your file here" description="Single CSV only" class="w-96 min-h-48" />
                         <div class="flex space-x-4">
                             <UButton to="/statements" color="neutral" variant="outline" size="xl">View uploaded statements</UButton>
-                            <UButton active color="primary" variant="outline" active-color="primary" active-variant="outline" size="xl" @click="upload()">Submit</UButton>
+                            <UButton to="/upload" color="primary" variant="outline" active-color="primary" active-variant="outline" size="xl" @click="upload()">Submit</UButton>
                         </div>
+                        <UButton to="/transactions" color="secondary" variant="outline" size="xl">View transaction data</UButton>
                     </div>
                 </div>
             </UContainer>
