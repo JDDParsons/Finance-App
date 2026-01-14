@@ -22,10 +22,14 @@ function formatDateOnly(val: any) {
   // and construct a local Date so the local date matches the DB date.
   if (typeof val === 'string') {
     const m = val.match(/^(\d{4}-\d{2}-\d{2})(?:T.*Z)?$/)
-    if (m) {
-      const [y, mm, dd] = m[1].split('-').map(Number)
+    if (m && m[1]) {
+      const parts = m[1].split('-').map(Number)
+      const [y, mm, dd] = parts as [number, number, number]
       const local = new Date(y, mm - 1, dd)
-      if (!Number.isNaN(local.getTime())) return local.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      if (!Number.isNaN(local.getTime())) {
+        const formatted = local.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        return formatted
+      }
       return String(val)
     }
   }
