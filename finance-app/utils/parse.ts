@@ -12,18 +12,19 @@ export type ParsedItem = {
 }
 
 export function parseFinanceData(records: InputRecord[], filename: string): ParsedItem[] {
+
   // Process the uploaded file
-  const data: InputRecord[] = records; // get all input items
   const filename_clean = (filename || '').replace(/\.csv$/, ""); // get the filename of the current statement
-  const items: InputRecord[] = data.slice(1); // get the transaction data for the current item in the current statement;
 
   // Determine what kind of dataset is under consideration
   const isBmoChequing = filename_clean.includes("BMO_CHEQUING");
   const isBmoCredit = filename_clean.includes("BMO_CREDIT");
+  const isScotiaChequing = filename_clean.includes("SCOTIA_CHEQUING");
 
   // Use values appropriate for the kind of dataset
   const descriptionLabel = "Description";
-  const dateLabel = (isBmoChequing) ? "Date Posted" : (isBmoCredit) ? "Transaction Date" : "";
+  const dateLabel = (isBmoChequing) ? "Date Posted" : (isBmoCredit) ? "Transaction Date" : (isScotiaChequing) ? "Date" : "Date";
+  const amountLabel = (isBmoChequing) ? "Transaction Amount" : (isBmoCredit) ? "Transaction Amount" : (isScotiaChequing) ? "Amount" : "Amount";
 
   // Determine the targeted month of the current dataset
   const monthMap: Record<string, number> = { JAN: 1, FEB: 2, MAR: 3, APR: 4, MAY: 5, JUN: 6, JUL: 7, AUG: 8, SEPT: 9, OCT: 10, NOV: 11, DEC: 12 }
@@ -31,7 +32,8 @@ export function parseFinanceData(records: InputRecord[], filename: string): Pars
 
   function formatDate(value: InputRecord, dateLabel: string): string {
     const v = value[dateLabel] || '';
-    return v.slice(0, 4) + "-" + v.slice(4, 6) + "-" + v.slice(6, 8);
+    if (isScotiaChequing) return v; 
+    else return v.slice(0, 4) + "-" + v.slice(4, 6) + "-" + v.slice(6, 8);
   }
 
   function formatDescription(value: InputRecord, descriptionLabel: string): string {
@@ -39,25 +41,25 @@ export function parseFinanceData(records: InputRecord[], filename: string): Pars
     return v.trimEnd().slice(0, 80);
   }
 
-  function formatAmount(value: InputRecord): number {
-    const amt = Number(value['Transaction Amount'] || '0');
+  function formatAmount(value: InputRecord, amountLabel: string): number {
+    const amt = Number(value[amountLabel] || '0');
     if (isBmoChequing) return amt;
     if (isBmoCredit) return -1 * amt;
+    if (isScotiaChequing) return amt;
     return 0;
   }
 
   // Create a new, formatted object
   const mappedItems: ParsedItem[] =
-    items.map((item: InputRecord) => {
+    records.map((item: InputRecord) => {
       const parsed: ParsedItem = {
         Id: '',
         Group: filename_clean,
         GroupId: NaN,
         TransactionDate: formatDate(item, dateLabel),
         Description: formatDescription(item, descriptionLabel),
-        Amount: formatAmount(item),
+        Amount: formatAmount(item, amountLabel),
       }
-
       return parsed
     })
     .sort((a, b) => new Date(a.TransactionDate).getTime() - new Date(b.TransactionDate).getTime())
