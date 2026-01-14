@@ -1,9 +1,26 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import type { TableColumn } from '@nuxt/ui'
 
 const loading = ref(true)
 const rows = ref<{ year: number | null; month: string | null; name: string; transactions: number; rawGroup: string; dateUploaded: string | null }[]>([])
 const error = ref<string | null>(null)
+
+const columns: TableColumn<any>[] = [
+  { accessorKey: 'year', header: 'Year' },
+  { accessorKey: 'month', header: 'Month' },
+  { accessorKey: 'name', header: 'Institution / Account' },
+  {
+    accessorKey: 'transactions',
+    header: 'Number of transactions',
+    meta: { class: { th: 'text-right', td: 'text-right' } }
+  },
+  {
+    accessorKey: 'dateUploaded',
+    header: 'Date uploaded',
+    cell: ({ row }) => (row.getValue('dateUploaded') ? new Date(row.getValue('dateUploaded')).toLocaleString() : '-')
+  }
+]
 
 onMounted(async () => {
   try {
@@ -32,26 +49,7 @@ onMounted(async () => {
           <div v-if="loading">Loading statements…</div>
           <div v-else-if="error">{{ error }}</div>
           <div v-else>
-            <table class="w-full table-auto border-collapse">
-              <thead>
-                <tr class="text-left">
-                  <th class="p-2 border">Year</th>
-                  <th class="p-2 border">Month</th>
-                  <th class="p-2 border">Institution / Account</th>
-                  <th class="p-2 border">Number of transactions</th>
-                  <th class="p-2 border">Date uploaded</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(r, idx) in rows" :key="idx">
-                  <td class="p-2 border">{{ r.year ?? '-' }}</td>
-                  <td class="p-2 border">{{ r.month ?? '-' }}</td>
-                  <td class="p-2 border">{{ r.name }}</td>
-                  <td class="p-2 border">{{ r.transactions }}</td>
-                  <td class="p-2 border">{{ r.dateUploaded ? new Date(r.dateUploaded).toLocaleString() : '-' }}</td>
-                </tr>
-              </tbody>
-            </table>
+            <UTable :data="rows" :columns="columns" :loading="loading" class="w-full" />
           </div>
         </div>
       </UContainer>
