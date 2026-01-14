@@ -1,5 +1,5 @@
 // server/api/upload.post.ts
-import { TransactionService } from '../services/transaction.service'
+import { UploadService } from '../services/upload.service'
 
 
 export default defineEventHandler(async (event) => {
@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   if (!file) throw createError({ statusCode: 400, statusMessage: "No file uploaded" });
 
   // Initialize the transaction service
-  const service = new TransactionService();
+  const service = new UploadService();
 
   // Parse the CSV content
   const parsedData = service.parseCsv(file.data.toString('utf8'), file?.filename || '');
