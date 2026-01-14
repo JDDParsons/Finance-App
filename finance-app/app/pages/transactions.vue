@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import { ref, onMounted, h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
+import CategoryDropdown from '~/components/CategoryDropdown.vue'
+
+interface Category {
+  id: string
+  name: string | null
+}
 
 const loading = ref(true)
 const rows = ref<any[]>([])
 const error = ref<string | null>(null)
+const categories = ref<Category[]>([])
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
 
@@ -17,9 +24,6 @@ function formatAmount(val: any) {
 
 function formatDateOnly(val: any) {
   if (!val) return '-'
-  // If the server returned an ISO date/time for a date-only DB value
-  // (e.g. "2025-12-01T00:00:00.000Z"), extract the date portion
-  // and construct a local Date so the local date matches the DB date.
   if (typeof val === 'string') {
     const m = val.match(/^(\d{4}-\d{2}-\d{2})(?:T.*Z)?$/)
     if (m && m[1]) {
@@ -47,6 +51,19 @@ const columns: TableColumn<any>[] = [
   },
   { accessorKey: 'description', header: 'Description' },
   {
+    accessorKey: 'id',
+    header: 'Category',
+    cell: ({ row }) => {
+      const transactionId = row.getValue('id') as string
+      const currentCategoryId = row.original.currentCategoryId || null
+      return h(CategoryDropdown, {
+        transactionId,
+        currentCategoryId,
+        categories: categories.value
+      })
+    }
+  },
+  {
     accessorKey: 'amount',
     header: 'Amount',
     meta: { class: { th: 'text-right', td: 'text-right' } },
@@ -64,12 +81,21 @@ const columns: TableColumn<any>[] = [
 
 onMounted(async () => {
   try {
-    const res = await fetch('/api/transactions')
-    if (!res.ok) throw new Error(`Error fetching transactions: ${res.statusText}`)
-    const data = await res.json()
-    rows.value = data || []
+    const [transRes, catRes] = await Promise.all([
+      fetch('/api/transactions'),
+      fetch('/api/categories')
+    ])
+
+    if (!transRes.ok) throw new Error(`Error fetching transactions: ${transRes.statusText}`)
+    if (!catRes.ok) throw new Error(`Error fetching categories: ${catRes.statusText}`)
+
+    const transData = await transRes.json()
+    const catData = await catRes.json()
+
+    rows.value = transData || []
+    categories.value = catData || []
   } catch (err: any) {
-    error.value = err.message || 'Failed to load transactions'
+    error.value = err.message || 'Failed to load data'
   } finally {
     loading.value = false
   }

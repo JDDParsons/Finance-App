@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   // Handle missing file
   if (!file) throw createError({ statusCode: 400, statusMessage: "No file uploaded" });
 
-  // Initialize the transaction service
+  // Initialize the upload service
   const service = new UploadService();
 
   // Parse the CSV content
