@@ -79,7 +79,6 @@ async function handleSubmit() {
 </script>
 <template>
     <div>
-        <UHeader title="Personal Finance App" />
         <UMain>
             <UContainer>
                 <div v-if="formSubmitted">

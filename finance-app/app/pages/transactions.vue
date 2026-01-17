@@ -104,8 +104,6 @@ onMounted(async () => {
 
 <template>
   <div>
-    <UHeader title="Transactions" />
-
     <UMain>
       <UContainer>
         <div class="flex justify-start pt-6 mb-4">

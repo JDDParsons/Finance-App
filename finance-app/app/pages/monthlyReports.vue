@@ -1,34 +1,182 @@
 <script setup>
 
+import BarChart from '~/components/BarChart.vue';
+import { attachCategoryLabel } from '../utils/attachCategoryLabel.ts';
+import DoughnutChart from '~/components/DoughnutChart.vue';
+
+const years = [2025, 2026];
+const months = [
+  { value: 1, label: 'January' },
+  { value: 2, label: 'February' },
+  { value: 3, label: 'March' },
+  { value: 4, label: 'April' },
+  { value: 5, label: 'May' },
+  { value: 6, label: 'June' },
+  { value: 7, label: 'July' },
+  { value: 8, label: 'August' },
+  { value: 9, label: 'September' },
+  { value: 10, label: 'October' },
+  { value: 11, label: 'November' },
+  { value: 12, label: 'December' },
+];
+const items = ref([
+  'https://picsum.photos/id/237/320',
+  'https://picsum.photos/640/640?random=2',
+  'https://picsum.photos/640/640?random=3',
+  'https://picsum.photos/640/640?random=4',
+  'https://picsum.photos/640/640?random=5',
+  'https://picsum.photos/640/640?random=6',
+  'https://picsum.photos/640/640?random=7',
+  'https://picsum.photos/640/640?random=8',
+  'https://picsum.photos/640/640?random=9',
+  'https://picsum.photos/640/640?random=10',
+  'https://picsum.photos/640/640?random=11',
+  'https://picsum.photos/640/640?random=12'
+]);
+
+const viewReport = ref(false);
+const loading = ref(false);
+const error = ref(null);
+const rows = ref([]);
+const categories = ref([]);
+const monthData = ref(null);
+
+const now = new Date()
+
+const selectedYear = ref(
+  now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
+)
+
+const selectedMonth = ref(
+  now.getMonth() === 0 ? 12 : now.getMonth()
+)
+
+const selectedMonthLabel = computed(() => {
+  const monthObj = months.find(m => m.value === selectedMonth.value);
+  return monthObj ? monthObj.label : '';
+});
+
+async function fetchReportDetails(year, month) {
+  // Placeholder function to fetch report details based on year and month
+  console.log(`Fetching report for Year: ${year}, Month: ${month}`);
+  loading.value = true;
+    try {
+    const [transRes, catRes] = await Promise.all([
+      fetch(`/api/transactions?year=${year}&month=${month}`),
+      fetch('/api/categories')
+    ])
+
+    if (!transRes?.ok) throw new Error(`Error fetching transactions`)
+    if (!catRes?.ok) throw new Error(`Error fetching categories`)
+
+    const transData = await transRes.json()
+    const catData = await catRes.json()
+
+    rows.value = transData || []
+    categories.value = catData || []
+
+    monthData.value = attachCategoryLabel(rows.value, categories.value);
+    console.log(monthData.value);
+
+    viewReport.value = true;
+  } catch (err) {
+    error.value = err.message || 'Failed to load data'
+    console.error(error.value);
+  } finally {
+    loading.value = false
+  }
+}
+
+const carouselUI = {
+  item: 'basis-1/6',
+  container: 'ms-0'
+};
+
+// Chart data
+const barChart1Series1 = {
+  labels: ['Income', 'Expenses'],
+  datasets: [
+    {
+      data: [40, 20],
+      label: 'Bar',
+      borderColor: '#36A2EB',
+      backgroundColor: '#9BD0F5',
+    }
+  ]
+}
+
+const barChart2Series1 = {
+  labels: ['January', 'February', 'March'],
+  datasets: [
+    {
+      data: [40, 30, 30],
+      backgroundColor: '#9BD0F5',
+    }
+  ]
+}
+
+const dataItems = [
+  { component: BarChart, props: { series1: barChart1Series1 } },
+  { component: DoughnutChart, props: {transactionData: monthData.value} }
+]
 </script>
 <template>
-    <div>
-        <UHeader title="Personal Finance App" />
-
-        <UMain>
+    <div class="min-h-screen flex flex-col">
+        <UHeader title="Personal Finance App">
+          <template #right>
+            <UColorModeSwitch />
+          </template>
+        </UHeader>
+        <UMain class="flex-1 flex items-center justify-center">
             <UContainer>
-                <div class="grid grid-cols-4 gap-4">
-                    <NuxtLink to="/viewMonthlyReport">
-                        <UCard class="mt-8 p-4 h-48 flex flex-col items-center justify-center cursor-pointer transition transform hover:scale-105 hover:shadow-xl active:scale-95">
-                            <h2 class="text-lg font-semibold">August</h2>
-                        </UCard>
-                    </NuxtLink>
-
-                    <UCard class="mt-8 p-4 h-48 flex flex-col items-center justify-center">
-                        <h2 class="text-lg font-semibold">September</h2>
-                    </UCard>
-
-                    <UCard class="mt-8 p-4 h-48 flex flex-col items-center justify-center">
-                        <h2 class="text-lg font-semibold">October</h2>
-                    </UCard>
-
-                    <UCard class="mt-8 p-4 h-48 flex flex-col items-center justify-center">
-                        <h2 class="text-lg font-semibold">November</h2>
-                    </UCard>
-
-                    <UCard class="mt-8 p-4 h-48 flex flex-col items-center justify-center">
-                        <h2 class="text-lg font-semibold">December</h2>
-                    </UCard>
+                <div v-if="!viewReport">
+                    <div class="flex flex-col items-center justify-center gap-4 pb-20">
+                        <h1 class="text-2xl font-semibold">Select Year and Month for Report</h1>
+                        <div>
+                            <USelect v-model="selectedYear" placeholder="Year" :items="years" class="w-50 m-2" />
+                            <USelect v-model="selectedMonth" placeholder="Month" :items="months" class="w-50 m-2" />
+                        </div>
+                        <div>
+                            <UButton to="/reports" color="neutral" variant="outline" size="xl" class="m-2">Back</UButton>
+                            <UButton to="/monthlyReports" color="primary" variant="outline" active-color="primary" active-variant="outline" size="xl" class="m-2" @click="fetchReportDetails(selectedYear, selectedMonth)">Go</UButton>
+                        </div>
+                    </div>
+                    <UCarousel
+                        v-slot="{ item }"
+                        loop
+                        :autoplay="{ delay: 2000 }"
+                        wheel-gestures                    
+                        :items="items"
+                        :ui="carouselUI"
+                    >
+                        <img :src="item" width="320" height="320" class="rounded-lg shadow-lg" />
+                    </UCarousel>
+                </div>
+                <div v-else>
+                    <div class="flex flex-col items-center justify-center gap-4 pb-10">
+                      <h1 class="text-3xl font-bold">{{ selectedMonthLabel }} {{ selectedYear }}</h1>
+                      <UCarousel
+                        :items="[
+                          { component: DoughnutChart, props: {transactionData: monthData} },
+                          { component: BarChart, props: { series1: barChart1Series1 } }                          
+                        ]"
+                        dots
+                        loop
+                        :ui="{
+                          item: 'basis-full flex justify-center',
+                        }"
+                      >
+                        <template #default="{ item }">
+                          <!-- Centering wrapper -->
+                          <div class="w-full flex justify-center">
+                            <!-- Width-constrained container -->
+                            <div class="w-full max-w-7xl">
+                              <component :is="item.component" v-bind="item.props" />
+                            </div>
+                          </div>
+                        </template>
+                      </UCarousel>
+                    </div>
                 </div>
             </UContainer>
         </UMain>

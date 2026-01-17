@@ -38,8 +38,6 @@ onMounted(async () => {
 
 <template>
   <div>
-    <UHeader title="Statements" />
-
     <UMain>
       <UContainer>
         <div class="flex justify-start pt-6 mb-4">
