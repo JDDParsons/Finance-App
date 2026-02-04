@@ -1,8 +1,11 @@
 <script setup>
 
-import BarChart from '~/components/BarChart.vue';
+import DoughnutChartA from '~/components/DoughnutChartA.vue';
+import DoughnutChartB from '~/components/DoughnutChartB.vue';
+import DoughnutChartC from '~/components/DoughnutChartC.vue';
+
 import { attachCategoryLabel } from '../utils/attachCategoryLabel.ts';
-import DoughnutChart from '~/components/DoughnutChart.vue';
+
 
 const years = [2025, 2026];
 const months = [
@@ -19,20 +22,6 @@ const months = [
   { value: 11, label: 'November' },
   { value: 12, label: 'December' },
 ];
-const items = ref([
-  'https://picsum.photos/id/237/320',
-  'https://picsum.photos/640/640?random=2',
-  'https://picsum.photos/640/640?random=3',
-  'https://picsum.photos/640/640?random=4',
-  'https://picsum.photos/640/640?random=5',
-  'https://picsum.photos/640/640?random=6',
-  'https://picsum.photos/640/640?random=7',
-  'https://picsum.photos/640/640?random=8',
-  'https://picsum.photos/640/640?random=9',
-  'https://picsum.photos/640/640?random=10',
-  'https://picsum.photos/640/640?random=11',
-  'https://picsum.photos/640/640?random=12'
-]);
 
 const viewReport = ref(false);
 const loading = ref(false);
@@ -40,6 +29,9 @@ const error = ref(null);
 const rows = ref([]);
 const categories = ref([]);
 const monthData = ref(null);
+const numberOfUncategorized = computed(() => {
+  return monthData.value ? monthData.value.filter(tx => !tx.category).length : 0;
+});
 
 const now = new Date()
 
@@ -55,6 +47,12 @@ const selectedMonthLabel = computed(() => {
   const monthObj = months.find(m => m.value === selectedMonth.value);
   return monthObj ? monthObj.label : '';
 });
+
+async function fetchAvailableMonthsAndYears() {
+  // Placeholder function to fetch available months and years
+  // In a real application, this would fetch from an API
+  return;
+}
 
 async function fetchReportDetails(year, month) {
   // Placeholder function to fetch report details based on year and month
@@ -92,33 +90,6 @@ const carouselUI = {
   container: 'ms-0'
 };
 
-// Chart data
-const barChart1Series1 = {
-  labels: ['Income', 'Expenses'],
-  datasets: [
-    {
-      data: [40, 20],
-      label: 'Bar',
-      borderColor: '#36A2EB',
-      backgroundColor: '#9BD0F5',
-    }
-  ]
-}
-
-const barChart2Series1 = {
-  labels: ['January', 'February', 'March'],
-  datasets: [
-    {
-      data: [40, 30, 30],
-      backgroundColor: '#9BD0F5',
-    }
-  ]
-}
-
-const dataItems = [
-  { component: BarChart, props: { series1: barChart1Series1 } },
-  { component: DoughnutChart, props: {transactionData: monthData.value} }
-]
 </script>
 <template>
     <div class="min-h-screen flex flex-col">
@@ -127,6 +98,7 @@ const dataItems = [
             <UColorModeSwitch />
           </template>
         </UHeader>
+        <UBanner v-if="numberOfUncategorized > 0" icon="i-lucide-info" color="neutral" to="/transactions" :title="`${numberOfUncategorized} uncategorized transactions in ${selectedMonthLabel} ${selectedYear}.`" />
         <UMain class="flex-1 flex items-center justify-center">
             <UContainer>
                 <div v-if="!viewReport">
@@ -141,24 +113,16 @@ const dataItems = [
                             <UButton to="/monthlyReports" color="primary" variant="outline" active-color="primary" active-variant="outline" size="xl" class="m-2" @click="fetchReportDetails(selectedYear, selectedMonth)">Go</UButton>
                         </div>
                     </div>
-                    <UCarousel
-                        v-slot="{ item }"
-                        loop
-                        :autoplay="{ delay: 2000 }"
-                        wheel-gestures                    
-                        :items="items"
-                        :ui="carouselUI"
-                    >
-                        <img :src="item" width="320" height="320" class="rounded-lg shadow-lg" />
-                    </UCarousel>
                 </div>
                 <div v-else>
+                    <UButton to="/monthlyReports" color="neutral" variant="outline" size="xl" class="m-2" @click="viewReport = false">Choose a different month</UButton>
                     <div class="flex flex-col items-center justify-center gap-4 pb-10">
                       <h1 class="text-3xl font-bold">{{ selectedMonthLabel }} {{ selectedYear }}</h1>
                       <UCarousel
                         :items="[
-                          { component: DoughnutChart, props: {transactionData: monthData} },
-                          { component: BarChart, props: { series1: barChart1Series1 } }                          
+                          { component: DoughnutChartA, props: {transactionData: monthData } },
+                          { component: DoughnutChartB, props: { transactionData: monthData } },      
+                          { component: DoughnutChartC, props: { transactionData: monthData } },
                         ]"
                         dots
                         loop

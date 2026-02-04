@@ -8,38 +8,49 @@ const props = defineProps({
 
 import { Doughnut } from 'vue-chartjs';
 import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement, CategoryScale } from 'chart.js';
-console.log('DoughnutChart props:', props.transactionData);
-// Register necessary Chart.js components
 ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale);
-const totalPayStubs = props.transactionData
+
+const transactionData = props.transactionData.filter(tx => {
+  return !tx.group.includes('SCOTIA') && 
+  !tx.category?.includes('Account transfer') && 
+  !tx.category?.includes('Credit card payments')
+});
+
+const totalPayStubs = transactionData
   .filter(tx => tx.category === 'Pay stubs') // keep only Pay stubs
   .reduce((sum, tx) => sum + Number(tx.amount), 0); // sum their amounts
 
-const totalTransfersReceivedFromRuthSebastian = props.transactionData
+const totalTransfersReceivedFromRuthSebastian = transactionData
   .filter(tx => tx.category === 'E-transfers received' && tx.description.includes('RUTH A SEBASTIAN')) // keep only Transfers received from Ruth Sebastian
   .reduce((sum, tx) => sum + Number(tx.amount), 0); // sum their amounts
 
-const totalTransfersReceived = props.transactionData
+const totalTransfersReceived = transactionData
   .filter(tx => tx.category === 'E-transfers received' && !tx.description.includes('RUTH A SEBASTIAN')) // keep remaining Transfers received
   .reduce((sum, tx) => sum + Number(tx.amount), 0); // sum their amounts
 
-const totalReimbursements = props.transactionData
+const totalReimbursements = transactionData
   .filter(tx => tx.category === 'Reimbursements') // keep only Reimbursements
   .reduce((sum, tx) => sum + Number(tx.amount), 0); // sum their amounts
 
-const totalExpenses = props.transactionData
-  .filter(tx => tx.category !== 'Pay stubs' && tx.category !== 'E-transfers received' && tx.category !== 'Reimbursements') // keep only expenses
+const bankDeposits = transactionData
+  .filter(tx => tx.category === 'Bank deposit') // keep only Bank deposits
   .reduce((sum, tx) => sum + Number(tx.amount), 0); // sum their amounts
 
-const netBalance = Math.round(totalPayStubs + totalExpenses);
-const percentIncome = Math.round(((netBalance) / (totalPayStubs)) * 100);
+console.log('Bank Deposits:', bankDeposits);
+
+const totalExpenses = transactionData
+  .filter(tx => tx.category !== 'Pay stubs' && tx.category !== 'E-transfers received' && tx.category !== 'Reimbursements' && tx.category !== 'Bank deposit') // keep only expenses
+  .reduce((sum, tx) => sum + Number(tx.amount), 0); // sum their amounts
+
+const netBalance = Math.round(totalPayStubs + totalReimbursements + totalExpenses);
+const percentIncome = Math.round(((netBalance) / (totalPayStubs + totalReimbursements)) * 100);
 
 const data = {
-  labels: ['Income', 'Reimbursements', 'E-transfers received', 'E-transfers from Ruth Sebastian', 'Total Expenses'],
+  labels: ['Income', 'Reimbursements', 'E-transfers from Ruth Sebastian', 'E-transfers from other sources', 'Bank deposits', 'Total Expenses'],
   datasets: [
     {
-      backgroundColor: ['#007a38', '#48fa99', '#004da6', '#0091ff', '#ff614d'],
-      data: [totalPayStubs, totalReimbursements, totalTransfersReceived, totalTransfersReceivedFromRuthSebastian, totalExpenses],
+      backgroundColor: ['#B7E4C7','#8ED1C6', '#9AD9EA', '#A7C7E7', '#A7C7E7', '#F6A6A1'],
+      data: [totalPayStubs, totalReimbursements, totalTransfersReceivedFromRuthSebastian, totalTransfersReceived, bankDeposits, totalExpenses],
     },
   ],
 };

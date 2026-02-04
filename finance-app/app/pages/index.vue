@@ -3,6 +3,11 @@
 </script>
 <template>
     <div>
+        <UHeader title="Personal Finance App">
+          <template #right>
+            <UColorModeSwitch />
+          </template>
+        </UHeader>
         <UMain>
             <UContainer>
                 <div class="grid grid-cols-4 gap-4">

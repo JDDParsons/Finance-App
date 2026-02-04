@@ -38,6 +38,11 @@ onMounted(async () => {
 
 <template>
   <div>
+    <UHeader title="Personal Finance App">
+      <template #right>
+        <UColorModeSwitch />
+      </template>
+    </UHeader>
     <UMain>
       <UContainer>
         <div class="flex justify-start pt-6 mb-4">

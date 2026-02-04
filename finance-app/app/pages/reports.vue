@@ -3,6 +3,11 @@
 </script>
 <template>
 <div class="min-h-screen flex flex-col">
+  <UHeader title="Personal Finance App">
+    <template #right>
+      <UColorModeSwitch />
+    </template>
+  </UHeader>
   <UMain class="flex-1 flex items-center justify-center">
     <UContainer>
       <div class="flex items-center justify-center gap-8">
