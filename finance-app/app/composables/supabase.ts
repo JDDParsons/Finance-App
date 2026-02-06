@@ -1,8 +1,13 @@
-import { useSupabaseBrowser } from '../../utils/supabaseBrowser'
+import { createClient } from '@supabase/supabase-js'
 import Papa from 'papaparse';
 
 function getSupabase() {
-  return useSupabaseBrowser()
+    const config = useRuntimeConfig()
+
+    return createClient(
+    config.public.supabaseUrl,
+    config.public.supabaseAnonKey
+  )
 }
 
 
@@ -267,3 +272,33 @@ function getSupabase() {
     return { count }
   }
 
+  // Send magic link for email authentication
+  export async function sendMagicLink(email: string): Promise<{ success: boolean; message: string }> {
+    try {
+      if (!email) {
+        return { success: false, message: 'Please enter a valid email address.' }
+      }
+
+      const supabase = getSupabase()
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : ''
+        }
+      })
+
+      if (error) {
+        return { success: false, message: 'Error sending magic link: ' + error.message }
+      }
+
+      return { success: true, message: 'Magic link sent! Please check your email.' }
+    } catch (err: any) {
+      return { success: false, message: 'Error: ' + (err?.message || 'Unknown error') }
+    }
+  }
+
+  export async function getSession() {
+    const supabase = getSupabase()
+    const { data: auth } = await supabase.auth.getSession()
+    return auth.session
+  }

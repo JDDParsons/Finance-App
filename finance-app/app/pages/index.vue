@@ -1,29 +1,22 @@
 <script setup>
-import { useSupabaseBrowser } from '../utils/supabaseBrowser'
+import { sendMagicLink, getSession } from '../composables/supabase'
 
 const email = ref('');
-const supabaseBrowser = useSupabaseBrowser();
+const loading = ref(false);
 
-async function sendMagicLink() {
-    if (!email.value) {
-        alert('Please enter a valid email address.');
-        return;
-    }
-
-      const { error } = await supabaseBrowser.auth.signInWithOtp({
-        email: email.value,
-        options: {
-        emailRedirectTo: window.location.origin
+async function handleSendMagicLink() {
+    loading.value = true;
+    try {
+        const result = await sendMagicLink(email.value);
+        alert(result.message);
+        if (result.success) {
+            email.value = '';
         }
-    })
-
-    if (error) {
-        alert('Error sending magic link: ' + error.message);
-    } else {
-        alert('Magic link sent! Please check your email.');
+    } finally {
+        loading.value = false;
     }
-
 }
+
 </script>
 <template>
     <div>
@@ -34,43 +27,35 @@ async function sendMagicLink() {
         </UHeader>
         <UMain>
             <UContainer>
-                <div class="grid grid-cols-4 gap-4">
-                    <NuxtLink to="/upload">
-                        <UCard
-                            class="cursor-pointer transition transform hover:scale-105 hover:shadow-xl active:scale-95
-                                flex flex-col items-center justify-center mt-8 p-4 h-48"
-                        >
-                            
-                            <h2 class="text-lg font-semibold text-center">Upload</h2>
-                            <p class="text-sm text-center"> Upload a bank statement</p>
-                        </UCard>
-                    </NuxtLink>
-<!--
-                    <NuxtLink to="/snap">
-                        <UCard
-                            class="cursor-pointer transition transform hover:scale-105 hover:shadow-xl active:scale-95
-                                flex flex-col items-center justify-center mt-8 p-4 h-48"
-                        >
-                            
-                            <h2 class="text-lg font-semibold text-center">Snap your balances</h2>
-                            <p class="text-sm text-gray-400 text-center"> Record a snapshot of all current account balances </p>
-                        </UCard>
-                    </NuxtLink>
--->
-                    <NuxtLink to="/reports">
-                        <UCard
-                            class="cursor-pointer transition transform hover:scale-105 hover:shadow-xl active:scale-95
-                                flex flex-col items-center justify-center mt-8 p-4 h-48"
-                        >
-                            <h2 class="text-lg font-semibold text-center">View</h2>
-                            <p class="text-sm text-center"> Browse data and reports </p>
-                        </UCard>
-                    </NuxtLink>
+                <div class="flex flex-col items-center justify-center min-h-screen space-y-8">
+                    <div class="text-center">
+                        <h1 class="text-4xl font-bold mb-4">Welcome to Personal Finance App</h1>
+                        <p class="text-lg text-gray-400">Sign in with your email to get started</p>
+                    </div>
+
+                    <UCard class="w-full max-w-md p-8">
+                        <UFormField description="" class="text-lg font-semibold mb-4" required>
+                            <UInput 
+                                type="email" 
+                                variant="soft" 
+                                size="xl" 
+                                class="w-full"
+                                color="neutral" 
+                                placeholder="Enter your email..." 
+                                v-model="email"
+                                :disabled="loading"
+                            />
+                            <UButton 
+                                class="mt-4 w-full" 
+                                color="primary" 
+                                @click="handleSendMagicLink"
+                                :loading="loading"
+                            >
+                                Send Magic Link
+                            </UButton>
+                        </UFormField>
+                    </UCard>
                 </div>
-                <UFormField label="Email address" description="" class="text-lg font-semibold mb-4" required>
-                    <UInput type="email" variant="soft" size="xl" color="neutral" placeholder="Enter an email..." v-model="email" />
-                    <UButton class="mt-4" variant="soft" color="secondary" @click="sendMagicLink">Send Magic Link</UButton>
-                </UFormField>
             </UContainer>
         </UMain>
     </div>

@@ -12,7 +12,7 @@
     <UContainer>
       <div class="flex items-center justify-center gap-8">
         <!-- Left -->
-        <NuxtLink to="/monthlyReports" class="w-1/2 flex items-center justify-center p-8 pr-10">
+        <NuxtLink to="/reports/monthly" class="w-1/2 flex items-center justify-center p-8 pr-10">
           <div class="cursor-pointer transition transform hover:scale-105 active:scale-95 w-full flex flex-col items-center justify-center gap-4">
             <UIcon name="radix-icons:calendar" class="w-24 h-24" />
             <h2 class="text-4xl font-semibold text-center">Monthly Reports</h2>

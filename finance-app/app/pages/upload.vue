@@ -57,12 +57,18 @@ async function upload() {
                     </div>
                     <div class="flex flex-col items-center justify-center space-y-8">
                         <UFileUpload v-model="fileInput" accept="text/csv" label="Drop your file here" description="Single CSV only" class="w-96 min-h-48" />
-                        <div class="flex space-x-4">
-                            <UButton to="/statements" color="neutral" variant="outline" size="xl">View uploaded statements</UButton>
-                            <UButton to="/upload" color="primary" variant="outline" active-color="primary" active-variant="outline" size="xl" @click="upload()">Submit</UButton>
+                        <div class="flex flex-col items-center justify-center pt-5">
+                            <UButton to="/upload" color="primary" active-color="primary" size="xl" @click="upload()">Submit bank statement</UButton>
+                            <div class="flex space-x-4 pt-7">
+                                <UButton to="/menu" color="neutral" variant="outline" size="xl">Back</UButton>
+                                
+                                <UButton to="/reports/monthly" color="secondary" variant="outline" size="xl">View reports</UButton>
+                            </div>
                         </div>
-                        <UButton to="/transactions" color="secondary" variant="outline" size="xl">View transaction data</UButton>
                     </div>
+                </div>
+                <div class="flex flex-col items-center justify-center">
+                    <UploadTimeline />
                 </div>
             </UContainer>
         </UMain>
