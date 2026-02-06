@@ -2,10 +2,14 @@
 import { ref, onMounted, h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import CategoryDropdown from '~/components/CategoryDropdown.vue'
+import { getAllSorted, getCategories } from '../composables/supabase'
+
+
+
 
 interface Category {
   id: string
-  name: string | null
+  label?: string
 }
 
 const loading = ref(true)
@@ -81,19 +85,8 @@ const columns: TableColumn<any>[] = [
 
 onMounted(async () => {
   try {
-    const [transRes, catRes] = await Promise.all([
-      fetch('/api/transactions'),
-      fetch('/api/categories')
-    ])
-
-    if (!transRes.ok) throw new Error(`Error fetching transactions: ${transRes.statusText}`)
-    if (!catRes.ok) throw new Error(`Error fetching categories: ${catRes.statusText}`)
-
-    const transData = await transRes.json()
-    const catData = await catRes.json()
-
-    rows.value = transData || []
-    categories.value = catData || []
+    rows.value = await getAllSorted()
+    categories.value = await getCategories()
   } catch (err: any) {
     error.value = err.message || 'Failed to load data'
   } finally {

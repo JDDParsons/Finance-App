@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { setTransactionCategory } from '../composables/supabase'
 
 interface Category {
   id: string
-  name: string | null
+  label?: string
 }
 
 const props = defineProps<{
@@ -18,7 +19,7 @@ const avatarUrl = ref('');
 
 const selectedCategoryName = computed(() => {
   const selected = props.categories.find(c => c.id === currentCategoryId.value)
-  return selected?.name || 'Select category'
+  return selected?.label || 'Select category'
 })
 
 async function submitCategoryChange() {
@@ -26,27 +27,12 @@ async function submitCategoryChange() {
   
   loading.value = true
   try {
-    const response = await fetch('/api/transaction-categories', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        transactionId: props.transactionId,
-        categoryId: currentCategoryId.value
-      })
-    })
-
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.statusMessage || 'Failed to update category')
-      avatarUrl.value = 'https://www.driversupport.com/wp-content/uploads/2019/04/red-x-on-network-icon.png'
-    }
-    else {
-      // Successfully updated
-      console.log('Category updated successfully')
-      avatarUrl.value = 'https://upload.wikimedia.org/wikipedia/commons/8/8b/Eo_circle_green_white_checkmark.svg'
-    }
+    await setTransactionCategory(props.transactionId, currentCategoryId.value as string)
+    // Successfully updated
+    console.log('Category updated successfully')
+    avatarUrl.value = 'https://upload.wikimedia.org/wikipedia/commons/8/8b/Eo_circle_green_white_checkmark.svg'
   } catch (error: any) {
-    console.error('Error updating category:', error.message)
+    console.error('Error updating category:', error?.message || error)
     // Reset to previous value on error
     currentCategoryId.value = props.currentCategoryId || undefined
     avatarUrl.value = 'https://www.driversupport.com/wp-content/uploads/2019/04/red-x-on-network-icon.png'
@@ -65,7 +51,7 @@ async function submitCategoryChange() {
     size="sm"
     :items="categories"
     placeholder="Select a category"
-    option-attribute="name"
+    option-attribute="label"
     value-attribute="id"
     class="w-50"
     :popper="{ placement: 'bottom-start' }"

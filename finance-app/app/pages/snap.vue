@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { saveBalance } from '../composables/supabase'
 
 const toast = useToast();
 const formSubmitted = ref(false);
@@ -58,21 +59,19 @@ async function handleSubmit() {
     submitFailure.value = false; 
     formSubmitted.value = true;
     formState.value.total = Number(total.value);
-    response.value = await $fetch('/api/form', {
-        method: 'POST',
-        body: formState.value
-    })  
-    if (response.value.message == "Balance saved") {
-        resetFormState();
+    try {
+        const record = await saveBalance(formState.value)
+        response.value = { record }
+        resetFormState()
 
         toast.add({
             title: 'Balances saved successfully',
-            description: 'Your total balance is $' + response.value.record?.total || 'null'
+            description: 'Your total balance is $' + (record?.total ?? 'null')
         })
-    }
-    else {
+    } catch (err) {
         alert("There was an error submitting the form. Please try again.");
         submitFailure.value = true;
+        console.error(err)
     }
 }  
 

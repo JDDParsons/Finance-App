@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { getStatementGroups } from '../composables/supabase'
 import type { TableColumn } from '@nuxt/ui'
 
 const loading = ref(true)
@@ -24,10 +25,7 @@ const columns: TableColumn<any>[] = [
 
 onMounted(async () => {
   try {
-    const res = await fetch('/api/statements')
-    if (!res.ok) throw new Error(`Error fetching statements: ${res.statusText}`)
-    const data = await res.json()
-    rows.value = data || []
+    rows.value = await getStatementGroups()
   } catch (err: any) {
     error.value = err.message || 'Failed to load statements'
   } finally {

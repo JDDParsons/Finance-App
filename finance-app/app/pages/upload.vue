@@ -1,5 +1,7 @@
 <script setup>
 
+import { uploadFile } from '../composables/supabase'
+
 const toast = useToast();
 const fileInput = ref(null);
 const fileUploaded = ref(false);
@@ -11,21 +13,18 @@ function resetForm() {
 
 async function upload() {
     if (fileInput.value) {
-        const formData = new FormData()
-        formData.append('file', fileInput.value)   // VERY IMPORTANT
+        try {
+            await uploadFile(fileInput.value)
+            fileUploaded.value = true;
 
-        const response = await $fetch('/api/upload', {
-            method: 'POST',
-            body: formData
-            // DON'T set headers — FormData sets them automatically
-        })
-
-        fileUploaded.value = true;
-
-        toast.add({
-            title: 'Bank statement uploaded successfully',
-            description: 'Your transactions are being processed.'
-        })
+            toast.add({
+                title: 'Bank statement uploaded successfully',
+                description: 'Your transactions are being processed.'
+            })
+        } catch (err) {
+            console.error(err)
+            alert('Failed to upload file. See console for details.')
+        }
 
     } else {
         alert("Please upload a CSV file before submitting.");

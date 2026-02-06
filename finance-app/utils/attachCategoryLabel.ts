@@ -1,10 +1,10 @@
 type Transaction = {
-  currentCategoryId: number | null
+  currentCategoryId: string | null
   [key: string]: any
 }
 
 type Category = {
-  id: number
+  id: string
   label: string
 }
 
@@ -13,7 +13,7 @@ export function attachCategoryLabel(
   catData: Category[]
 ) {
   // Build lookup table: id → label
-  const categoryMap = new Map<number, string>(
+  const categoryMap = new Map<string, string>(
     catData.map(cat => [cat.id, cat.label])
   )
 

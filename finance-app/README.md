@@ -20,6 +20,19 @@ yarn install
 bun install
 ```
 
+---
+
+## Frontend-only mode ✅
+
+This project now uses client-side Supabase calls via the composable `app/composables/supabase.ts`.
+Server endpoints under `server/api` that previously used Prisma / Node have been deprecated (return 410). To remove the Node backend entirely, you can:
+
+1. Delete the `server` and `prisma` folders.
+2. Remove the Prisma-related packages from `package.json` (`prisma`, `@prisma/client`, `@prisma/adapter-pg`, `pg`).
+3. Run `npm install` to update dependencies.
+
+If you'd like, I can perform these deletions and cleanups for you.
+
 ## Development Server
 
 Start the development server on `http://localhost:3000`:

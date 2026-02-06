@@ -5,7 +5,7 @@ import DoughnutChartB from '~/components/DoughnutChartB.vue';
 import DoughnutChartC from '~/components/DoughnutChartC.vue';
 
 import { attachCategoryLabel } from '../utils/attachCategoryLabel.ts';
-
+import { getAllByMonth, getCategories } from '../composables/supabase.ts';
 
 const years = [2025, 2026];
 const months = [
@@ -59,36 +59,25 @@ async function fetchReportDetails(year, month) {
   console.log(`Fetching report for Year: ${year}, Month: ${month}`);
   loading.value = true;
     try {
-    const [transRes, catRes] = await Promise.all([
-      fetch(`/api/transactions?year=${year}&month=${month}`),
-      fetch('/api/categories')
-    ])
+      const [rowsRes, catData] = await Promise.all([
+        getAllByMonth(year, month),
+        getCategories()
+      ])
 
-    if (!transRes?.ok) throw new Error(`Error fetching transactions`)
-    if (!catRes?.ok) throw new Error(`Error fetching categories`)
+      rows.value = rowsRes
+      categories.value = catData || []
 
-    const transData = await transRes.json()
-    const catData = await catRes.json()
+      monthData.value = attachCategoryLabel(rows.value, categories.value)
+      console.log(monthData.value)
 
-    rows.value = transData || []
-    categories.value = catData || []
-
-    monthData.value = attachCategoryLabel(rows.value, categories.value);
-    console.log(monthData.value);
-
-    viewReport.value = true;
-  } catch (err) {
-    error.value = err.message || 'Failed to load data'
-    console.error(error.value);
-  } finally {
-    loading.value = false
-  }
+      viewReport.value = true
+    } catch (err) {
+      error.value = err.message || 'Failed to load data'
+      console.error(error.value)
+    } finally {
+      loading.value = false
+    }
 }
-
-const carouselUI = {
-  item: 'basis-1/6',
-  container: 'ms-0'
-};
 
 </script>
 <template>
