@@ -212,6 +212,54 @@ async function fetchReportDetails(year: number, month: number) {
     }
 }
 
+const prevYearMonth = computed(() => {
+  const y = selectedYear.value
+  const m = selectedMonth.value
+  if (m === 1) return { year: y - 1, month: 12 }
+  return { year: y, month: m - 1 }
+})
+
+const nextYearMonth = computed(() => {
+  const y = selectedYear.value
+  const m = selectedMonth.value
+  if (m === 12) return { year: y + 1, month: 1 }
+  return { year: y, month: m + 1 }
+})
+
+const isPrevAvailable = computed(() => {
+  const py = prevYearMonth.value.year
+  const pm = prevYearMonth.value.month
+  const avail = availableMonthsMap.value[py] || []
+  return avail.includes(pm)
+})
+
+const isNextAvailable = computed(() => {
+  const ny = nextYearMonth.value.year
+  const nm = nextYearMonth.value.month
+  const avail = availableMonthsMap.value[ny] || []
+  return avail.includes(nm)
+})
+
+async function gotoPrev() {
+  if (!isPrevAvailable.value) return
+  selectedYear.value = prevYearMonth.value.year
+  selectedMonth.value = prevYearMonth.value.month
+  await fetchReportDetails(selectedYear.value, selectedMonth.value)
+}
+
+async function gotoNext() {
+  if (!isNextAvailable.value) return
+  selectedYear.value = nextYearMonth.value.year
+  selectedMonth.value = nextYearMonth.value.month
+  await fetchReportDetails(selectedYear.value, selectedMonth.value)
+}
+
+const carouselItems = computed(() => ([
+  { component: DoughnutChartA, props: { transactionData: monthData.value || {} } },
+  { component: DoughnutChartB, props: { transactionData: monthData.value || {} } },
+  { component: DoughnutChartC, props: { transactionData: monthData.value || {} } },
+]))
+
 </script>
 <template>
     <div class="min-h-screen flex flex-col">
@@ -244,11 +292,7 @@ async function fetchReportDetails(year: number, month: number) {
                     <div v-if="!viewData" class="flex flex-col items-center justify-center gap-4 pb-10">
                       <h1 class="text-3xl font-bold">{{ selectedMonthLabel }} {{ selectedYear }}</h1>
                       <UCarousel
-                        :items="[
-                          { component: DoughnutChartA, props: {transactionData: monthData || {} } },
-                          { component: DoughnutChartB, props: { transactionData: monthData || {} } },      
-                          { component: DoughnutChartC, props: { transactionData: monthData || {} } },
-                        ]"
+                        :items="carouselItems"
                         dots
                         loop
                         :ui="{
@@ -273,6 +317,17 @@ async function fetchReportDetails(year: number, month: number) {
                 </div>
                 </transition>
             </UContainer>
+
+            <!-- Overlay prev/next buttons -->
+            <div v-if="viewReport">
+              <div class="fixed left-20 top-1/2 transform -translate-y-1/2 z-50 cursor-pointer">
+                <UButton v-if="isPrevAvailable" color="info" variant="outline" size="xl" @click="gotoPrev" aria-label="Previous month">◀ Previous month</UButton>
+              </div>
+              <div class="fixed right-20 top-1/2 transform -translate-y-1/2 z-50 cursor-pointer">
+                <UButton v-if="isNextAvailable" color="info" variant="outline" size="xl" @click="gotoNext" aria-label="Next month">Next month ▶</UButton>
+              </div>
+            </div>
+
         </UMain>
     </div>
 </template>
