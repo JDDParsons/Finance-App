@@ -1,0 +1,10 @@
+{
+  "name": "finance-app-root",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix finance-app run dev",
+    "build": "npm --prefix finance-app run build",
+    "start": "npm --prefix finance-app run preview",
+    "postinstall": "npm --prefix finance-app run postinstall"
+  }
+}
