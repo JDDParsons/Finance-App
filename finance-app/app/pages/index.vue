@@ -19,7 +19,6 @@ async function handleSendMagicLink() {
         const result = await sendMagicLink(email.value);
         alert(result.message);
         if (result.success) {
-            email.value = '';
             codeRequested.value = true;
         }
         else {

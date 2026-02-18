@@ -297,7 +297,9 @@ const carouselItems = computed(() => ([
                         loop
                         :ui="{
                           item: 'basis-full flex justify-center',
+                          container: 'rounded-lg'
                         }"
+                        class="w-full max-w-sm md:max-w-7xl mx-auto" 
                       >
                         <template #default="{ item }">
                           <!-- Centering wrapper -->

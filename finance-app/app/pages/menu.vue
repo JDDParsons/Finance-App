@@ -22,7 +22,7 @@ import { signOut } from '../composables/supabase'
                         </UCard>
                     </NuxtLink>
 
-                    <NuxtLink to="/reports">
+                    <NuxtLink to="/reports/monthly">
                         <UCard
                             class="cursor-pointer transition transform hover:scale-105 hover:shadow-xl active:scale-95
                                 flex flex-col items-center justify-center mt-8 p-4 h-48"
