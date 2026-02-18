@@ -51,9 +51,9 @@ async function upload() {
                     <UButton to="/transactions" color="secondary" variant="outline" size="xl">View transaction data</UButton>
                 </div>
                 <div v-else class="divider mb-8">
-                    <div class="flex flex-col items-center justify-center p-8 mb-12 space-y-4">                     
+                    <div class="flex flex-col items-center justify-center p-8 space-y-4">                     
                         <h1 class="text-xl font-bold">Upload a bank statement</h1>
-                        <p>Please upload a CSV file containing transaction records from your bank.</p>
+                        <p class="text-center">Please upload a CSV file containing transaction records from your bank.</p>
                     </div>
                     <div class="flex flex-col items-center justify-center space-y-8">
                         <UFileUpload v-model="fileInput" accept="text/csv" label="Drop your file here" description="Single CSV only" class="w-96 min-h-48" />
@@ -67,9 +67,11 @@ async function upload() {
                         </div>
                     </div>
                 </div>
+                <!--
                 <div class="flex flex-col items-center justify-center">
                     <UploadTimeline />
                 </div>
+                -->
             </UContainer>
         </UMain>
     </div>

@@ -297,8 +297,31 @@ function getSupabase() {
     }
   }
 
+  export async function validateCode(email: string, code: string) {
+    try {
+      const supabase = getSupabase()
+      const { data: { session }, error } = await supabase.auth.verifyOtp({
+        email: email,
+        token: code, // The 6-digit code from the email
+        type: 'email',   // Crucial: Use 'email' for OTP codes
+      })
+      return { session, error };
+
+    } catch (err: any) {
+      console.error('Error validating code:', err)
+      throw new Error('Invalid code or error during validation.')
+    }
+  }
+
   export async function getSession() {
     const supabase = getSupabase()
     const { data: auth } = await supabase.auth.getSession()
     return auth.session
+  }
+
+  export async function signOut() {
+    const supabase = getSupabase()
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
+    else window.location.href = '/'; 
   }

@@ -1,4 +1,5 @@
 <script setup>
+import { signOut } from '../composables/supabase'
 </script>
 
 <template>
@@ -10,7 +11,7 @@
         </UHeader>
         <UMain>
             <UContainer>
-                <div class="grid grid-cols-4 gap-4">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <NuxtLink to="/upload">
                         <UCard
                             class="cursor-pointer transition transform hover:scale-105 hover:shadow-xl active:scale-95
@@ -31,6 +32,7 @@
                         </UCard>
                     </NuxtLink>
                 </div>
+                <UButton class="mt-8" color="primary" @click="signOut()">Sign out</UButton>
             </UContainer>
         </UMain>
     </div>
