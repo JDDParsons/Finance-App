@@ -283,7 +283,7 @@ function getSupabase() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : ''
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.href : ''
         }
       })
 
