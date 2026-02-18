@@ -35,6 +35,9 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'finance-app/package-lock.json'
       
+      - name: Update npm
+        run: npm install -g npm@11.6.4
+      
       - name: Install dependencies
         working-directory: finance-app
         run: npm ci
