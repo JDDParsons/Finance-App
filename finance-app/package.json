@@ -31,6 +31,9 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
+  "overrides": {
+    "citty": "^0.2.1"
+  },
   "version": "1.0.0",
   "description": "Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.",
   "main": "index.js",

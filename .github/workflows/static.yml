@@ -37,7 +37,7 @@ jobs:
       
       - name: Install dependencies
         working-directory: finance-app
-        run: npm ci --legacy-peer-deps
+        run: npm ci
       
       - name: Build Nuxt app
         working-directory: finance-app
