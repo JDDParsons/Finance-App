@@ -23,12 +23,12 @@
         <div class="w-px h-150 bg-gray-100 dark:bg-gray-200 shadow-lg shadow-black/10"></div>
 
         <!-- Right -->
-        <NuxtLink to="/monthlyReports" class="w-1/2 flex items-center justify-center p-8 pr-10">
-          <div class="cursor-pointer transition transform hover:scale-105 active:scale-95 w-full flex flex-col items-center justify-center gap-4">
+        <div class="w-1/2 flex items-center justify-center p-8 pr-10 opacity-50 cursor-not-allowed">
+          <div class="w-full flex flex-col items-center justify-center gap-4">
             <UIcon name="fa-solid:chart-line" class="w-24 h-24" />
             <h2 class="text-4xl font-semibold text-center">Trailing Reports</h2>
           </div>
-        </NuxtLink>
+        </div>
       </div>
     </UContainer>
   </UMain>
