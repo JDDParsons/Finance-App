@@ -4,9 +4,6 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ['@nuxt/ui'],
   css: ['@/assets/css/main.css'],
-  app: {
-    baseURL: '/Finance-App/',
-  },
   runtimeConfig: {
       public: {
       supabaseUrl: process.env.NUXT_PUBLIC_SUPABASE_URL || '',
