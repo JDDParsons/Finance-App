@@ -4,7 +4,6 @@ import { h, ref, computed, watch, onMounted } from 'vue';
 import type { TableColumn } from '@nuxt/ui'
 import DoughnutChartA from '~/components/DoughnutChartA.vue';
 import DoughnutChartB from '~/components/DoughnutChartB.vue';
-import DoughnutChartC from '~/components/DoughnutChartC.vue';
 import CategoryDropdown from '~/components/CategoryDropdown.vue';
 
 import { getAllByMonth, getCategories, getStatementGroups } from '../../../composables/supabase.js';
@@ -318,9 +317,45 @@ const carouselItems = computed(() => ([
                         <UButton v-if="isNextAvailable" color="info" variant="outline" size="sm" @click="gotoNext" aria-label="Next month">Next month</UButton>
                       </div>
                     </div>
-                    <div v-if="viewData" class="flex flex-col items-center justify-center gap-4 pb-10">
+                    <div v-if="viewData" class="flex flex-col items-center justify-center gap-4 pb-10 w-full">
                       <h1 class="text-3xl font-bold text-center">{{ selectedMonthLabel }} {{ selectedYear }}</h1>
-                      <UTable :data="rows" :columns="columns" class="w-full" />
+                      <!-- Desktop view: Table -->
+                      <div class="hidden md:block w-full">
+                        <UTable :data="rows" :columns="columns" class="w-full" />
+                      </div>
+                      <!-- Mobile view: Cards -->
+                      <div class="md:hidden w-full space-y-3 px-2">
+                        <div v-for="row in rows" :key="row.id" class="flex flex-col">
+                          <UCard class="w-full">
+                            <div class="space-y-2">
+                              <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                  <p class="text-xs text-gray-500">Date</p>
+                                  <p class="font-semibold">{{ formatDateOnly(row.transaction_date) }}</p>
+                                </div>
+                                <div class="flex-1 text-right">
+                                  <p class="text-xs text-gray-500">Amount</p>
+                                  <p class="font-semibold" :class="Number(row.amount) < 0 ? 'text-red-500' : 'text-green-500'">
+                                    {{ currencyFormatter.format(Number(row.amount)) }}
+                                  </p>
+                                </div>
+                              </div>
+                              <div>
+                                <p class="text-xs text-gray-500">Description</p>
+                                <p class="text-sm">{{ row.description }}</p>
+                              </div>
+                              <div>
+                                <p class="text-xs text-gray-500 mb-1">Category</p>
+                                <component :is="() => h(CategoryDropdown, {
+                                  transactionId: row.id,
+                                  currentCategoryId: row.currentCategoryId || null,
+                                  categories: categories
+                                })" />
+                              </div>
+                            </div>
+                          </UCard>
+                        </div>
+                      </div>
                     </div>
                 </div>
                 </transition>
