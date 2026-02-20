@@ -34,9 +34,10 @@ async function upload() {
 </script>
 <template>
     <div>
-        <UHeader title="Personal Finance App">
+        <UHeader title="Finance App">
           <template #right>
             <UColorModeSwitch />
+            <UButton class="ml-2" color="neutral" variant="ghost" size="sm" @click="signOut()">Sign out</UButton>
           </template>
         </UHeader>
         <UMain>
@@ -60,9 +61,9 @@ async function upload() {
                         <div class="flex flex-col items-center justify-center pt-5">
                             <UButton to="/upload" color="primary" active-color="primary" size="xl" @click="upload()">Submit bank statement</UButton>
                             <div class="flex space-x-4 pt-7">
-                                <UButton to="/menu" color="neutral" variant="outline" size="xl">Back</UButton>
+                                <UButton to="/menu" color="neutral" variant="outline" size="sm">Back</UButton>
                                 
-                                <UButton to="/reports/monthly" color="secondary" variant="outline" size="xl">View reports</UButton>
+                                <UButton to="/reports/monthly" color="secondary" variant="outline" size="sm">View reports</UButton>
                             </div>
                         </div>
                     </div>

@@ -261,9 +261,10 @@ const carouselItems = computed(() => ([
 </script>
 <template>
     <div class="min-h-screen flex flex-col">
-        <UHeader title="Personal Finance App">
+        <UHeader title="Finance App">
           <template #right>
             <UColorModeSwitch />
+            <UButton class="ml-2" color="neutral" variant="ghost" size="sm" @click="signOut()">Sign out</UButton>
           </template>
         </UHeader>
         <UBanner v-if="numberOfUncategorized > 0" icon="i-lucide-info" color="neutral" to="/transactions" :title="`${numberOfUncategorized} uncategorized transactions in ${selectedMonthLabel} ${selectedYear}.`" />
@@ -272,14 +273,14 @@ const carouselItems = computed(() => ([
               <transition name="fade" mode="out-in">
                 <div v-if="!viewReport">
                     <div class="flex flex-col items-center justify-center gap-4 pb-20">
-                        <h1 class="text-2xl font-semibold">Select Year and Month for Report</h1>
+                        <h1 class="text-2xl font-semibold text-center">Which month would you like to see?</h1>
                         <div class="flex items-center justify-center gap-4">
                             <USelect v-model="selectedYear" placeholder="Year" :items="years" class="w-25 m-2" />
                             <USelect v-model="selectedMonth" placeholder="Month" :items="availableMonthItems" class="w-25 m-2" />
                         </div>
                         <div>
-                            <UButton to="/menu" color="neutral" variant="outline" size="xl" class="m-2">Back</UButton>
-                            <UButton to="/reports/monthly" color="primary" active-color="primary" size="xl" class="m-2" @click="fetchReportDetails(selectedYear, selectedMonth)">See report</UButton>
+                            <UButton to="/menu" color="neutral" variant="outline" size="sm" class="m-2">Back</UButton>
+                            <UButton to="/reports/monthly" color="primary"  variant="outline" size="sm" class="m-2" @click="fetchReportDetails(selectedYear, selectedMonth)">See report</UButton>
                         </div>
                     </div>
                 </div>
