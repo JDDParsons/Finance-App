@@ -325,3 +325,33 @@ function getSupabase() {
     if (error) throw error
     else window.location.href = '/'; 
   }
+
+  export async function createBudget(name: string, startDate: string, endDate: string, amount: string) {
+    const supabase = getSupabase()
+    const { data: auth } = await supabase.auth.getSession(); 
+    const { data, error } = await supabase
+      .from('Budgets')
+      .insert({
+        name,
+        start_date: startDate,
+        end_date: endDate,
+        amount: parseFloat(amount),
+        user_id: auth.session?.user?.id
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  export async function getBudgets() {
+    const supabase = getSupabase()
+    const { data: budgets, error } = await supabase
+      .from('Budgets')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return budgets || []
+  }

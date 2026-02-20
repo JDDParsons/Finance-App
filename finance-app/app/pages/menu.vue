@@ -19,24 +19,40 @@ import { signOut } from '../composables/supabase'
                                 flex flex-col items-center justify-center mt-8 p-4 h-50"
                         >
                         <template #header>
-                            <h2 class="text-lg font-semibold text-center">Upload file</h2>
+                            <h2 class="text-lg font-semibold text-center">Upload a file</h2>
                         </template>
                             <div class="flex flex-col justify-center items-center gap-2">
                                 <UIcon name="flat-color-icons:upload" class="w-12 h-12" />
                             </div>
                         <template #footer>
-                            <p class="text-sm text-center"> Save bank statement data</p>
+                            <p class="text-sm text-center"> Save banking data to the cloud</p>
                         </template>
                         </UCard>
                     </NuxtLink>
 
+                    <NuxtLink to="/budgets">
+                        <UCard
+                            class="cursor-pointer transition transform hover:scale-105 hover:shadow-xl active:scale-95
+                                flex flex-col items-center justify-center mt-8 p-4 h-50"
+                        >
+                        <template #header>
+                            <h2 class="text-lg font-semibold text-center">Manage budgets</h2>
+                        </template>
+                         <div class="flex flex-col justify-center items-center gap-2">
+                            <UIcon name="flat-color-icons:paid" class="w-12 h-12" />
+                        </div>
+                        <template #footer>
+                            <p class="text-sm text-center"> Make allocations, update remaining amounts</p>
+                        </template>
+                        </UCard>
+                    </NuxtLink>
                     <NuxtLink to="/reports/monthly">
                         <UCard
                             class="cursor-pointer transition transform hover:scale-105 hover:shadow-xl active:scale-95
                                 flex flex-col items-center justify-center mt-8 p-4 h-50"
                         >
                         <template #header>
-                            <h2 class="text-lg font-semibold text-center">View Reports</h2>
+                            <h2 class="text-lg font-semibold text-center">View reports</h2>
                         </template>
                          <div class="flex flex-col justify-center items-center gap-2">
                             <UIcon name="flat-color-icons:doughnut-chart" class="w-12 h-12" />
