@@ -256,8 +256,7 @@ async function gotoNext() {
 
 const carouselItems = computed(() => ([
   { component: DoughnutChartA, props: { transactionData: monthData.value || {} } },
-  { component: DoughnutChartB, props: { transactionData: monthData.value || {} } },
-  { component: DoughnutChartC, props: { transactionData: monthData.value || {} } },
+  { component: DoughnutChartB, props: { transactionData: monthData.value || {} } }
 ]))
 
 </script>
@@ -275,9 +274,9 @@ const carouselItems = computed(() => ([
                 <div v-if="!viewReport">
                     <div class="flex flex-col items-center justify-center gap-4 pb-20">
                         <h1 class="text-2xl font-semibold">Select Year and Month for Report</h1>
-                        <div>
-                            <USelect v-model="selectedYear" placeholder="Year" :items="years" class="w-50 m-2" />
-                            <USelect v-model="selectedMonth" placeholder="Month" :items="availableMonthItems" class="w-50 m-2" />
+                        <div class="flex items-center justify-center gap-4">
+                            <USelect v-model="selectedYear" placeholder="Year" :items="years" class="w-25 m-2" />
+                            <USelect v-model="selectedMonth" placeholder="Month" :items="availableMonthItems" class="w-25 m-2" />
                         </div>
                         <div>
                             <UButton to="/menu" color="neutral" variant="outline" size="xl" class="m-2">Back</UButton>
@@ -286,9 +285,11 @@ const carouselItems = computed(() => ([
                     </div>
                 </div>
                 <div v-else>
-                    <UButton to="/reports/monthly" color="neutral" variant="outline" size="xl" class="m-2" @click="viewReport = false">Choose a different month</UButton>
-                    <UButton v-if="!viewData" color="info" variant="outline" size="xl" class="m-2" @click="viewData = true">View data</UButton>
-                    <UButton v-if="viewData" color="info" variant="outline" size="xl" class="m-2" @click="viewData = false">View reports</UButton>
+                    <div class="flex justify-center mb-8">
+                      <UButton to="/reports/monthly" color="neutral" variant="outline" size="sm" class="m-2" @click="viewReport = false">Choose a different month</UButton>
+                      <UButton v-if="!viewData" color="info" variant="outline" size="sm" class="m-2" @click="viewData = true">View data</UButton>
+                      <UButton v-if="viewData" color="info" variant="outline" size="sm" class="m-2" @click="viewData = false">View reports</UButton>
+                    </div> 
                     <div v-if="!viewData" class="flex flex-col items-center justify-center gap-4 pb-10">
                       <h1 class="text-3xl font-bold">{{ selectedMonthLabel }} {{ selectedYear }}</h1>
                       <UCarousel
@@ -297,20 +298,25 @@ const carouselItems = computed(() => ([
                         loop
                         :ui="{
                           item: 'basis-full flex justify-center',
-                          container: 'rounded-lg'
+                          container: 'rounded-lg items-center h-[60vh]', // <-- Add 'items-center' and 'h-full' here
                         }"
-                        class="w-full max-w-sm md:max-w-7xl mx-auto" 
+                        class="w-full md:max-w-7xl mx-auto" 
                       >
                         <template #default="{ item }">
                           <!-- Centering wrapper -->
                           <div class="w-full flex justify-center">
                             <!-- Width-constrained container -->
-                            <div class="w-full max-w-7xl">
+                            <div class="w-full max-w-sm md:max-w-7xl">
                               <component :is="item.component" v-bind="item.props" />
                             </div>
                           </div>
                         </template>
                       </UCarousel>
+                      <!-- Prev/Next buttons below carousel -->
+                      <div class="flex gap-4 justify-center mt-6">
+                        <UButton v-if="isPrevAvailable" color="info" variant="outline" size="sm" @click="gotoPrev" aria-label="Previous month">Previous month</UButton>
+                        <UButton v-if="isNextAvailable" color="info" variant="outline" size="sm" @click="gotoNext" aria-label="Next month">Next month</UButton>
+                      </div>
                     </div>
                     <div v-if="viewData" class="flex flex-col items-center justify-center gap-4 pb-10">
                       <h1 class="text-3xl font-bold text-center">{{ selectedMonthLabel }} {{ selectedYear }}</h1>
@@ -319,16 +325,6 @@ const carouselItems = computed(() => ([
                 </div>
                 </transition>
             </UContainer>
-
-            <!-- Overlay prev/next buttons -->
-            <div v-if="viewReport">
-              <div class="fixed left-20 top-1/2 transform -translate-y-1/2 z-50 cursor-pointer">
-                <UButton v-if="isPrevAvailable" color="info" variant="outline" size="xl" @click="gotoPrev" aria-label="Previous month">◀ Previous month</UButton>
-              </div>
-              <div class="fixed right-20 top-1/2 transform -translate-y-1/2 z-50 cursor-pointer">
-                <UButton v-if="isNextAvailable" color="info" variant="outline" size="xl" @click="gotoNext" aria-label="Next month">Next month ▶</UButton>
-              </div>
-            </div>
 
         </UMain>
     </div>

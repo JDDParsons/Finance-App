@@ -17,8 +17,23 @@ const transactionDataFiltered = computed(() => (props.transactionData || []).fil
     !tx.category?.includes('Credit card payments')
 }))
 
+const totalInflows = computed(() => transactionDataFiltered.value
+  .filter(tx => Number(tx.amount) > 0)
+  .reduce((sum, tx) => sum + Number(tx.amount), 0)
+)
+
+const totalOutflows = computed(() => transactionDataFiltered.value
+  .filter(tx => Number(tx.amount) < 0)
+  .reduce((sum, tx) => sum + Number(tx.amount), 0)
+)
+
 const totalPayStubs = computed(() => transactionDataFiltered.value
   .filter(tx => tx.category === 'Pay stubs')
+  .reduce((sum, tx) => sum + Number(tx.amount), 0)
+)
+
+const totalInflowsLessPayStubs = computed(() => transactionDataFiltered.value
+  .filter(tx => Number(tx.amount) > 0 && tx.category !== 'Pay stubs')
   .reduce((sum, tx) => sum + Number(tx.amount), 0)
 )
 
@@ -47,18 +62,17 @@ const totalExpenses = computed(() => transactionDataFiltered.value
   .reduce((sum, tx) => sum + Number(tx.amount), 0)
 )
 
-const netBalance = computed(() => Math.round(totalPayStubs.value + totalReimbursements.value + totalExpenses.value))
+const totalIncome = computed(() => Math.round(totalPayStubs.value + totalInflowsLessPayStubs.value + totalOutflows.value))
 const percentIncome = computed(() => {
-  const denom = totalPayStubs.value + totalReimbursements.value
-  return denom ? Math.round((netBalance.value / denom) * 100) : 0
+  return totalIncome.value ? Math.round((totalIncome.value / (totalPayStubs.value + totalInflowsLessPayStubs.value)) * 100) : 0
 })
 
 const data = computed(() => ({
-  labels: ['Income', 'Reimbursements', 'E-transfers from Ruth Sebastian', 'E-transfers from other sources', 'Bank deposits', 'Total Expenses'],
+  labels: ['Regular Inflow', 'Other Inflow', 'Outflow'],
   datasets: [
     {
-      backgroundColor: ['#B7E4C7','#8ED1C6', '#9AD9EA', '#A7C7E7', '#A7C7E7', '#F6A6A1'],
-      data: [totalPayStubs.value, totalReimbursements.value, totalTransfersReceivedFromRuthSebastian.value, totalTransfersReceived.value, bankDeposits.value, totalExpenses.value],
+      backgroundColor: ['#B7E4C7','#8ED1C6', '#F6A6A1'],
+      data: [totalPayStubs.value, totalInflowsLessPayStubs.value, totalOutflows.value],
     },
   ],
 }))
@@ -69,6 +83,7 @@ const options = {
   cutout: '70%',
   plugins: {
     legend: {
+      display: false,
       position: 'bottom',
       labels: {
         boxWidth: 12,
@@ -77,6 +92,14 @@ const options = {
       },
     },
   },
+  layout: {
+    padding: {
+      top: -20,
+      bottom: -20,
+      left: 0,
+      right: 0
+    }
+  }
 }
 
 onMounted(async () => {
@@ -87,21 +110,19 @@ onMounted(async () => {
 
 <template>
   <p class="text-xl font-semibold mb-4 text-center">
-    Income vs Expenses
+    Inflow vs Outflow
   </p>
 
-  <div class="relative w-full h-[70vh]">
+  <div class="relative w-full h-[50vh]">
     <!-- Doughnut chart -->
     <Doughnut :data="data" :options="options" />
 
     <!-- Center overlay -->
     <div
-      class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none -translate-y-6"
+      class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-6 pointer-events-none"
     >
-      <p class="text-2xl font-bold">${{netBalance}}</p>
-      <p class="text-sm text-gray-500 mb-2">Net balance</p>
-      <p class="text-2xl font-bold">{{percentIncome}}%</p>
-      <p class="text-sm text-gray-500">Income saved</p>
+      <p class="text-2xl font-bold">${{totalIncome}} ({{ percentIncome }}%)</p>
+      <p class="text-sm text-gray-500 text-center">Income saved</p>
     </div>
   </div>
 </template>

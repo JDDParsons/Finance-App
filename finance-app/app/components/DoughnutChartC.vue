@@ -77,6 +77,7 @@ const options = {
   cutout: '70%',
   plugins: {
     legend: {
+      display: false,
       position: 'bottom',
       labels: { boxWidth: 12, padding: 25, font: { size: 16 } },
     },
