@@ -170,7 +170,7 @@ onMounted(async () => {
                         <template #footer>
                             <div class="flex justify-between"> 
                                 <UButton color="neutral" size="sm" variant="ghost" @click="openEditModal(budget.id)"><UIcon name="streamline-flex:cog-remix" class="ml-1" />Edit</UButton>  
-                                <UButton color="neutral" size="sm" variant="ghost" @click="openHitsModal(budget.id)"><UIcon name="streamline-flex:cog-remix" class="ml-1" />Hits</UButton>  
+                                <UButton color="neutral" size="sm" variant="ghost" @click="openHitsModal(budget.id)"><UIcon name="subway:switch" class="ml-1" />Hits</UButton>  
                                 <UButton class="ml-auto" color="info" size="xl" variant="ghost" @click="$router.push(`/budgets/${budget.id}/hit`)"><UIcon name="subway:add" class="ml-1 size-7" /></UButton>
                             </div>
                         </template>
