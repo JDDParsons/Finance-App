@@ -64,8 +64,7 @@ onMounted(() => {
     </div>
 
     <div v-else class="">
-                <!-- Use the UCard as the modal's internal structure -->
-        <UCard :ui="{ body: 'min-h-0 flex flex-col' }">
+        <UCard class="w-full" :ui="{ body: 'min-h-0 flex flex-col' }">
             <template #header>
             <h2 class="text-2xl font-bold">Budget Hits</h2>
             </template>
