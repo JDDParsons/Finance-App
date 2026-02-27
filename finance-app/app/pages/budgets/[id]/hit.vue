@@ -94,6 +94,7 @@ onMounted(() => {
                                 <UInput
                                     v-model="date"
                                     type="date"
+                                    size="xl"
                                 />
                             </UFormField>
 
@@ -103,6 +104,7 @@ onMounted(() => {
                                     placeholder="0.00"
                                     type="number"
                                     step="0.01"
+                                    size="xl"
                                 />
                             </UFormField>
 
@@ -112,6 +114,7 @@ onMounted(() => {
                                     v-model="note"
                                     placeholder="Leave a note..."
                                     type="text"
+                                    size="xl"
                                 />
                             </UFormField>
                         </div>
