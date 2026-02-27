@@ -122,7 +122,8 @@ onMounted(() => {
                         <template #footer>
                             <div class="flex gap-4">
                                 <UButton
-                                    color="primary"
+                                    color="info"
+                                    variant="solid"
                                     @click="handleCreateHit"
                                     class="flex-1"
                                     :loading="loading"
@@ -131,7 +132,8 @@ onMounted(() => {
                                     Record Hit
                                 </UButton>
                                 <UButton
-                                    color="gray"
+                                    color="neutral"
+                                    variant="ghost"
                                     @click="router.back()"
                                     class="flex-1"
                                     :disabled="loading"

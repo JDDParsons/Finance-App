@@ -127,7 +127,7 @@ onMounted(async () => {
                 <div class="flex flex-col mt-8 mb-8">
                     <h2 class="text-3xl font-bold">Monthly Budgets</h2>
                     <div class="">
-                        <UButton color="primary" variant="outline" size="sm" class="mt-2" @click="handleNewBudget">
+                        <UButton color="primary" variant="solid" size="sm" class="mt-2" @click="handleNewBudget">
                             <UIcon name="subway:add-1" class="size-3" />
                             New budget
                         </UButton>
@@ -169,9 +169,9 @@ onMounted(async () => {
                             </div>
                         <template #footer>
                             <div class="flex justify-between"> 
-                                <UButton color="warning" size="sm" variant="ghost" @click="openEditModal(budget.id)"><UIcon name="streamline-flex:cog-remix" class="ml-1" />Edit</UButton>  
-                                <UButton color="info" size="sm" variant="ghost" @click="openHitsModal(budget.id)"><UIcon name="streamline-flex:cog-remix" class="ml-1" />Hits</UButton>  
-                                <UButton class="ml-auto" color="primary" size="sm" variant="ghost" @click="$router.push(`/budgets/${budget.id}/hit`)"><UIcon name="streamline-flex:arrow-cursor-click-2-solid" class="ml-1" />Hit</UButton>  
+                                <UButton color="neutral" size="sm" variant="ghost" @click="openEditModal(budget.id)"><UIcon name="streamline-flex:cog-remix" class="ml-1" />Edit</UButton>  
+                                <UButton color="neutral" size="sm" variant="ghost" @click="openHitsModal(budget.id)"><UIcon name="streamline-flex:cog-remix" class="ml-1" />Hits</UButton>  
+                                <UButton class="ml-auto" color="info" size="xl" variant="ghost" @click="$router.push(`/budgets/${budget.id}/hit`)"><UIcon name="subway:add" class="ml-1 size-7" /></UButton>
                             </div>
                         </template>
                     </UCard>
