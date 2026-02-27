@@ -326,23 +326,44 @@ function getSupabase() {
     else window.location.href = '/'; 
   }
 
-  export async function createBudget(name: string, startDate: string, endDate: string, amount: string) {
+  export async function createBudget(name: string, amount: string) {
     const supabase = getSupabase()
     const { data: auth } = await supabase.auth.getSession(); 
     const { data, error } = await supabase
       .from('Budgets')
       .insert({
         name,
-        start_date: startDate,
-        end_date: endDate,
         amount: parseFloat(amount),
         user_id: auth.session?.user?.id
       })
       .select()
       .single()
 
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Format back to YYYY-MM-DD
+    const year = firstDay.getFullYear();
+    const month = String(firstDay.getMonth() + 1).padStart(2, '0');
+    const day = '01';
+
+    const result = `${year}-${month}-${day}`;   
+
+    const {data: periodData, error: periodError} = await supabase
+      .from('Budget_Period')
+      .insert({ 
+        budget_id: data?.id, 
+        date: result,
+        amount: parseFloat(amount),
+        user_id: auth.session?.user?.id
+       })
+      .select()
+      .single()
+
+    if (periodError) throw periodError
     if (error) throw error
-    return data
+
+    return {data: data, periodData: periodData}
   }
 
   export async function getBudgets() {
@@ -353,5 +374,107 @@ function getSupabase() {
       .order('created_at', { ascending: false })
 
     if (error) throw error
+
+    const {data: budgetPeriods, error: periodError} = await supabase
+      .from('Budget_Period')
+      .select('*')  
+
+    if (periodError) throw periodError
+
+    budgets.forEach((b: any) => {
+      const periods = (budgetPeriods || []).filter((p: any) => p.budget_id === b.id)
+      const latest = periods.reduce((latest: any, current: any) => {
+        return !latest || new Date(current.date) > new Date(latest.date) ? current : latest
+      }, null)
+      b.currentPeriod = latest
+    })
+
     return budgets || []
+  }
+
+  export async function getBudgetById(id: string) {
+    const supabase = getSupabase()
+    const { data: budget, error } = await supabase
+      .from('Budgets')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+
+    const {data: budgetPeriods, error: periodError} = await supabase
+      .from('Budget_Period')
+      .select('*')  
+      .eq('budget_id', id)
+
+    if (periodError) throw periodError
+    budget.currentPeriod = budgetPeriods?.[0] || null
+    return budget
+  } 
+
+  export async function updateBudget(id: string, name: string, amount: string) {
+    const supabase = getSupabase()
+    const { data, error } = await supabase
+      .from('Budgets')
+      .update({
+        name,
+        amount: parseFloat(amount)
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  export async function deleteBudget(id: string) {
+    const supabase = getSupabase()
+    const { error } = await supabase
+      .from('Budgets')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
+  export async function createBudgetHit(budgetId: string, date: string, amount: string, note: string) {
+    const supabase = getSupabase()
+    const { data: auth } = await supabase.auth.getSession()
+    const { data, error } = await supabase
+      .from('Budget_Hit')
+      .insert({
+        budget_id: budgetId,
+        date: date,
+        amount: parseFloat(amount),
+        note: note,
+        user_id: auth.session?.user?.id
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  export async function getBudgetHits() {
+    const supabase = getSupabase()
+    const { data: hits, error } = await supabase
+      .from('Budget_Hit')
+      .select('*')
+      .order('date', { ascending: false })
+
+    if (error) throw error
+    return hits || []
+  }
+
+  export async function getBudgetHitsByBudgetId(budgetId: string) {
+    const supabase = getSupabase()
+    const { data: hits, error } = await supabase
+      .from('Budget_Hit')
+      .select('*')
+      .eq('budget_id', budgetId)
+      .order('date', { ascending: false })
+
+    if (error) throw error
+    return hits || []
   }

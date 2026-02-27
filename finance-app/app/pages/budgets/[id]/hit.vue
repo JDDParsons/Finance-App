@@ -1,19 +1,22 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { createBudget, signOut } from '../../composables/supabase'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { getBudgetById, createBudgetHit, signOut } from '../../../composables/supabase'
 
 const router = useRouter()
+const route = useRoute()
+const budgetId = route.params.id as string
 
 const budgetName = ref('')
-const startDate = ref('')
-const endDate = ref('')
+const date = ref(new Date().toISOString().split('T')[0]) // Default to today's date in YYYY-MM-DD format
 const amount = ref('')
+const note = ref('')
 const loading = ref(false)
+const error = ref<string | null>(null)
 
 function validateForm() {
-    if (!budgetName.value.trim()) {
-        alert('Please enter a budget name')
+    if (!date.value) {
+        alert('Please select a date')
         return false
     }
     if (!amount.value) {
@@ -23,19 +26,39 @@ function validateForm() {
     return true
 }
 
-async function handleCreateBudget() {
+async function fetchBudgetName() {
+    try {
+        loading.value = true
+        error.value = null
+        const budget = await getBudgetById(budgetId)
+        budgetName.value = budget.name
+    } catch (err: any) {
+        error.value = err?.message || 'Failed to load budget'
+        console.error('Error fetching budget:', err)
+    } finally {
+        loading.value = false
+    }
+}
+
+async function handleCreateHit() {
     if (validateForm()) {
         try {
             loading.value = true
-            await createBudget(budgetName.value, amount.value)
+            error.value = null
+            await createBudgetHit(budgetId, date.value, amount.value, note.value)
             await router.push('/budgets')
-        } catch (error) {
-            alert('Error creating budget: ' + (error?.message || 'Unknown error'))
+        } catch (err: any) {
+            error.value = err?.message || 'Error recording budget hit'
+            console.error('Error creating budget hit:', err)
         } finally {
             loading.value = false
         }
     }
 }
+
+onMounted(() => {
+    fetchBudgetName()
+})
 </script>
 
 <template>
@@ -51,15 +74,26 @@ async function handleCreateBudget() {
                 <div class="max-w-xl mx-auto mt-8">
                     <UCard>
                         <template #header>
-                            <h2 class="text-2xl font-bold">Create New Budget</h2>
+                            <div>
+                                <h2 class="text-2xl font-bold">Record Budget Hit</h2>
+                                <p v-if="budgetName" class="text-gray-500 mt-2">Budget: {{ budgetName }}</p>
+                            </div>
                         </template>
                         
+                        <div v-if="error" class="mb-4">
+                            <UAlert
+                                title="Error"
+                                :description="error"
+                                color="red"
+                                variant="soft"
+                            />
+                        </div>
+
                         <div class="space-y-6">
-                            <UFormField label="Budget Name" required>
+                            <UFormField label="Date" required>
                                 <UInput
-                                    v-model="budgetName"
-                                    placeholder="e.g., Monthly Groceries"
-                                    type="text"
+                                    v-model="date"
+                                    type="date"
                                 />
                             </UFormField>
 
@@ -71,18 +105,27 @@ async function handleCreateBudget() {
                                     step="0.01"
                                 />
                             </UFormField>
+
+                            
+                            <UFormField label="Note" required>
+                                <UInput
+                                    v-model="note"
+                                    placeholder="Leave a note..."
+                                    type="text"
+                                />
+                            </UFormField>
                         </div>
 
                         <template #footer>
                             <div class="flex gap-4">
                                 <UButton
                                     color="primary"
-                                    @click="handleCreateBudget"
+                                    @click="handleCreateHit"
                                     class="flex-1"
                                     :loading="loading"
                                     :disabled="loading"
                                 >
-                                    Create Budget
+                                    Record Hit
                                 </UButton>
                                 <UButton
                                     color="gray"

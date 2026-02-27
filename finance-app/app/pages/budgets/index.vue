@@ -1,25 +1,45 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getBudgets, signOut } from '../../composables/supabase'
+import { getBudgets, getBudgetHitsByBudgetId,signOut } from '../../composables/supabase'
+import Edit from '../../components/Edit.vue'
+import Hits from '../../components/Hits.vue'
 
 const router = useRouter()
 const budgets = ref<any[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
+const isEditModalOpen = ref(false)
+const isHitsModalOpen = ref(false)
+const editingBudgetId = ref<string | null>(null)
 
 function handleNewBudget() {
     router.push('/budgets/create')
 }
 
-function formatDate(dateString: string | null) {
-    if (!dateString) return '-'
-    try {
-        const date = new Date(dateString)
-        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-    } catch {
-        return dateString
-    }
+function openHitsModal(budgetId: string) {
+    editingBudgetId.value = budgetId
+    isHitsModalOpen.value = true
+}
+
+function closeHitsModal() {
+    isHitsModalOpen.value = false
+    editingBudgetId.value = null
+}
+
+function openEditModal(budgetId: string) {
+    editingBudgetId.value = budgetId
+    isEditModalOpen.value = true
+}
+
+function closeEditModal() {
+    isEditModalOpen.value = false
+    editingBudgetId.value = null
+}
+
+async function handleEditAction() {
+    closeEditModal()
+    await fetchBudgets()
 }
 
 function formatCurrency(value: number | null) {
@@ -32,6 +52,12 @@ async function fetchBudgets() {
         loading.value = true
         error.value = null
         budgets.value = await getBudgets()
+
+        budgets.value.forEach(async (budget) => {
+            budget.totalHitAmount = await sumBudgetHits(budget.id)
+            console.log(budget.name, budget.totalHitAmount)
+        })
+        console.log('Budgets with hit amounts:', budgets.value)
     } catch (err: any) {
         error.value = err?.message || 'Failed to load budgets'
         console.error('Error fetching budgets:', err)
@@ -40,8 +66,46 @@ async function fetchBudgets() {
     }
 }
 
-onMounted(() => {
-    fetchBudgets()
+async function sumBudgetHits(budgetId: string) {
+    try {
+        const hits = await getBudgetHitsByBudgetId(budgetId);
+        console.log('Hits for budget', budgetId, hits);
+
+        // Get current Year and Month (0-indexed, so January is 0)
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+
+        return hits.reduce((sum, hit) => {
+            // Parse hit.date (YYYY-MM-DD)
+            const hitDate = new Date(hit.date);
+            
+            const isCurrentMonth = 
+                hitDate.getFullYear() === currentYear && 
+                hitDate.getMonth() === currentMonth;
+
+            return isCurrentMonth ? sum + (hit.amount || 0) : sum;
+        }, 0);
+        
+    } catch (err) {
+        console.error('Error summing budget hits:', err);
+        return 0;
+    }
+}
+
+function progressBarColour(amount: number, totalHitAmount: number) {
+    const percentage = (totalHitAmount / amount) * 100
+    if (percentage < 60) return 'primary'
+    if (percentage >= 60 && percentage < 90) return 'warning'
+    if (percentage >= 90) return 'error'
+    console.log(amount, totalHitAmount)
+    console.log(percentage)
+    return 'error'
+}
+
+onMounted(async () => {
+    await fetchBudgets()
+    console.log(budgets.value)
 })
 </script>
 
@@ -55,16 +119,21 @@ onMounted(() => {
         </UHeader>
         <UMain>
             <UContainer>
-                <div class="flex justify-between items-center mt-8 mb-8">
-                    <h1 class="text-3xl font-bold">My Budgets</h1>
-                    <UButton color="primary" @click="handleNewBudget">New</UButton>
+                <div class="flex flex-col mt-8 mb-8">
+                    <h2 class="text-3xl font-bold">Monthly Budgets</h2>
+                    <div class="">
+                        <UButton color="primary" variant="outline" size="sm" class="mt-2" @click="handleNewBudget">
+                            <UIcon name="subway:add-1" class="size-3" />
+                            New budget
+                        </UButton>
+                    </div>
                 </div>
 
                 <div v-if="error" class="mb-4">
                     <UAlert
                         title="Error"
                         :description="error"
-                        color="red"
+                        color="error"
                         variant="soft"
                     />
                 </div>
@@ -83,22 +152,45 @@ onMounted(() => {
                         :key="budget.id"
                         class="flex flex-col"
                     >
-                        <template #header>
+
+                        <div class="space-y-3 flex">
                             <h3 class="text-lg font-semibold">{{ budget.name }}</h3>
-                        </template>
-                        
-                        <div class="space-y-3 flex-1">
-                            <div>
-                                <p class="text-sm text-gray-500">Period</p>
-                                <p class="text-sm">{{ formatDate(budget.start_date) }} - {{ formatDate(budget.end_date) }}</p>
-                            </div>
-                            <div>
-                                <p class="text-sm text-gray-500">Budget Amount</p>
-                                <p class="text-lg font-semibold">{{ formatCurrency(budget.amount) }}</p>
-                            </div>
+                            <p class="text-lg font-semibold ml-auto">{{ formatCurrency(budget.currentPeriod.amount) }}</p>
                         </div>
+                            <UProgress :color="progressBarColour(budget.currentPeriod.amount, budget.totalHitAmount)" v-model="budget.totalHitAmount" :max="budget.totalHitAmount > budget.currentPeriod.amount ? budget.totalHitAmount : budget.currentPeriod.amount" />
+                            <div class="flex">
+                            <p class="text-sm text-gray-500 mt-2">{{ formatCurrency(budget.totalHitAmount) }} spent</p>
+                            <p class="text-sm text-gray-500 mt-2 ml-auto">{{ formatCurrency(budget.currentPeriod.amount - budget.totalHitAmount) }} remaining</p>
+                            </div>
+                        <template #footer>
+                            <div class="flex justify-between"> 
+                                <UButton color="warning" size="sm" variant="ghost" @click="openEditModal(budget.id)"><UIcon name="streamline-flex:cog-remix" class="ml-1" />Edit</UButton>  
+                                <UButton color="info" size="sm" variant="ghost" @click="openHitsModal(budget.id)"><UIcon name="streamline-flex:cog-remix" class="ml-1" />Hits</UButton>  
+                                <UButton class="ml-auto" color="primary" size="sm" variant="ghost" @click="$router.push(`/budgets/${budget.id}/hit`)"><UIcon name="streamline-flex:arrow-cursor-click-2-solid" class="ml-1" />Hit</UButton>  
+                            </div>
+                        </template>
                     </UCard>
                 </div>
+
+                <UModal v-model:open="isHitsModalOpen">
+                    <template #content>
+                    <Hits
+                        :budget-id="editingBudgetId"
+                        @cancel="closeHitsModal"
+                    />
+                    </template>
+                </UModal>
+
+                <UModal v-model:open="isEditModalOpen">
+                    <template #content>
+                    <Edit
+                        :budget-id="editingBudgetId"
+                        @update="handleEditAction"
+                        @cancel="closeEditModal"
+                        @delete="handleEditAction"
+                    />
+                    </template>
+                </UModal>
             </UContainer>
         </UMain>
     </div>
