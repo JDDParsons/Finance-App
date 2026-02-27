@@ -60,6 +60,7 @@ async function handleCreateBudget() {
                                     v-model="budgetName"
                                     placeholder="e.g., Monthly Groceries"
                                     type="text"
+                                    size="xl"
                                 />
                             </UFormField>
 
@@ -69,6 +70,7 @@ async function handleCreateBudget() {
                                     placeholder="0.00"
                                     type="number"
                                     step="0.01"
+                                    size="xl"
                                 />
                             </UFormField>
                         </div>
