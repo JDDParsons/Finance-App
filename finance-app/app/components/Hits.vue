@@ -64,36 +64,38 @@ onMounted(() => {
     </div>
 
     <div v-else class="">
-        
-        <UCard>
-        <template #header>
-            <h2 class="text-2xl font-bold"">Budget Hits</h2>
-        </template>
-        <UScrollArea class="max-h-96">
-            <UCard
-                v-for="hit in hits"
-                :key="hit.id"
-                class="" 
-            >
-                <div class="flex">
+                <!-- Use the UCard as the modal's internal structure -->
+        <UCard :ui="{ body: 'min-h-0 flex flex-col' }">
+            <template #header>
+            <h2 class="text-2xl font-bold">Budget Hits</h2>
+            </template>
+
+            <!-- The flex-1 and min-h-0 here are key for iOS Safari -->
+            <div class="flex-1 min-h-0">
+            <UScrollArea class="max-h-96">
+                <div class="space-y-4 p-1"> <!-- Added spacing for clarity -->
+                <UCard v-for="hit in hits" :key="hit.id">
+                    <div class="flex">
                     <div class="mr-5">
-                        <!-- Access properties directly from 'hit' -->
                         <p class="text-md font-semibold">{{ formatDate(hit.date) }}</p>
                     </div>
                     <div class="mr-5">
                         <p class="text-md font-bold text-info">{{ formatCurrency(hit.amount) }}</p>
                     </div>
+                    </div>
+                    <p class="text-md mt-0.75">{{ hit.note }}</p>
+                </UCard>
                 </div>
-                <p class="text-md mt-0.75">{{ hit.note }}</p>
-            </UCard>
-        </UScrollArea>
-        <template #footer>
+            </UScrollArea>
+            </div>
+
+            <template #footer>
             <div class="flex">
                 <UButton color="neutral" variant="ghost" size="md" @click="$emit('cancel')">
-                    Cancel
+                Cancel
                 </UButton>
             </div>
-        </template>
+            </template>
         </UCard>
 
         <!--
