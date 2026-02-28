@@ -381,13 +381,30 @@ function getSupabase() {
 
     if (periodError) throw periodError
 
-    budgets.forEach((b: any) => {
-      const periods = (budgetPeriods || []).filter((p: any) => p.budget_id === b.id)
-      const latest = periods.reduce((latest: any, current: any) => {
-        return !latest || new Date(current.date) > new Date(latest.date) ? current : latest
-      }, null)
-      b.currentPeriod = latest
-    })
+    const currentMonth = new Date().getMonth() + 1
+    const currentYear = new Date().getFullYear()
+    const currentMonthFirstDate = new Date(currentYear, currentMonth - 1, 1)
+    const formattedDate = currentMonthFirstDate.toISOString().split('T')[0]
+
+    for (const b of budgets) {
+      b.currentPeriod = budgetPeriods?.find((p: any) => p.budget_id === b.id && p.date === formattedDate) || null
+      
+      if (!b.currentPeriod) {
+        const { data: newPeriod, error: newPeriodError } = await supabase
+          .from('Budget_Period')
+          .insert({ 
+            budget_id: b.id, 
+            date: formattedDate,
+            amount: b.amount,
+            user_id: b.user_id
+          })
+          .select()
+          .single()
+          
+        if (newPeriodError) console.error('Error creating new budget period:', newPeriodError)
+        b.currentPeriod = newPeriod || null
+      }
+    }
 
     return budgets || []
   }
@@ -423,8 +440,24 @@ function getSupabase() {
       .select()
       .single()
 
+    const currentMonth = new Date().getMonth() + 1
+    const currentYear = new Date().getFullYear()
+    const currentMonthFirstDate = new Date(currentYear, currentMonth - 1, 1)
+    const formattedDate = currentMonthFirstDate.toISOString().split('T')[0]
+
+    const {data: periodData, error: periodError} = await supabase
+      .from('Budget_Period')
+      .update({
+        amount: parseFloat(amount)
+      })
+      .eq('budget_id', id)
+      .eq('date', formattedDate)
+      .select()
+      .single()
+
+    if (periodError) throw periodError
     if (error) throw error
-    return data
+    return {data, periodData}
   }
 
   export async function deleteBudget(id: string) {

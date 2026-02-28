@@ -13,6 +13,19 @@ const isEditModalOpen = ref(false)
 const isHitsModalOpen = ref(false)
 const editingBudgetId = ref<string | null>(null)
 
+onMounted(async () => {
+    await fetchBudgets()
+    console.log(budgets.value)
+})
+
+// 'posts' is the key for caching/hydration
+const { data: posts, status } = await useAsyncData('posts', async () => { 
+    const  data = await fetchBudgets() 
+    return data;
+})
+console.log('Async data status:', status.value)
+console.log('Async data posts:', posts.value)
+
 function handleNewBudget() {
     router.push('/budgets/create')
 }
@@ -42,16 +55,6 @@ async function handleEditAction() {
     await fetchBudgets()
 }
 
-function formatCurrency(value: number | null) {
-    if (value === null || value === undefined) return '-'
-    return new Intl.NumberFormat('en-US', { 
-        style: 'currency', 
-        currency: 'USD',  
-        minimumFractionDigits: 0, 
-        maximumFractionDigits: 0  
-    }).format(value)
-}
-
 async function fetchBudgets() {
     try {
         loading.value = true
@@ -60,9 +63,7 @@ async function fetchBudgets() {
 
         budgets.value.forEach(async (budget) => {
             budget.totalHitAmount = await sumBudgetHits(budget.id)
-            console.log(budget.name, budget.totalHitAmount)
         })
-        console.log('Budgets with hit amounts:', budgets.value)
     } catch (err: any) {
         error.value = err?.message || 'Failed to load budgets'
         console.error('Error fetching budgets:', err)
@@ -74,7 +75,6 @@ async function fetchBudgets() {
 async function sumBudgetHits(budgetId: string) {
     try {
         const hits = await getBudgetHitsByBudgetId(budgetId);
-        console.log('Hits for budget', budgetId, hits);
 
         // Get current Year and Month (0-indexed, so January is 0)
         const now = new Date();
@@ -103,15 +103,18 @@ function progressBarColour(amount: number, totalHitAmount: number) {
     if (percentage < 60) return 'primary'
     if (percentage >= 60 && percentage < 90) return 'warning'
     if (percentage >= 90) return 'error'
-    console.log(amount, totalHitAmount)
-    console.log(percentage)
     return 'error'
 }
 
-onMounted(async () => {
-    await fetchBudgets()
-    console.log(budgets.value)
-})
+function formatCurrency(value: number | null) {
+    if (value === null || value === undefined) return '-'
+    return new Intl.NumberFormat('en-US', { 
+        style: 'currency', 
+        currency: 'USD',  
+        minimumFractionDigits: 0, 
+        maximumFractionDigits: 0  
+    }).format(value)
+}
 </script>
 
 <template>
@@ -160,12 +163,12 @@ onMounted(async () => {
 
                         <div class="space-y-3 flex">
                             <h3 class="text-lg font-semibold">{{ budget.name }}</h3>
-                            <p class="text-lg font-semibold ml-auto">{{ formatCurrency(budget.currentPeriod.amount) }}</p>
+                            <p class="text-lg font-semibold ml-auto">{{ formatCurrency(budget?.currentPeriod?.amount) }}</p>
                         </div>
-                            <UProgress :color="progressBarColour(budget.currentPeriod.amount, budget.totalHitAmount)" v-model="budget.totalHitAmount" :max="budget.totalHitAmount > budget.currentPeriod.amount ? budget.totalHitAmount : budget.currentPeriod.amount" />
+                            <UProgress :color="progressBarColour(budget?.currentPeriod?.amount, budget?.totalHitAmount)" v-model="budget.totalHitAmount" :max="budget.totalHitAmount > budget?.currentPeriod?.amount ? budget.totalHitAmount : budget?.currentPeriod?.amount" />
                             <div class="flex">
                             <p class="text-sm text-gray-500 mt-2">{{ formatCurrency(budget.totalHitAmount) }} spent</p>
-                            <p class="text-sm text-gray-500 mt-2 ml-auto">{{ formatCurrency(budget.currentPeriod.amount - budget.totalHitAmount) }} remaining</p>
+                            <p class="text-sm text-gray-500 mt-2 ml-auto">{{ formatCurrency(budget?.currentPeriod?.amount - budget.totalHitAmount) }} remaining</p>
                             </div>
                         <template #footer>
                             <div class="flex justify-between"> 
