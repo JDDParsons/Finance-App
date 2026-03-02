@@ -16,7 +16,7 @@ function formatDate(dateString: string | null) {
     if (!dateString) return '-'
     try {
         const date = new Date(dateString)
-        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })
     } catch {
         return dateString
     }

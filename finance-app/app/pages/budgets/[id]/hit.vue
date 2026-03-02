@@ -8,7 +8,8 @@ const route = useRoute()
 const budgetId = route.params.id as string
 
 const budgetName = ref('')
-const date = ref(new Date().toISOString().split('T')[0]) // Default to today's date in YYYY-MM-DD format
+const localDate = new Date().toLocaleDateString('en-CA'); // 'en-CA' outputs YYYY-MM-DD
+const date = ref(localDate);
 const amount = ref('')
 const note = ref('')
 const loading = ref(false)
@@ -84,7 +85,7 @@ onMounted(() => {
                             <UAlert
                                 title="Error"
                                 :description="error"
-                                color="red"
+                                color="error"
                                 variant="soft"
                             />
                         </div>

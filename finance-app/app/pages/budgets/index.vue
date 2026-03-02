@@ -83,8 +83,7 @@ async function sumBudgetHits(budgetId: string) {
 
         return hits.reduce((sum, hit) => {
             // Parse hit.date (YYYY-MM-DD)
-            const hitDate = new Date(hit.date);
-            
+            const hitDate = new Date(hit.date.replace(/-/g, '\/'));
             const isCurrentMonth = 
                 hitDate.getFullYear() === currentYear && 
                 hitDate.getMonth() === currentMonth;
