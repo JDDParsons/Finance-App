@@ -2,8 +2,6 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getBudgets, getBudgetHitsByBudgetId,signOut } from '../../composables/supabase'
-import Edit from '../../components/Edit.vue'
-import Hits from '../../components/Hits.vue'
 
 const router = useRouter()
 const budgets = ref<any[]>([])
@@ -12,19 +10,12 @@ const error = ref<string | null>(null)
 const isEditModalOpen = ref(false)
 const isHitsModalOpen = ref(false)
 const editingBudgetId = ref<string | null>(null)
+const isCreateExpenseModalOpen = ref(false)
 
 onMounted(async () => {
     await fetchBudgets()
-    console.log(budgets.value)
 })
 
-// 'posts' is the key for caching/hydration
-const { data: posts, status } = await useAsyncData('posts', async () => { 
-    const  data = await fetchBudgets() 
-    return data;
-})
-console.log('Async data status:', status.value)
-console.log('Async data posts:', posts.value)
 
 function handleNewBudget() {
     router.push('/budgets/create')
@@ -53,6 +44,16 @@ function closeEditModal() {
 async function handleEditAction() {
     closeEditModal()
     await fetchBudgets()
+}
+
+function openCreateExpenseModal(budgetId: string) {
+    editingBudgetId.value = budgetId
+    isCreateExpenseModalOpen.value = true
+}
+
+function closeCreateExpenseModal() {
+    isCreateExpenseModalOpen.value = false
+    editingBudgetId.value = null
 }
 
 async function fetchBudgets() {
@@ -172,8 +173,8 @@ function formatCurrency(value: number | null) {
                         <template #footer>
                             <div class="flex justify-between"> 
                                 <UButton color="neutral" size="sm" variant="ghost" @click="openEditModal(budget.id)"><UIcon name="streamline-flex:cog-remix" class="ml-1" />Edit</UButton>  
-                                <UButton color="neutral" size="sm" variant="ghost" @click="openHitsModal(budget.id)"><UIcon name="subway:switch" class="ml-1" />Hits</UButton>  
-                                <UButton class="ml-auto" color="info" size="xl" variant="ghost" @click="$router.push(`/budgets/${budget.id}/hit`)"><UIcon name="subway:add" class="ml-1 size-7" /></UButton>
+                                <UButton color="neutral" size="sm" variant="ghost" @click="openHitsModal(budget.id)"><UIcon name="subway:switch" class="ml-1" />Expenses</UButton>  
+                                <UButton class="ml-auto" color="info" size="xl" variant="ghost" @click="openCreateExpenseModal(budget.id)"><UIcon name="subway:add" class="ml-1 size-7" /></UButton>
                             </div>
                         </template>
                     </UCard>
@@ -181,7 +182,7 @@ function formatCurrency(value: number | null) {
 
                 <UModal v-model:open="isHitsModalOpen">
                     <template #content>
-                    <Hits
+                    <BudgetExpensesList
                         :budget-id="editingBudgetId"
                         @cancel="closeHitsModal"
                     />
@@ -190,11 +191,22 @@ function formatCurrency(value: number | null) {
 
                 <UModal v-model:open="isEditModalOpen">
                     <template #content>
-                    <Edit
+                    <BudgetEdit
                         :budget-id="editingBudgetId"
                         @update="handleEditAction"
                         @cancel="closeEditModal"
                         @delete="handleEditAction"
+                    />
+                    </template>
+                </UModal>
+
+                <UModal v-model:open="isCreateExpenseModalOpen">
+                    <template #content>
+                    <BudgetExpenseCreate
+                        :budget-id="editingBudgetId"
+                        :budget-name="budgets.find(b => b.id === editingBudgetId)?.name"
+                        @update="handleEditAction"
+                        @cancel="closeCreateExpenseModal"
                     />
                     </template>
                 </UModal>

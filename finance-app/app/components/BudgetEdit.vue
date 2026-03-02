@@ -103,7 +103,7 @@ onMounted(() => {
             <UAlert
                 title="Error"
                 :description="error"
-                color="red"
+                color="error"
                 variant="soft"
             />
         </div>
@@ -148,7 +148,7 @@ onMounted(() => {
                     color="neutral"
                     variant="ghost"
                     @click="handleCancel"
-                    class="w-25"
+                    class="w-16"
                     :disabled="loading || deleting"
                 >
                     Cancel
