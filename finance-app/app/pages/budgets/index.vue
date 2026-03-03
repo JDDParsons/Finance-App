@@ -180,11 +180,11 @@ function formatCurrency(value: number | null) {
                 <div class="flex flex-col mt-8 mb-8">
                     <h2 class="text-3xl font-bold">Monthly Budgets</h2>
                     <div class="">
-                        <UButton color="primary" variant="solid" size="sm" class="mt-2" @click="handleNewBudget">
+                        <UButton color="primary" variant="solid" size="lg" class="mt-2" @click="handleNewBudget">
                             <UIcon name="subway:add-1" class="size-3" />
                             New budget
                         </UButton>
-                        <UInputMenu icon="heroicons-solid:arrows-up-down" v-model="sortValue" @update:model-value="handleSortChange" :items="sortItems" class="w-45 ml-4 mt-2"/>
+                        <UInputMenu size="lg" icon="heroicons-solid:arrows-up-down" v-model="sortValue" @update:model-value="handleSortChange" :items="sortItems" class="w-45 ml-4 mt-2"/>
                            
                     </div>
                 </div>
