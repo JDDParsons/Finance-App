@@ -11,6 +11,8 @@ const isEditModalOpen = ref(false)
 const isHitsModalOpen = ref(false)
 const editingBudgetId = ref<string | null>(null)
 const isCreateExpenseModalOpen = ref(false)
+const sortItems = ref(['Sort by name', 'Sort by spending', 'Sort by amount'])
+const sortValue = ref('Sort by name')
 
 onMounted(async () => {
     await fetchBudgets()
@@ -71,6 +73,54 @@ async function fetchBudgets() {
     } finally {
         loading.value = false
     }
+}
+
+function handleSortChange() {
+    switch (sortValue.value) {
+        case 'Sort by name':
+            sortBudgetsByName()
+            break
+        case 'Sort by spending':
+            sortBudgetsByTotalHitAmount()
+            break
+        case 'Sort by amount':
+            sortBudgetsByAmount()
+            break
+    }
+}
+
+const spendingSortOrder = ref<'asc' | 'desc'>('asc')
+function sortBudgetsByTotalHitAmount() {
+    if (spendingSortOrder.value === 'asc') {
+        budgets.value.sort((a, b) => (a.totalHitAmount || 0) - (b.totalHitAmount || 0))
+        spendingSortOrder.value = 'desc'
+    } else {
+        budgets.value.sort((a, b) => (b.totalHitAmount || 0) - (a.totalHitAmount || 0))
+        spendingSortOrder.value = 'asc' 
+    }
+}
+
+const nameSortOrder = ref<'asc' | 'desc'>('asc')
+function sortBudgetsByName() {
+    if (nameSortOrder.value === 'asc') {
+        budgets.value.sort((a, b) => a.name.localeCompare(b.name))
+        nameSortOrder.value = 'desc'
+    } else {
+        budgets.value.sort((a, b) => b.name.localeCompare(a.name))
+        nameSortOrder.value = 'asc'
+    }
+}
+
+
+const amountSortOrder = ref<'asc' | 'desc'>('asc')
+function sortBudgetsByAmount() {
+        if (amountSortOrder.value === 'asc') {
+            budgets.value.sort((a, b) => (a.currentPeriod?.amount || 0) - (b.currentPeriod?.amount || 0))
+            amountSortOrder.value = 'desc'
+        } else {
+            budgets.value.sort((a, b) => (b.currentPeriod?.amount || 0) - (a.currentPeriod?.amount || 0))
+            amountSortOrder.value = 'asc'
+        }
 }
 
 async function sumBudgetHits(budgetId: string) {
@@ -134,6 +184,8 @@ function formatCurrency(value: number | null) {
                             <UIcon name="subway:add-1" class="size-3" />
                             New budget
                         </UButton>
+                        <UInputMenu icon="heroicons-solid:arrows-up-down" v-model="sortValue" @update:model-value="handleSortChange" :items="sortItems" class="w-45 ml-4 mt-2"/>
+                           
                     </div>
                 </div>
 
@@ -171,9 +223,9 @@ function formatCurrency(value: number | null) {
                             <p class="text-sm text-gray-500 mt-2 ml-auto">{{ formatCurrency(budget?.currentPeriod?.amount - budget.totalHitAmount) }} remaining</p>
                             </div>
                         <template #footer>
-                            <div class="flex justify-between"> 
-                                <UButton color="neutral" size="sm" variant="ghost" @click="openEditModal(budget.id)"><UIcon name="streamline-flex:cog-remix" class="ml-1" />Edit</UButton>  
-                                <UButton color="neutral" size="sm" variant="ghost" @click="openHitsModal(budget.id)"><UIcon name="subway:switch" class="ml-1" />Expenses</UButton>  
+                            <div class="flex justify-center items-center"> 
+                                <UButton class="" color="neutral" size="sm" variant="outline" @click="openEditModal(budget.id)"><UIcon name="streamline-flex:cog-remix" />Edit</UButton>  
+                                <UButton class="ml-auto" color="secondary" size="sm" variant="outline" @click="openHitsModal(budget.id)">Expenses</UButton>  
                                 <UButton class="ml-auto" color="info" size="xl" variant="ghost" @click="openCreateExpenseModal(budget.id)"><UIcon name="subway:add" class="ml-1 size-7" /></UButton>
                             </div>
                         </template>
