@@ -511,3 +511,13 @@ function getSupabase() {
     if (error) throw error
     return hits || []
   }
+
+  export async function deleteBudgetHit(id: string) {
+    const supabase = getSupabase()
+    const { error } = await supabase
+      .from('Budget_Hit')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  }

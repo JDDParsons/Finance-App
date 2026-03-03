@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { getBudgetById, createBudgetHit, signOut } from '../composables/supabase'
+import { createBudgetHit } from '../composables/supabase'
 
 const props = defineProps<{
     budgetId: string,
@@ -69,14 +68,6 @@ async function handleCreateHit() {
         </div>
 
         <div class="space-y-6">
-            <UFormField label="Date" required>
-                <UInput
-                    v-model="date"
-                    type="date"
-                    size="xl"
-                />
-            </UFormField>
-
             <UFormField label="Amount" required>
                 <UInput
                     v-model="amount"
@@ -87,6 +78,13 @@ async function handleCreateHit() {
                 />
             </UFormField>
 
+            <UFormField label="Date" required>
+                <UInput
+                    v-model="date"
+                    type="date"
+                    size="xl"
+                />
+            </UFormField>
             
             <UFormField label="Note">
                 <UInput

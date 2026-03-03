@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getBudgetHitsByBudgetId, signOut } from '../composables/supabase'
+import { getBudgetHitsByBudgetId, deleteBudgetHit } from '../composables/supabase'
 
 const props = defineProps<{
     budgetId: string
 }>()
 
-const router = useRouter()
 const hits = ref<any[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
@@ -40,6 +39,17 @@ async function fetchHits() {
     }
 }
 
+async function handleDeleteHit(id: string) {
+    if (!confirm('Are you sure you want to delete this budget hit?')) return
+    try {
+        await deleteBudgetHit(id)
+        await fetchHits() // Refresh the list after deletion
+    } catch (err: any) {
+        alert(err?.message || 'Failed to delete budget hit')
+        console.error('Error deleting budget hit:', err)
+    }
+}   
+
 onMounted(() => {
     fetchHits()
 })
@@ -66,7 +76,7 @@ onMounted(() => {
     <div v-else class="">
         <UCard class="w-full" :ui="{ body: 'min-h-0 flex flex-col' }">
             <template #header>
-            <h2 class="text-2xl font-bold">Budget Hits</h2>
+            <h2 class="text-2xl font-bold">Budget Expenses</h2>
             </template>
 
             <!-- The flex-1 and min-h-0 here are key for iOS Safari -->
@@ -74,15 +84,26 @@ onMounted(() => {
             <UScrollArea class="max-h-96">
                 <div class="space-y-4 p-1"> <!-- Added spacing for clarity -->
                 <UCard v-for="hit in hits" :key="hit.id">
-                    <div class="flex">
-                    <div class="mr-5">
-                        <p class="text-md font-semibold">{{ formatDate(hit.date) }}</p>
+                    <div>
+                        <div class="flex">
+                            <div class="mr-5">
+                                <p class="text-md font-semibold">{{ formatDate(hit.date) }}</p>
+                            </div>
+                            <div class="mr-5">
+                                <p class="text-md font-bold text-info">{{ formatCurrency(hit.amount) }}</p>
+                            </div>
+                            <UButton
+                                color="error"
+                                variant="ghost"
+                                size="sm"
+                                class="ml-auto"
+                                @click="() => handleDeleteHit(hit.id)"
+                            >
+                                Remove  
+                            </UButton>
+                        </div>
+                        <p class="text-md mt-0.75">{{ hit.note }}</p>
                     </div>
-                    <div class="mr-5">
-                        <p class="text-md font-bold text-info">{{ formatCurrency(hit.amount) }}</p>
-                    </div>
-                    </div>
-                    <p class="text-md mt-0.75">{{ hit.note }}</p>
                 </UCard>
                 </div>
             </UScrollArea>

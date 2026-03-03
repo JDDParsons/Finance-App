@@ -154,7 +154,7 @@ function formatCurrency(value: number | null) {
                     <p class="text-gray-400">No budgets yet. Click the "New" button to create one.</p>
                 </div>
 
-                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24">
                     <UCard
                         v-for="budget in budgets"
                         :key="budget.id"
