@@ -184,6 +184,7 @@ function formatCurrency(value: number | null) {
                     <template #content>
                     <BudgetExpensesList
                         :budget-id="editingBudgetId"
+                        @update="handleEditAction"
                         @cancel="closeHitsModal"
                     />
                     </template>

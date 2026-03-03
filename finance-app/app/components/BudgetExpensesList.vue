@@ -12,6 +12,7 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 
 const emit = defineEmits<{
+    update: [],
     cancel: []
 }>()
 
@@ -48,7 +49,7 @@ async function handleDeleteHit(id: string) {
     try {
         await deleteBudgetHit(id)
         await fetchHits() // Refresh the list after deletion
-        
+        emit('update') // Notify parent to refresh the budget hits list
         const numberOfHits = hits.value.length
         if (numberOfHits === 0) {
             emit('cancel') // Close the modal after deletion

@@ -7,6 +7,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
+    update: [],
     cancel: []
 }>()
 
@@ -39,6 +40,7 @@ async function handleCreateHit() {
             loading.value = true
             error.value = null
             await createBudgetHit(props.budgetId, date.value, amount.value, note.value)
+            emit('update') // Notify parent to refresh the budget hits list
             emit('cancel') // Close the modal after successful creation
         } catch (err: any) {
             error.value = err?.message || 'Error recording budget hit'
