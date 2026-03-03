@@ -11,6 +11,10 @@ const hits = ref<any[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 
+const emit = defineEmits<{
+    cancel: []
+}>()
+
 function formatDate(dateString: string | null) {
     if (!dateString) return '-'
     try {
@@ -44,6 +48,11 @@ async function handleDeleteHit(id: string) {
     try {
         await deleteBudgetHit(id)
         await fetchHits() // Refresh the list after deletion
+        
+        const numberOfHits = hits.value.length
+        if (numberOfHits === 0) {
+            emit('cancel') // Close the modal after deletion
+        }
     } catch (err: any) {
         alert(err?.message || 'Failed to delete budget hit')
         console.error('Error deleting budget hit:', err)
