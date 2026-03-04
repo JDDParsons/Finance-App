@@ -5,6 +5,8 @@ import { getBudgetById, updateBudget, deleteBudget, signOut } from '../composabl
 
 const props = defineProps<{
     budgetId: string
+    budgetName?: string
+    budgetAmount?: number
 }>()
 
 const emit = defineEmits<{
@@ -17,16 +19,15 @@ const router = useRouter()
 const route = useRoute()
 const budgetId = route.params.id as string
 
-const budgetName = ref('')
-const startDate = ref('')
-const endDate = ref('')
-const amount = ref('')
+const name = ref(props.budgetName)
+const amount = ref(props.budgetAmount)
+
 const loading = ref(false)
 const deleting = ref(false)
 const error = ref<string | null>(null)
 
 function validateForm() {
-    if (!budgetName.value.trim()) {
+    if (!name.value.trim()) {
         alert('Please enter a budget name')
         return false
     }
@@ -37,28 +38,12 @@ function validateForm() {
     return true
 }
 
-async function fetchBudget() {
-    try {
-        loading.value = true
-        error.value = null
-        const budget = await getBudgetById(props.budgetId)
-        budgetName.value = budget.name
-        amount.value = budget.currentPeriod.amount
-        console.log('Fetched budget:', budget)
-    } catch (err: any) {
-        error.value = err?.message || 'Failed to load budget'
-        console.error('Error fetching budget:', err)
-    } finally {
-        loading.value = false
-    }
-}
-
 async function handleUpdateBudget() {
     if (validateForm()) {
         try {
             loading.value = true
             error.value = null
-            await updateBudget(props.budgetId, budgetName.value, amount.value)
+            await updateBudget(props.budgetId, name.value, amount.value)
             emit('update')
         } catch (err: any) {
             error.value = err?.message || 'Error updating budget'
@@ -84,21 +69,10 @@ async function handleDeleteBudget() {
     }
 }
 
-function handleCancel() {
-    emit('cancel')
-}
-
-onMounted(() => {
-    fetchBudget()
-})
 </script>
 
 <template>
-    <UCard>
-        <template #header>
-            <h2 class="text-2xl font-bold">Edit Budget</h2>
-        </template>
-        
+    <div class="w-full h-100 ml-2">
         <div v-if="error" class="mb-4">
             <UAlert
                 title="Error"
@@ -115,7 +89,7 @@ onMounted(() => {
         <div v-else class="space-y-6">
             <UFormField label="Budget Name" required>
                 <UInput
-                    v-model="budgetName"
+                    v-model="name"
                     placeholder="e.g., Monthly Groceries"
                     type="text"
                     size="xl"
@@ -132,7 +106,7 @@ onMounted(() => {
                 />
             </UFormField>
             <UButton
-                color="primary"
+                color="secondary"
                 @click="handleUpdateBudget"
                 class="flex-1"
                 :loading="loading"
@@ -141,30 +115,16 @@ onMounted(() => {
                 Update Budget
             </UButton>
         </div>
-
-        <template #footer>
-            <div class="flex gap-4">
-                <UButton
-                    color="neutral"
-                    variant="ghost"
-                    @click="handleCancel"
-                    class="w-16"
-                    :disabled="loading || deleting"
-                >
-                    Cancel
-                </UButton>
-                <UButton
-                    color="error"
-                    variant="ghost"
-                    size="sm"
-                    @click="handleDeleteBudget"
-                    class="w-25 ml-auto"
-                    :loading="deleting"
-                    :disabled="loading || deleting"
-                >
-                    Delete Budget
-                </UButton>
-            </div>
-        </template>
-    </UCard>
+        <UButton
+            color="error"
+            variant="outline"
+            size="sm"
+            @click="handleDeleteBudget"
+            class="w-25 mt-5"
+            :loading="deleting"
+            :disabled="loading || deleting"
+        >
+            Delete Budget
+        </UButton>
+    </div>
 </template>

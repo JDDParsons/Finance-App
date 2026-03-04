@@ -75,17 +75,11 @@ async function handleCreateHit() {
             <UFormField label="Amount" required>
                 <UInput
                     v-model="amount"
+                    highlight
+                    color="info"
                     placeholder="0.00"
                     type="number"
                     step="0.01"
-                    size="xl"
-                />
-            </UFormField>
-
-            <UFormField label="Date" required>
-                <UInput
-                    v-model="date"
-                    type="date"
                     size="xl"
                 />
             </UFormField>
@@ -93,8 +87,20 @@ async function handleCreateHit() {
             <UFormField label="Note">
                 <UInput
                     v-model="note"
+                    highlight
+                    color="info"
                     placeholder="Leave a note..."
                     type="text"
+                    size="xl"
+                />
+            </UFormField>
+
+            <UFormField label="Date" required>
+                <UInput
+                    v-model="date"
+                    highlight
+                    color="info"
+                    type="date"
                     size="xl"
                 />
             </UFormField>
@@ -121,7 +127,7 @@ async function handleCreateHit() {
                     class="w-16"
                     :disabled="loading"
                 >
-                    Cancel
+                    Close
                 </UButton>
             </div>
         </template>

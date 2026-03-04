@@ -66,6 +66,7 @@ onMounted(() => {
 </script>
 
 <template>
+    <div class="h-100"> 
     <div v-if="error" class="mb-4">
         <UAlert
             title="Error"
@@ -84,23 +85,18 @@ onMounted(() => {
     </div>
 
     <div v-else class="">
-        <UCard class="w-full" :ui="{ body: 'min-h-0 flex flex-col' }">
-            <template #header>
-            <h2 class="text-2xl font-bold">Budget Expenses</h2>
-            </template>
-
             <!-- The flex-1 and min-h-0 here are key for iOS Safari -->
             <div class="flex-1 min-h-0">
             <UScrollArea class="max-h-96">
                 <div class="space-y-4 p-1"> <!-- Added spacing for clarity -->
-                <UCard v-for="hit in hits" :key="hit.id">
+                <UCard v-for="hit in hits" :key="hit.id" class="ml-2 mr-2">
                     <div>
                         <div class="flex">
                             <div class="mr-5">
-                                <p class="text-md font-semibold">{{ formatDate(hit.date) }}</p>
+                                <p class="text-sm font-semibold">{{ formatDate(hit.date) }}</p>
                             </div>
                             <div class="mr-5">
-                                <p class="text-md font-bold text-info">{{ formatCurrency(hit.amount) }}</p>
+                                <p class="text-sm font-bold text-info">{{ formatCurrency(hit.amount) }}</p>
                             </div>
                             <UButton
                                 color="error"
@@ -112,43 +108,13 @@ onMounted(() => {
                                 Remove  
                             </UButton>
                         </div>
-                        <p class="text-md mt-0.75">{{ hit.note }}</p>
+                        <p class="text-sm mt-0.75">{{ hit.note }}</p>
                     </div>
                 </UCard>
                 </div>
             </UScrollArea>
             </div>
-
-            <template #footer>
-            <div class="flex">
-                <UButton color="neutral" variant="ghost" size="md" @click="$emit('cancel')">
-                Cancel
-                </UButton>
-            </div>
-            </template>
-        </UCard>
-
-        <!--
-        <UCard
-            v-for="hit in hits"
-            :key="hit.id"
-            class=""
-        >
-            <div class="flex">
-                <div class="mr-5">
-                    <p class="text-sm text-gray-500">Date</p>
-                    <p class="text-lg font-semibold">{{ formatDate(hit.date) }}</p>
-                </div>
-                <div class="mr-5">
-                    <p class="text-sm text-gray-500">Amount</p>
-                    <p class="text-lg font-bold text-info">{{ formatCurrency(hit.amount) }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">Note</p>
-                    <p class="text-md font-semibold mt-0.75">{{ hit.note }}</p>
-                </div>
-            </div>
-        </UCard>
-        -->
+        </div>
     </div>
 </template>
+

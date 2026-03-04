@@ -9,9 +9,11 @@ const budgets = ref<any[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 const isEditModalOpen = ref(false)
-const isHitsModalOpen = ref(false)
 const editingBudgetId = ref<string | null>(null)
+const editingBudgetName = ref<string | null>(null)
+const editingBudgetAmount = ref<number | null>(null)
 const isCreateExpenseModalOpen = ref(false)
+const activeEditTab = ref(0)
 const sortItems = ref(['Name', 'Spending', 'Amount', 'Progress'])
 const sortValue = ref('Name')
 const ascendingIcon = 'heroicons-solid:arrow-long-up';
@@ -35,24 +37,26 @@ function handleNewBudget() {
     router.push('/budgets/create')
 }
 
-function openHitsModal(budgetId: string) {
-    editingBudgetId.value = budgetId
-    isHitsModalOpen.value = true
-}
-
-function closeHitsModal() {
-    isHitsModalOpen.value = false
-    editingBudgetId.value = null
-}
-
 function openEditModal(budgetId: string) {
     editingBudgetId.value = budgetId
+    editingBudgetName.value = budgets.value.find(b => b.id === budgetId)?.name || null
+    editingBudgetAmount.value = budgets.value.find(b => b.id === budgetId)?.currentPeriod?.amount || null
+    activeEditTab.value = 1
+    isEditModalOpen.value = true
+}
+
+function openExpensesTab(budgetId: string) {
+    editingBudgetId.value = budgetId
+    editingBudgetName.value = budgets.value.find(b => b.id === budgetId)?.name || null
+    activeEditTab.value = 1
     isEditModalOpen.value = true
 }
 
 function closeEditModal() {
     isEditModalOpen.value = false
     editingBudgetId.value = null
+    editingBudgetName.value = null
+    activeEditTab.value = 0
 }
 
 async function handleEditAction() {
@@ -62,6 +66,8 @@ async function handleEditAction() {
 
 function openCreateExpenseModal(budgetId: string) {
     editingBudgetId.value = budgetId
+    editingBudgetName.value = budgets.value.find(b => b.id === budgetId)?.name || null
+    editingBudgetAmount.value = budgets.value.find(b => b.id === budgetId)?.currentPeriod?.amount || null
     isCreateExpenseModalOpen.value = true
 }
 
@@ -78,9 +84,15 @@ async function fetchBudgets() {
         budgets.value = [...originalBudgets.value]
 
         budgets.value.forEach(async (budget) => {
-            budget.totalHitAmount = await sumBudgetHits(budget.id)
+            const { totalHitAmount, numberOfHits } = await sumBudgetHits(budget.id)
+            budget.totalHitAmount = totalHitAmount
+            budget.numberOfHits = numberOfHits
             budget.progress = budget.currentPeriod?.amount ? (budget.totalHitAmount / budget.currentPeriod.amount) * 100 : 0
         })
+
+        //sort by progress by default
+        budgets.value.sort((a, b) => (b.progress || 0) - (a.progress || 0))
+
     } catch (err: any) {
         error.value = err?.message || 'Failed to load budgets'
         console.error('Error fetching budgets:', err)
@@ -168,7 +180,7 @@ async function sumBudgetHits(budgetId: string) {
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth();
 
-        return hits.reduce((sum, hit) => {
+        const totalHitAmount = hits.reduce((sum, hit) => {
             // Parse hit.date (YYYY-MM-DD)
             const hitDate = new Date(hit.date.replace(/-/g, '\/'));
             const isCurrentMonth = 
@@ -177,10 +189,13 @@ async function sumBudgetHits(budgetId: string) {
 
             return isCurrentMonth ? sum + (hit.amount || 0) : sum;
         }, 0);
+
+        const numberOfHits = hits.length
+        return { totalHitAmount, numberOfHits }
         
     } catch (err) {
         console.error('Error summing budget hits:', err);
-        return 0;
+        return { totalHitAmount: 0, numberOfHits: 0 };
     }
 }
 
@@ -259,42 +274,36 @@ function formatCurrency(value: number | null) {
                     <UCard
                         v-for="budget in budgets"
                         :key="budget.id"
-                        class="flex flex-col"
+                        class="flex flex-col cursor-pointer"
                     >
-
-                        <div class="space-y-3 flex">
-                            <h3 class="text-lg font-semibold">{{ budget.name }}</h3>
-                            <p class="text-lg font-semibold ml-auto">{{ formatCurrency(budget?.currentPeriod?.amount) }}</p>
-                        </div>
-                            <UProgress :color="progressBarColour(budget?.currentPeriod?.amount, budget?.totalHitAmount)" v-model="budget.totalHitAmount" :max="budget.totalHitAmount > budget?.currentPeriod?.amount ? budget.totalHitAmount : budget?.currentPeriod?.amount" />
+                    <div class="flex items-center w-full"> 
+                        <div class="flex-1" @click="openEditModal(budget.id)">
                             <div class="flex">
-                            <p class="text-sm text-gray-500 mt-2">{{ formatCurrency(budget.totalHitAmount) }} spent</p>
-                            <p class="text-sm text-gray-500 mt-2 ml-auto">{{ formatCurrency(budget?.currentPeriod?.amount - budget.totalHitAmount) }} remaining</p>
+                                <h3 class="basis-1/2 text-left text-md font-semibold text-black dark:text-white">
+                                    {{ budget.name }}
+                                </h3>
+                                <p class="basis-1/2 text-right text-sm pt-1 font-semibold">
+                                    {{ formatCurrency(budget?.currentPeriod?.amount) }}
+                                </p>
                             </div>
-                        <template #footer>
-                            <div class="flex justify-center items-center"> 
-                                <UButton class="" color="neutral" size="sm" variant="outline" @click="openEditModal(budget.id)"><UIcon name="streamline-flex:cog-remix" />Edit</UButton>  
-                                <UButton class="ml-auto" color="secondary" size="sm" variant="outline" @click="openHitsModal(budget.id)">Expenses</UButton>  
-                                <UButton class="ml-auto" color="info" size="xl" variant="ghost" @click="openCreateExpenseModal(budget.id)"><UIcon name="subway:add" class="ml-1 size-7" /></UButton>
-                            </div>
-                        </template>
+                            <UProgress class="mt-1" :color="progressBarColour(budget?.currentPeriod?.amount, budget?.totalHitAmount)" v-model="budget.totalHitAmount" :max="budget.totalHitAmount > budget?.currentPeriod?.amount ? budget.totalHitAmount : budget?.currentPeriod?.amount" />
+                        </div>
+                        <div class="flex flex-col">
+                        <UButton class="ml-auto" color="secondary" size="xl" variant="ghost" @click="openCreateExpenseModal(budget.id)"><UIcon name="subway:add" class="ml-3 size-7" /></UButton>
+                        </div>  
+                    </div>
+
                     </UCard>
                 </div>
 
-                <UModal v-model:open="isHitsModalOpen">
-                    <template #content>
-                    <BudgetExpensesList
-                        :budget-id="editingBudgetId"
-                        @update="handleEditAction"
-                        @cancel="closeHitsModal"
-                    />
-                    </template>
-                </UModal>
-
                 <UModal v-model:open="isEditModalOpen">
                     <template #content>
-                    <BudgetEdit
+                    <BudgetEditModal
+                        v-if="editingBudgetId"
                         :budget-id="editingBudgetId"
+                        :budget-name="editingBudgetName"
+                        :budget-amount="editingBudgetAmount"
+                        :active-tab="activeEditTab"
                         @update="handleEditAction"
                         @cancel="closeEditModal"
                         @delete="handleEditAction"
@@ -305,6 +314,7 @@ function formatCurrency(value: number | null) {
                 <UModal v-model:open="isCreateExpenseModalOpen">
                     <template #content>
                     <BudgetExpenseCreate
+                        v-if="editingBudgetId"
                         :budget-id="editingBudgetId"
                         :budget-name="budgets.find(b => b.id === editingBudgetId)?.name"
                         @update="handleEditAction"
