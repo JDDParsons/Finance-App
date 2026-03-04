@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { getBudgets, getBudgetHitsByBudgetId,signOut } from '../../composables/supabase'
 
 const router = useRouter()
+const originalBudgets = ref<any[]>([])
 const budgets = ref<any[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
@@ -11,11 +12,22 @@ const isEditModalOpen = ref(false)
 const isHitsModalOpen = ref(false)
 const editingBudgetId = ref<string | null>(null)
 const isCreateExpenseModalOpen = ref(false)
-const sortItems = ref(['Sort by name', 'Sort by spending', 'Sort by amount'])
-const sortValue = ref('Sort by name')
+const sortItems = ref(['Name', 'Spending', 'Amount', 'Progress'])
+const sortValue = ref('Name')
+const ascendingIcon = 'heroicons-solid:arrow-long-up';
+const descendingIcon = 'heroicons-solid:arrow-long-down';
+const sortIcon = ref(ascendingIcon)
+const searchText = ref('')
 
 onMounted(async () => {
     await fetchBudgets()
+})
+
+watch(searchText, (newValue) => {
+    const searchLower = newValue.toLowerCase()
+    budgets.value = originalBudgets.value.filter((budget) =>
+        budget.name.toLowerCase().includes(searchLower)
+    )
 })
 
 
@@ -62,10 +74,12 @@ async function fetchBudgets() {
     try {
         loading.value = true
         error.value = null
-        budgets.value = await getBudgets()
+        originalBudgets.value = await getBudgets()
+        budgets.value = [...originalBudgets.value]
 
         budgets.value.forEach(async (budget) => {
             budget.totalHitAmount = await sumBudgetHits(budget.id)
+            budget.progress = budget.currentPeriod?.amount ? (budget.totalHitAmount / budget.currentPeriod.amount) * 100 : 0
         })
     } catch (err: any) {
         error.value = err?.message || 'Failed to load budgets'
@@ -77,14 +91,17 @@ async function fetchBudgets() {
 
 function handleSortChange() {
     switch (sortValue.value) {
-        case 'Sort by name':
+        case 'Name':
             sortBudgetsByName()
             break
-        case 'Sort by spending':
+        case 'Spending':
             sortBudgetsByTotalHitAmount()
             break
-        case 'Sort by amount':
+        case 'Amount':
             sortBudgetsByAmount()
+            break
+        case 'Progress':
+            sortBudgetsByProgress()
             break
     }
 }
@@ -94,9 +111,11 @@ function sortBudgetsByTotalHitAmount() {
     if (spendingSortOrder.value === 'asc') {
         budgets.value.sort((a, b) => (a.totalHitAmount || 0) - (b.totalHitAmount || 0))
         spendingSortOrder.value = 'desc'
+        sortIcon.value = descendingIcon
     } else {
         budgets.value.sort((a, b) => (b.totalHitAmount || 0) - (a.totalHitAmount || 0))
         spendingSortOrder.value = 'asc' 
+        sortIcon.value = ascendingIcon
     }
 }
 
@@ -105,9 +124,11 @@ function sortBudgetsByName() {
     if (nameSortOrder.value === 'asc') {
         budgets.value.sort((a, b) => a.name.localeCompare(b.name))
         nameSortOrder.value = 'desc'
+        sortIcon.value = descendingIcon
     } else {
         budgets.value.sort((a, b) => b.name.localeCompare(a.name))
         nameSortOrder.value = 'asc'
+        sortIcon.value = ascendingIcon
     }
 }
 
@@ -117,10 +138,25 @@ function sortBudgetsByAmount() {
         if (amountSortOrder.value === 'asc') {
             budgets.value.sort((a, b) => (a.currentPeriod?.amount || 0) - (b.currentPeriod?.amount || 0))
             amountSortOrder.value = 'desc'
+            sortIcon.value = descendingIcon
         } else {
             budgets.value.sort((a, b) => (b.currentPeriod?.amount || 0) - (a.currentPeriod?.amount || 0))
             amountSortOrder.value = 'asc'
+            sortIcon.value = ascendingIcon
         }
+}
+
+const progressSortOrder = ref<'asc' | 'desc'>('asc')
+function sortBudgetsByProgress() {
+    if (progressSortOrder.value === 'asc') {
+        budgets.value.sort((a, b) => (a.progress || 0) - (b.progress || 0))
+        progressSortOrder.value = 'desc'
+        sortIcon.value = descendingIcon
+    } else {
+        budgets.value.sort((a, b) => (b.progress || 0) - (a.progress || 0))
+        progressSortOrder.value = 'asc'
+        sortIcon.value = ascendingIcon
+    }
 }
 
 async function sumBudgetHits(budgetId: string) {
@@ -179,13 +215,26 @@ function formatCurrency(value: number | null) {
             <UContainer>
                 <div class="flex flex-col mt-8 mb-8">
                     <h2 class="text-3xl font-bold">Monthly Budgets</h2>
-                    <div class="">
-                        <UButton color="primary" variant="solid" size="lg" class="mt-2" @click="handleNewBudget">
+                        <UButton color="primary" variant="solid" size="sm" class="mt-2 w-28" @click="handleNewBudget">
                             <UIcon name="subway:add-1" class="size-3" />
                             New budget
                         </UButton>
-                        <UInputMenu size="lg" icon="heroicons-solid:arrows-up-down" v-model="sortValue" @update:model-value="handleSortChange" :items="sortItems" class="w-45 ml-4 mt-2"/>
-                           
+                        <div class="">
+                            <UInputMenu 
+                                size="xl" 
+                                :icon="sortIcon" 
+                                v-model="sortValue" 
+                                @update:model-value="handleSortChange" 
+                                :items="sortItems" 
+                                class="w-40 mt-2"
+                            />
+                            <UInput
+                                icon="heroicons-solid:magnifying-glass"
+                                v-model="searchText"
+                                placeholder="Search"
+                                size="xl"
+                                class="w-29 mt-2 ml-4"
+                            />
                     </div>
                 </div>
 
