@@ -470,7 +470,7 @@ function getSupabase() {
     if (error) throw error
   }
 
-  export async function createBudgetHit(budgetId: string, date: string, amount: string, note: string) {
+  export async function createBudgetHit(budgetId: string | null, date: string, amount: string, note: string) {
     const supabase = getSupabase()
     const { data: auth } = await supabase.auth.getSession()
     const { data, error } = await supabase

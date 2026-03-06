@@ -228,7 +228,7 @@ function formatCurrency(value: number | null) {
         </UHeader>
         <UMain>
             <UContainer>
-                <div class="flex flex-col mt-8 mb-8">
+                <div class="flex flex-col pt-2 mb-8">
                     <h2 class="text-3xl font-bold">Monthly Budgets</h2>
                         <UButton color="primary" variant="solid" size="sm" class="mt-2 w-28" @click="handleNewBudget">
                             <UIcon name="subway:add-1" class="size-3" />

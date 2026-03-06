@@ -2,9 +2,13 @@
 import { createBudgetHit } from '../composables/supabase'
 
 const props = defineProps<{
-    budgetId: string,
-    budgetName?: string
+    budgetId?: string,
+    budgetName?: string,
+    budgets?: any[]
 }>()
+
+const selectedBudgetId = ref(props.budgetId ?? '')
+const noBudget = ref(false)
 
 const emit = defineEmits<{
     update: [],
@@ -35,11 +39,16 @@ function validateForm() {
 }
 
 async function handleCreateHit() {
+    if (!noBudget.value && !props.budgetId && !selectedBudgetId.value) {
+        alert('Please select a budget')
+        return
+    }
     if (validateForm()) {
         try {
             loading.value = true
             error.value = null
-            await createBudgetHit(props.budgetId, date.value, amount.value, note.value)
+            const budgetIdToSubmit = noBudget.value ? null : (selectedBudgetId.value || props.budgetId || null)
+            await createBudgetHit(budgetIdToSubmit, date.value, amount.value, note.value)
             emit('update') // Notify parent to refresh the budget hits list
             emit('cancel') // Close the modal after successful creation
         } catch (err: any) {
@@ -57,7 +66,7 @@ async function handleCreateHit() {
     <UCard>
         <template #header>
             <div>
-                <h2 class="text-2xl font-bold">{{budgetName}}</h2>
+                <h2 class="text-2xl font-bold">{{ budgetName ?? 'Record Expense' }}</h2>
                 <p class="text-gray-500 mt-2">Record an expense for this budget</p>
             </div>
         </template>
@@ -72,6 +81,8 @@ async function handleCreateHit() {
         </div>
 
         <div class="space-y-6">
+
+
             <UFormField label="Amount" required>
                 <UInput
                     v-model="amount"
@@ -80,6 +91,16 @@ async function handleCreateHit() {
                     placeholder="0.00"
                     type="number"
                     step="0.01"
+                    size="xl"
+                />
+            </UFormField>
+            
+            <UFormField label="Date" required>
+                <UInput
+                    v-model="date"
+                    highlight
+                    color="info"
+                    type="date"
                     size="xl"
                 />
             </UFormField>
@@ -95,15 +116,20 @@ async function handleCreateHit() {
                 />
             </UFormField>
 
-            <UFormField label="Date" required>
-                <UInput
-                    v-model="date"
-                    highlight
-                    color="info"
-                    type="date"
-                    size="xl"
-                />
-            </UFormField>
+            <template v-if="!props.budgetId && props.budgets?.length">
+                <UFormField label="Budget" :required="!noBudget">
+                    <USelect
+                        v-model="selectedBudgetId"
+                        :items="props.budgets.map((b: any) => ({ label: b.name, value: b.id }))"
+                        placeholder="Select a budget..."
+                        size="xl"
+                        color="info"
+                        highlight
+                        :disabled="noBudget"
+                    />
+                </UFormField>
+                <UCheckbox v-model="noBudget" color="info" label="No budget" />
+            </template>
 
             <UButton
                 color="info"
