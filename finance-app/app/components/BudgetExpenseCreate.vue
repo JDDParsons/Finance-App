@@ -62,15 +62,11 @@ async function handleCreateHit() {
 }
 </script>
 
-<template>
-    <UCard>
-        <template #header>
-            <div>
-                <h2 class="text-2xl font-bold">{{ budgetName ?? 'Record Expense' }}</h2>
-                <p class="text-gray-500 mt-2">Record an expense for this budget</p>
-            </div>
-        </template>
-        
+<template>        
+    <div class="w-full h-100 ml-3">
+
+        <h3 class="text-2xl font-semibold text-gray-500 pb-4 pt-4">Add Expense</h3>
+
         <div v-if="error" class="mb-4">
             <UAlert
                 title="Error"
@@ -81,8 +77,6 @@ async function handleCreateHit() {
         </div>
 
         <div class="space-y-6">
-
-
             <UFormField label="Amount" required>
                 <UInput
                     v-model="amount"
@@ -142,20 +136,5 @@ async function handleCreateHit() {
                 Submit expense
             </UButton>
         </div>
-
-        <template #footer>
-            <div class="flex gap-4">
-
-                <UButton
-                    color="neutral"
-                    variant="ghost"
-                    @click="handleCancel"
-                    class="w-16"
-                    :disabled="loading"
-                >
-                    Close
-                </UButton>
-            </div>
-        </template>
-    </UCard>
+    </div>
 </template>

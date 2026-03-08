@@ -5,6 +5,7 @@ const props = defineProps<{
     budgetId: string
     budgetName?: string
     budgetAmount?: number
+    budgetHits?: any[]
     activeTab?: number
 }>()
 
@@ -41,6 +42,10 @@ function handleExpensesUpdate() {
 function handleExpensesCancel() {
     emit('cancel')
 }
+
+function handleExpenseCreated() {
+    emit('update')
+}
 </script>
 
 <template>
@@ -50,7 +55,16 @@ function handleExpensesCancel() {
 
         </div>
         <div class="w-full">
-            <UTabs color="info" :items="[{ label: 'Edit', slot: 'edit' }, { label: 'Expenses', slot: 'expenses' }]" v-model="tab" class="ml-2 mr-2">
+            <UTabs color="info" :items="[{ icon: 'heroicons:plus-circle', slot: 'add-expense' }, { icon: 'heroicons:pencil-square', slot: 'edit' }, { icon: 'heroicons:list-bullet', slot: 'expenses' }]" v-model="tab" class="ml-2 mr-2">
+                <template #add-expense>
+                    <BudgetExpenseCreate
+                        :budget-id="budgetId"
+                        :budget-name="budgetName"
+                        @update="handleExpenseCreated"
+                        @cancel="handleExpensesCancel"
+                    />
+                </template>
+
                 <template #edit="{ item }">
                     <BudgetEdit
                         :budget-id="budgetId"
@@ -65,6 +79,7 @@ function handleExpensesCancel() {
                 <template #expenses="{ item }">
                     <BudgetExpensesList
                         :budget-id="budgetId"
+                        :budget-hits="budgetHits"
                         @update="handleExpensesUpdate"
                         @cancel="handleExpensesCancel"
                     />

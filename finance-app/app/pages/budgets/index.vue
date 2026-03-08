@@ -9,10 +9,9 @@ const budgets = ref<any[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 const isEditModalOpen = ref(false)
-const editingBudgetId = ref<string | null>(null)
-const editingBudgetName = ref<string | null>(null)
-const editingBudgetAmount = ref<number | null>(null)
-const isCreateExpenseModalOpen = ref(false)
+const editingBudgetId = ref<string | undefined>(undefined)
+const editingBudgetName = ref<string | undefined>(undefined)
+const editingBudgetAmount = ref<number | undefined>(undefined)
 const activeEditTab = ref(0)
 const sortItems = ref(['Name', 'Spending', 'Amount', 'Progress'])
 const sortValue = ref('Name')
@@ -54,8 +53,8 @@ function openExpensesTab(budgetId: string) {
 
 function closeEditModal() {
     isEditModalOpen.value = false
-    editingBudgetId.value = null
-    editingBudgetName.value = null
+    editingBudgetId.value = undefined
+    editingBudgetName.value = undefined
     activeEditTab.value = 0
 }
 
@@ -66,14 +65,15 @@ async function handleEditAction() {
 
 function openCreateExpenseModal(budgetId: string) {
     editingBudgetId.value = budgetId
-    editingBudgetName.value = budgets.value.find(b => b.id === budgetId)?.name || null
-    editingBudgetAmount.value = budgets.value.find(b => b.id === budgetId)?.currentPeriod?.amount || null
-    isCreateExpenseModalOpen.value = true
+    editingBudgetName.value = budgets.value.find(b => b.id === budgetId)?.name
+    editingBudgetAmount.value = budgets.value.find(b => b.id === budgetId)?.currentPeriod?.amount
+    activeEditTab.value = 0
+    isEditModalOpen.value = true
 }
 
 function closeCreateExpenseModal() {
-    isCreateExpenseModalOpen.value = false
-    editingBudgetId.value = null
+    isEditModalOpen.value = false
+    editingBudgetId.value = undefined
 }
 
 async function fetchBudgets() {
@@ -84,7 +84,8 @@ async function fetchBudgets() {
         budgets.value = [...originalBudgets.value]
 
         budgets.value.forEach(async (budget) => {
-            const { totalHitAmount, numberOfHits } = await sumBudgetHits(budget.id)
+            const { totalHitAmount, numberOfHits, hits } = await sumBudgetHits(budget.id)
+            budget.hits = hits
             budget.totalHitAmount = totalHitAmount
             budget.numberOfHits = numberOfHits
             budget.progress = budget.currentPeriod?.amount ? (budget.totalHitAmount / budget.currentPeriod.amount) * 100 : 0
@@ -191,11 +192,11 @@ async function sumBudgetHits(budgetId: string) {
         }, 0);
 
         const numberOfHits = hits.length
-        return { totalHitAmount, numberOfHits }
+        return { totalHitAmount, numberOfHits, hits }
         
     } catch (err) {
         console.error('Error summing budget hits:', err);
-        return { totalHitAmount: 0, numberOfHits: 0 };
+        return { totalHitAmount: 0, numberOfHits: 0, hits: [] };
     }
 }
 
@@ -270,7 +271,7 @@ function formatCurrency(value: number | null) {
                     <p class="text-gray-400">No budgets yet. Click the "New" button to create one.</p>
                 </div>
 
-                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24">
+                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 pb-24">
                     <UCard
                         v-for="budget in budgets"
                         :key="budget.id"
@@ -288,9 +289,6 @@ function formatCurrency(value: number | null) {
                             </div>
                             <UProgress class="mt-1" :color="progressBarColour(budget?.currentPeriod?.amount, budget?.totalHitAmount)" v-model="budget.totalHitAmount" :max="budget.totalHitAmount > budget?.currentPeriod?.amount ? budget.totalHitAmount : budget?.currentPeriod?.amount" />
                         </div>
-                        <div class="flex flex-col">
-                        <UButton class="ml-auto" color="secondary" size="xl" variant="ghost" @click="openCreateExpenseModal(budget.id)"><UIcon name="subway:add" class="ml-3 size-7" /></UButton>
-                        </div>  
                     </div>
 
                     </UCard>
@@ -303,22 +301,11 @@ function formatCurrency(value: number | null) {
                         :budget-id="editingBudgetId"
                         :budget-name="editingBudgetName"
                         :budget-amount="editingBudgetAmount"
+                        :budget-hits="budgets.find(b => b.id === editingBudgetId)?.hits || []"
                         :active-tab="activeEditTab"
                         @update="handleEditAction"
                         @cancel="closeEditModal"
                         @delete="handleEditAction"
-                    />
-                    </template>
-                </UModal>
-
-                <UModal v-model:open="isCreateExpenseModalOpen">
-                    <template #content>
-                    <BudgetExpenseCreate
-                        v-if="editingBudgetId"
-                        :budget-id="editingBudgetId"
-                        :budget-name="budgets.find(b => b.id === editingBudgetId)?.name"
-                        @update="handleEditAction"
-                        @cancel="closeCreateExpenseModal"
                     />
                     </template>
                 </UModal>

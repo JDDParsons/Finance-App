@@ -72,7 +72,11 @@ async function handleDeleteBudget() {
 </script>
 
 <template>
-    <div class="w-full h-100 ml-2">
+
+    <div class="w-full h-100 ml-3">
+
+        <h3 class="text-2xl font-semibold text-gray-500 pb-4 pt-4">Edit Budget</h3>
+
         <div v-if="error" class="mb-4">
             <UAlert
                 title="Error"
