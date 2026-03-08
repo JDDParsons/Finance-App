@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getBudgets, getBudgetHitsByBudgetId,signOut } from '../../composables/supabase'
+import { getBudgets, getBudgetHitsByBudgetId, createBudget, signOut } from '../../composables/supabase'
 
 const router = useRouter()
 const originalBudgets = ref<any[]>([])
@@ -19,6 +19,10 @@ const ascendingIcon = 'heroicons-solid:arrow-long-up';
 const descendingIcon = 'heroicons-solid:arrow-long-down';
 const sortIcon = ref(ascendingIcon)
 const searchText = ref('')
+const isSlideoverOpen = ref(false)
+const budgetName = ref('')
+const amount = ref('')
+const createLoading = ref(false)
 
 onMounted(async () => {
     await fetchBudgets()
@@ -33,7 +37,42 @@ watch(searchText, (newValue) => {
 
 
 function handleNewBudget() {
-    router.push('/budgets/create')
+    isSlideoverOpen.value = true
+}
+
+function validateBudgetForm() {
+    if (!budgetName.value.trim()) {
+        alert('Please enter a budget name')
+        return false
+    }
+    if (!amount.value) {
+        alert('Please enter an amount')
+        return false
+    }
+    return true
+}
+
+async function handleCreateBudget() {
+    if (validateBudgetForm()) {
+        try {
+            createLoading.value = true
+            await createBudget(budgetName.value, amount.value)
+            budgetName.value = ''
+            amount.value = ''
+            isSlideoverOpen.value = false
+            await fetchBudgets()
+        } catch (error: any) {
+            alert('Error creating budget: ' + (error?.message || 'Unknown error'))
+        } finally {
+            createLoading.value = false
+        }
+    }
+}
+
+function closeSlideover() {
+    isSlideoverOpen.value = false
+    budgetName.value = ''
+    amount.value = ''
 }
 
 function openEditModal(budgetId: string) {
@@ -229,29 +268,17 @@ function formatCurrency(value: number | null) {
         </UHeader>
         <UMain>
             <UContainer>
-                <div class="flex flex-col pt-2 mb-8">
+                <div class="flex items-center justify-center pt-2 mb-2">
                     <h2 class="text-3xl font-bold">Monthly Budgets</h2>
-                        <UButton color="primary" variant="solid" size="sm" class="mt-2 w-28" @click="handleNewBudget">
-                            <UIcon name="subway:add-1" class="size-3" />
-                            New budget
-                        </UButton>
-                        <div class="">
-                            <UInputMenu 
-                                size="xl" 
-                                :icon="sortIcon" 
-                                v-model="sortValue" 
-                                @update:model-value="handleSortChange" 
-                                :items="sortItems" 
-                                class="w-40 mt-2"
-                            />
-                            <UInput
-                                icon="heroicons-solid:magnifying-glass"
-                                v-model="searchText"
-                                placeholder="Search"
-                                size="xl"
-                                class="w-29 mt-2 ml-4"
-                            />
-                    </div>
+                    <UButton 
+                        color="primary" 
+                        variant="ghost" 
+                        size="lg" 
+                        class="ml-2 mt-1"
+                        @click="isSlideoverOpen = true"
+                    >
+                        <UIcon name="fa-solid:plus-circle" class="size-8" />
+                    </UButton>
                 </div>
 
                 <div v-if="error" class="mb-4">
@@ -309,6 +336,65 @@ function formatCurrency(value: number | null) {
                     />
                     </template>
                 </UModal>
+
+                <USlideover 
+                    v-model:open="isSlideoverOpen"
+                    class="w-full sm:max-w-md"
+                    >
+                    <template #content>
+                        <div class="flex flex-col h-full">
+                            <div class="flex-1 p-6 overflow-y-auto">
+                                <h3 class="text-2xl font-bold mb-6">Create New Budget</h3>
+                                
+                                <div class="space-y-6">
+                                    <UFormField label="Budget Name" required>
+                                        <UInput
+                                            v-model="budgetName"
+                                            placeholder="e.g., Monthly Groceries"
+                                            type="text"
+                                            size="xl"
+                                        />
+                                    </UFormField>
+
+                                    <UFormField label="Amount" required>
+                                        <UInput
+                                            v-model="amount"
+                                            placeholder="0.00"
+                                            type="number"
+                                            step="0.01"
+                                            size="xl"
+                                        />
+                                    </UFormField>
+                                </div>
+                            </div>
+                            
+                            <div class="p-6 border-t">
+                                <div class="flex gap-3">
+                                    <UButton
+                                        color="primary"
+                                        @click="handleCreateBudget"
+                                        class="flex-1"
+                                        size="lg"
+                                        :loading="createLoading"
+                                        :disabled="createLoading"
+                                    >
+                                        Create Budget
+                                    </UButton>
+                                    <UButton
+                                        color="neutral"
+                                        variant="outline"
+                                        @click="closeSlideover"
+                                        class="flex-1"
+                                        size="lg"
+                                        :disabled="createLoading"
+                                    >
+                                        Close
+                                    </UButton>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </USlideover>
             </UContainer>
         </UMain>
     </div>
