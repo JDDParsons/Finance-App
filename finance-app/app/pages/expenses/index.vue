@@ -64,15 +64,17 @@ async function handleDeleteHit(id: string) {
 </UHeader>
   <div class="pl-4 pr-4 pt-2 max-w-xl mx-auto">
     <div class="flex mb-4">
-      <div class="flex flex-col">
-        <h1 class="text-3xl font-bold">{{ monthLabel }} Expenses</h1>
-        <div class="flex">
-        <UButton color="info" variant="solid" size="sm" class="mt-2 w-28" @click="isCreateExpenseModalOpen = true">
-          <UIcon name="subway:add-1" class="size-3" />
-          Add Expense
-        </UButton>
-        </div>
-        <UBadge color="secondary" variant="subtle" size="lg" class="mt-3">Total: {{ formatCurrency(total) }}</UBadge>
+      <div class="flex items-center justify-center pt-2 mb-2">
+          <h2 class="text-3xl font-bold">Monthly Expenses</h2>
+          <UButton 
+              color="secondary" 
+              variant="ghost" 
+              size="lg" 
+              class="ml-2 mt-1"
+              @click="isCreateExpenseModalOpen = true"
+          >
+              <UIcon name="fa-solid:plus-circle" class="size-8" />
+          </UButton>
       </div>
     </div>
 
