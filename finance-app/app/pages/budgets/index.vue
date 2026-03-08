@@ -79,7 +79,7 @@ function openEditModal(budgetId: string) {
     editingBudgetId.value = budgetId
     editingBudgetName.value = budgets.value.find(b => b.id === budgetId)?.name || null
     editingBudgetAmount.value = budgets.value.find(b => b.id === budgetId)?.currentPeriod?.amount || null
-    activeEditTab.value = 1
+    activeEditTab.value = 0
     isEditModalOpen.value = true
 }
 

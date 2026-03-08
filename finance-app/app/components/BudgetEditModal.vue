@@ -16,6 +16,7 @@ const emit = defineEmits<{
 }>()
 
 const tab = ref(props.activeTab ?? 0)
+const isEditing = ref(false)
 
 watch(() => props.activeTab, (newValue) => {
     if (newValue !== undefined) {
@@ -24,14 +25,17 @@ watch(() => props.activeTab, (newValue) => {
 })
 
 function handleEditUpdate() {
+    isEditing.value = false
     emit('update')
 }
 
 function handleEditCancel() {
+    isEditing.value = false
     emit('cancel')
 }
 
 function handleEditDelete() {
+    isEditing.value = false
     emit('delete')
 }
 
@@ -50,29 +54,25 @@ function handleExpenseCreated() {
 
 <template>
     <div class="w-full h-140">
-        <div class="flex">
-            <h1 class="text-3xl font-bold mb-4 mt-4 ml-3 mr-3">{{ budgetName || 'Budget Details' }}</h1>
-
+        <div class="flex items-center justify-between mb-4 mt-4 ml-3 mr-3">
+            <h1 class="text-3xl font-bold">{{ budgetName || 'Budget Details' }}</h1>
+            <UButton
+                icon="heroicons:pencil-square"
+                color="secondary"
+                variant="ghost"
+                tabindex="-1"
+                @click="isEditing = true"
+            />
         </div>
+        
         <div class="w-full">
-            <UTabs color="info" :items="[{ icon: 'heroicons:plus-circle', slot: 'add-expense' }, { icon: 'heroicons:pencil-square', slot: 'edit' }, { icon: 'heroicons:list-bullet', slot: 'expenses' }]" v-model="tab" class="ml-2 mr-2">
+            <UTabs color="info" :items="[{ icon: 'heroicons:plus-circle', slot: 'add-expense' }, { icon: 'heroicons:list-bullet', slot: 'expenses' }]" v-model="tab" class="ml-2 mr-2">
                 <template #add-expense>
                     <BudgetExpenseCreate
                         :budget-id="budgetId"
                         :budget-name="budgetName"
                         @update="handleExpenseCreated"
                         @cancel="handleExpensesCancel"
-                    />
-                </template>
-
-                <template #edit="{ item }">
-                    <BudgetEdit
-                        :budget-id="budgetId"
-                        :budget-name="budgetName"
-                        :budget-amount="budgetAmount"
-                        @update="handleEditUpdate"
-                        @cancel="handleEditCancel"
-                        @delete="handleEditDelete"
                     />
                 </template>
 
@@ -86,6 +86,34 @@ function handleExpenseCreated() {
                 </template>
             </UTabs>
         </div>
+        <UModal v-if="isEditing" v-model:open="isEditing">
+            <template #content>
+                <UCard>
+                    <template #header>
+                        <h2 class="text-2xl font-bold">Edit Budget</h2>
+                    </template>
+                    <BudgetEdit
+                        :budget-id="budgetId"
+                        :budget-name="budgetName"
+                        :budget-amount="budgetAmount"
+                        @update="handleEditUpdate"
+                        @cancel="handleEditCancel"
+                        @delete="handleEditDelete"
+                    />
+                    
+                    <template #footer>
+                    <UButton
+                        color="neutral"
+                        variant="ghost"
+                        @click="isEditing = false"
+                        class="mr-2 mt-1"
+                    >
+                        Close
+                    </UButton>
+                    </template>
+                </UCard>
+            </template>
+        </UModal>
         <hr class="border-gray-200 dark:border-gray-800">
         <UButton
             color="neutral"
