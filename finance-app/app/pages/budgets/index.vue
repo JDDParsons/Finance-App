@@ -344,7 +344,7 @@ function formatCurrency(value: number | null) {
                     <template #content>
                         <div class="flex flex-col h-full">
                             <div class="flex-1 p-6 overflow-y-auto">
-                                <h3 class="text-2xl font-bold mb-6">Create New Budget</h3>
+                                <h3 class="text-2xl font-bold mb-6">Create a new budget</h3>
                                 
                                 <div class="space-y-6">
                                     <UFormField label="Budget Name" required>
@@ -378,7 +378,7 @@ function formatCurrency(value: number | null) {
                                         :loading="createLoading"
                                         :disabled="createLoading"
                                     >
-                                        Create Budget
+                                        Create this budget
                                     </UButton>
                                     <UButton
                                         color="neutral"

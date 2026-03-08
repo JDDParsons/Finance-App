@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { getBudgetHits, getBudgets } from '../../composables/supabase'
+import { getBudgetHits, getBudgets, deleteBudgetHit, createBudgetHit, signOut } from '../../composables/supabase'
 
 const today = new Date()
 const currentYear = today.getFullYear()
 const currentMonth = today.getMonth() + 1
 const monthLabel = today.toLocaleString('en-US', { month: 'long', year: 'numeric' })
 
-const isCreateExpenseModalOpen = ref(false)
+const isSlideoverOpen = ref(false)
+const expenseAmount = ref('')
+const expenseDate = ref(new Date().toLocaleDateString('en-CA'))
+const expenseNote = ref('')
+const selectedBudgetId = ref('')
+const noBudget = ref(false)
+const createLoading = ref(false)
 
 const { data: rawExpenses, refresh: refreshExpenses } = await useAsyncData('all-budget-hits', () => getBudgetHits())
 const { data: allBudgets } = await useAsyncData('all-budgets-expenses-page', () => getBudgets())
@@ -38,9 +44,50 @@ function formatCurrency(value: number | null) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
 }
 
-async function handleExpenseCreated() {
-  await refreshExpenses()
-  isCreateExpenseModalOpen.value = false
+function validateExpenseForm() {
+  if (!expenseDate.value) {
+    alert('Please select a date')
+    return false
+  }
+  if (!expenseAmount.value) {
+    alert('Please enter an amount')
+    return false
+  }
+  if (!noBudget.value && !selectedBudgetId.value) {
+    alert('Please select a budget')
+    return false
+  }
+  return true
+}
+
+async function handleCreateExpense() {
+  if (validateExpenseForm()) {
+    try {
+      createLoading.value = true
+      const budgetIdToSubmit = noBudget.value ? null : selectedBudgetId.value
+      await createBudgetHit(budgetIdToSubmit, expenseDate.value, expenseAmount.value, expenseNote.value)
+      expenseAmount.value = ''
+      expenseDate.value = new Date().toLocaleDateString('en-CA')
+      expenseNote.value = ''
+      selectedBudgetId.value = ''
+      noBudget.value = false
+      isSlideoverOpen.value = false
+      await refreshExpenses()
+    } catch (error: any) {
+      alert('Error creating expense: ' + (error?.message || 'Unknown error'))
+    } finally {
+      createLoading.value = false
+    }
+  }
+}
+
+function closeSlideover() {
+  isSlideoverOpen.value = false
+  expenseAmount.value = ''
+  expenseDate.value = new Date().toLocaleDateString('en-CA')
+  expenseNote.value = ''
+  selectedBudgetId.value = ''
+  noBudget.value = false
 }
 
 async function handleDeleteHit(id: string) {
@@ -62,20 +109,18 @@ async function handleDeleteHit(id: string) {
     <UButton class="ml-2" color="neutral" variant="ghost" size="sm" @click="signOut()">Sign out</UButton>
   </template>
 </UHeader>
-  <div class="pl-4 pr-4 pt-2 max-w-xl mx-auto">
-    <div class="flex mb-4">
-      <div class="flex items-center justify-center pt-2 mb-2">
-          <h2 class="text-3xl font-bold">Monthly Expenses</h2>
-          <UButton 
-              color="secondary" 
-              variant="ghost" 
-              size="lg" 
-              class="ml-2 mt-1"
-              @click="isCreateExpenseModalOpen = true"
-          >
-              <UIcon name="fa-solid:plus-circle" class="size-8" />
-          </UButton>
-      </div>
+  <div class="pl-2 pr-2 max-w-xl mx-auto">
+    <div class="flex items-center justify-center pt-2 mb-2">
+        <h2 class="text-3xl font-bold">Monthly Expenses</h2>
+        <UButton 
+            color="secondary" 
+            variant="ghost" 
+            size="sm" 
+            class="ml-2"
+            @click="isSlideoverOpen = true"
+        >
+            <UIcon name="fa-solid:plus-circle" class="size-8" />
+        </UButton>
     </div>
 
     <div v-if="expenses.length === 0" class="text-center py-12">
@@ -104,13 +149,82 @@ async function handleDeleteHit(id: string) {
     </div>
   </div>
 
-  <UModal v-model:open="isCreateExpenseModalOpen">
+  <USlideover 
+    v-model:open="isSlideoverOpen"
+    class="w-full sm:max-w-md"
+  >
     <template #content>
-      <BudgetExpenseCreate
-        :budgets="allBudgets ?? []"
-        @update="handleExpenseCreated"
-        @cancel="isCreateExpenseModalOpen = false"
-      />
+      <div class="flex flex-col h-full">
+        <div class="flex-1 p-6 overflow-y-auto">
+          <h3 class="text-2xl font-bold mb-6">Add an expense</h3>
+          
+          <div class="space-y-6">
+            <UFormField label="Amount" required>
+              <UInput
+                v-model="expenseAmount"
+                placeholder="0.00"
+                type="number"
+                step="0.01"
+                size="xl"
+              />
+            </UFormField>
+
+            <UFormField label="Date" required>
+              <UInput
+                v-model="expenseDate"
+                type="date"
+                size="xl"
+              />
+            </UFormField>
+
+            <UFormField label="Note">
+              <UInput
+                v-model="expenseNote"
+                placeholder="Leave a note..."
+                type="text"
+                size="xl"
+              />
+            </UFormField>
+
+            <UFormField label="Budget" :required="!noBudget">
+              <USelect
+                v-model="selectedBudgetId"
+                :items="(allBudgets ?? []).map((b: any) => ({ label: b.name, value: b.id }))"
+                placeholder="Select a budget..."
+                size="xl"
+                :disabled="noBudget"
+              />
+            </UFormField>
+
+            <UCheckbox v-model="noBudget" label="No budget" />
+          </div>
+        </div>
+        
+        <div class="p-6 border-t">
+          <div class="flex gap-3">
+            <UButton
+              color="secondary"
+              @click="handleCreateExpense"
+              class="flex-1"
+              size="lg"
+              :loading="createLoading"
+              :disabled="createLoading"
+            >
+              Add this expense
+            </UButton>
+            <UButton
+              color="neutral"
+              variant="outline"
+              @click="closeSlideover"
+              class="flex-1"
+              size="lg"
+              :disabled="createLoading"
+            >
+              Close
+            </UButton>
+          </div>
+        </div>
+      </div>
     </template>
-  </UModal>
+  </USlideover>
 </template>
