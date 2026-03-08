@@ -53,11 +53,11 @@ const percentRemaining = computed(() => {
 const remainingAmountForChart = computed(() => Math.max(remainingAmount.value, 0))
 
 const pieData = computed(() => ({
-    labels: ['Spent', 'Remaining'],
+    labels: ['Remaining', 'Spent'],
     datasets: [
         {
-            backgroundColor: ['#A7C7E7', '#B7E4C7'],
-            data: [currentMonthExpenseTotal.value, remainingAmountForChart.value]
+            backgroundColor: ['#B7E4C7', '#A7C7E7'],
+            data: [remainingAmountForChart.value, currentMonthExpenseTotal.value]
         }
     ]
 }))
@@ -67,7 +67,7 @@ const pieOptions = {
     maintainAspectRatio: false,
     plugins: {
         legend: {
-            display: true,
+            display: false,
             position: 'bottom' as const
         }
     }
@@ -86,27 +86,26 @@ function formatPercent(value: number) {
     <div class="p-4 w-full h-100">
         <h3 class="text-2xl font-semibold text-gray-500 pb-1">Budget Details</h3>
 
-        <div class="h-52 w-full mb-4">
+        <div class="h-52 w-full mt-4 mb-4">
             <Pie :data="pieData" :options="pieOptions" />
         </div>
 
-        <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+        <div class="grid grid-cols-2 gap-x-4 gap-y-3 text-center">
             <div>
                 <p class="text-xs text-gray-500">Allocated</p>
                 <p class="font-semibold">{{ formatCurrency(allocatedAmount) }}</p>
             </div>
             <div>
-                <p class="text-xs text-gray-500">Month Expenses</p>
+                <p class="text-xs text-gray-500">Spent</p>
                 <p class="font-semibold">{{ formatCurrency(currentMonthExpenseTotal) }}</p>
             </div>
-            <div>
-                <p class="text-xs text-gray-500">Remaining</p>
-                <p class="font-semibold">{{ formatCurrency(remainingAmount) }}</p>
-            </div>
-            <div>
-                <p class="text-xs text-gray-500">Remaining %</p>
-                <p class="font-semibold">{{ formatPercent(percentRemaining) }}</p>
-            </div>
         </div>
+            <div class="mt-4 text-center">
+                <p class="text-xs text-gray-500">Remaining</p>
+                <div class="flex text-center justify-center items-center">
+                    <p class="font-semibold">{{ formatCurrency(remainingAmount) }}</p>
+                    <p class="font-semibold text-gray-500 ml-2">({{ formatPercent(percentRemaining) }})</p>
+                </div>
+            </div>
     </div>
 </template>
