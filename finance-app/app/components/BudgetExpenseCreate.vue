@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { createBudgetHit } from '../composables/supabase'
+import AnimatedCheckmark from './AnimatedCheckmark.vue'
 
 const props = defineProps<{
     budgetId?: string,
@@ -25,6 +26,16 @@ const amount = ref('')
 const note = ref('')
 const loading = ref(false)
 const error = ref<string | null>(null)
+const showSuccess = ref(false)
+
+let closeTimer: ReturnType<typeof setTimeout> | null = null
+const CLOSE_AFTER_SUCCESS_MS = 1500
+
+onBeforeUnmount(() => {
+    if (closeTimer) {
+        clearTimeout(closeTimer)
+    }
+})
 
 function validateForm() {
     if (!date.value) {
@@ -39,6 +50,10 @@ function validateForm() {
 }
 
 async function handleCreateHit() {
+    if (showSuccess.value) {
+        return
+    }
+
     if (!noBudget.value && !props.budgetId && !selectedBudgetId.value) {
         alert('Please select a budget')
         return
@@ -49,8 +64,12 @@ async function handleCreateHit() {
             error.value = null
             const budgetIdToSubmit = noBudget.value ? null : (selectedBudgetId.value || props.budgetId || null)
             await createBudgetHit(budgetIdToSubmit, date.value, amount.value, note.value)
-            emit('update') // Notify parent to refresh the budget hits list
-            emit('cancel') // Close the modal after successful creation
+            showSuccess.value = true
+
+            closeTimer = setTimeout(() => {
+                emit('update')
+                emit('cancel')
+            }, CLOSE_AFTER_SUCCESS_MS)
         } catch (err: any) {
             error.value = err?.message || 'Error recording budget hit'
             console.error('Error creating budget hit:', err)
@@ -63,7 +82,11 @@ async function handleCreateHit() {
 </script>
 
 <template>        
-    <div class="w-full h-100 ml-3">
+    <div v-if="showSuccess" class="w-full h-100 flex items-center justify-center">
+        <AnimatedCheckmark style="--checkmark-size: 18rem;" />
+    </div>
+
+    <div v-else class="w-full h-100 ml-3">
 
         <h3 class="text-2xl font-semibold text-gray-500 pb-4 pt-4">Add Expense</h3>
 
@@ -130,7 +153,7 @@ async function handleCreateHit() {
                 variant="solid"
                 @click="handleCreateHit"
                 class="flex-1 mt-2"
-                :disabled="loading"
+                :disabled="loading || showSuccess"
                 :loading="loading"
             >
                 Submit expense
