@@ -198,6 +198,8 @@ function formatCurrency(value: number | null) {
         maximumFractionDigits: 0  
     }).format(value)
 }
+
+const { budgetIcon } = useBudgetIcon()
 </script>
 
 <template>
@@ -251,9 +253,12 @@ function formatCurrency(value: number | null) {
             <div class="flex items-center w-full"> 
                 <div class="flex-1" @click="openEditModal(budget.id)">
                     <div class="flex justify-between items-center gap-2 ">
-                        <h3 class="text-md font-semibold text-black dark:text-white">
-                            {{ budget.name }}
-                        </h3>
+                        <div class="flex items-center gap-2">
+                            <UIcon :name="budgetIcon(budget.name)" class="w-5 h-5 shrink-0 text-muted" />
+                            <h3 class="text-md font-semibold text-black dark:text-white">
+                                {{ budget.name }}
+                            </h3>
+                        </div>
                         <UBadge size="lg" :style="progressBarStyle(budget?.currentPeriod?.amount, budget?.totalHitAmount)">
                             {{ formatCurrency(budget.totalRemainingAmount) }}
                         </UBadge>
