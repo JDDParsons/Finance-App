@@ -16,7 +16,7 @@ const percentage = computed(() => Math.min((props.value / props.max) * 100, 100)
             :style="{
                 width: `${percentage}%`,
                 backgroundColor: colour,
-                boxShadow: `0 0 3px 1px ${colour}`
+                boxShadow: `0 0px 1px 0.1px ${colour}`
             }"
         />
     </div>
