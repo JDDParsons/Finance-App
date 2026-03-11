@@ -30,10 +30,11 @@ export const useFinanceStore = defineStore('finance', () => {
         const matches = d.getFullYear() === year && (d.getMonth() + 1) === month
         return matches ? sum + (Number(h.amount) || 0) : sum
       }, 0)
+      const totalRemainingAmount = (b.currentPeriod?.amount || 0) - totalHitAmount
       const progress = b.currentPeriod?.amount
         ? (totalHitAmount / b.currentPeriod.amount) * 100
         : 0
-      return { ...b, hits: budgetHitList, totalHitAmount, numberOfHits: budgetHitList.length, progress }
+      return { ...b, hits: budgetHitList, totalHitAmount, totalRemainingAmount, numberOfHits: budgetHitList.length, progress }
     })
   }
 

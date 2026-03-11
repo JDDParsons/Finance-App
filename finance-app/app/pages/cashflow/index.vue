@@ -88,13 +88,14 @@ async function saveExpense() {
 
 <template>
   <UContainer>
+    <!-- Month Selector -->
+    <MonthSelector />
+    
     <!-- Header -->
     <div class="flex items-center justify-center pt-2 mb-2">
         <h2 class="text-3xl font-bold">Cashflow</h2>
     </div>
 
-    <!-- Month Selector -->
-    <MonthSelector />
 
     <!-- Tabs -->
     <div class="px-4 pb-24">

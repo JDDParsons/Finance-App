@@ -8,23 +8,30 @@ const displayBudgets = ref<any[]>([])
 const loading = computed(() => store.loading)
 const error = computed(() => store.error)
 
-// Keep displayBudgets in sync with store; re-apply search filter
+// Keep displayBudgets in sync with store; re-apply search filter and default sort (progress low to high)
 watchEffect(() => {
     const q = searchText.value.toLowerCase().trim()
-    displayBudgets.value = q
+    const filtered = q
         ? store.budgets.filter((b: any) => b.name.toLowerCase().includes(q))
         : [...store.budgets]
+    displayBudgets.value = filtered.sort((a: any, b: any) => (a.progress || 0) - (b.progress || 0))
 })
 const isEditModalOpen = ref(false)
 const editingBudgetId = ref<string | undefined>(undefined)
 const editingBudgetName = ref<string | undefined>(undefined)
 const editingBudgetAmount = ref<number | undefined>(undefined)
 const activeEditTab = ref(0)
-const sortItems = ref(['Name', 'Spending', 'Amount', 'Progress'])
-const sortValue = ref('Name')
+const activeSortLabel = ref('Progress')
 const ascendingIcon = 'heroicons-solid:arrow-long-up';
 const descendingIcon = 'heroicons-solid:arrow-long-down';
 const sortIcon = ref(ascendingIcon)
+
+const sortDropdownItems = computed(() => [[
+    { label: 'Name',     icon: activeSortLabel.value === 'Name'     ? sortIcon.value : undefined, onSelect: () => { activeSortLabel.value = 'Name';     sortBudgetsByName() } },
+    { label: 'Spending', icon: activeSortLabel.value === 'Spending' ? sortIcon.value : undefined, onSelect: () => { activeSortLabel.value = 'Spending'; sortBudgetsByTotalHitAmount() } },
+    { label: 'Amount',   icon: activeSortLabel.value === 'Amount'  ? sortIcon.value : undefined, onSelect: () => { activeSortLabel.value = 'Amount';   sortBudgetsByAmount() } },
+    { label: 'Progress', icon: activeSortLabel.value === 'Progress' ? sortIcon.value : undefined, onSelect: () => { activeSortLabel.value = 'Progress'; sortBudgetsByProgress() } },
+]])
 const isSlideoverOpen = ref(false)
 const budgetName = ref('')
 const amount = ref('')
@@ -113,22 +120,6 @@ async function fetchBudgets() {
     await store.refreshBudgets()
 }
 
-function handleSortChange() {
-    switch (sortValue.value) {
-        case 'Name':
-            sortBudgetsByName()
-            break
-        case 'Spending':
-            sortBudgetsByTotalHitAmount()
-            break
-        case 'Amount':
-            sortBudgetsByAmount()
-            break
-        case 'Progress':
-            sortBudgetsByProgress()
-            break
-    }
-}
 
 const spendingSortOrder = ref<'asc' | 'desc'>('asc')
 function sortBudgetsByTotalHitAmount() {
@@ -170,7 +161,7 @@ function sortBudgetsByAmount() {
         }
 }
 
-const progressSortOrder = ref<'asc' | 'desc'>('asc')
+const progressSortOrder = ref<'asc' | 'desc'>('desc')
 function sortBudgetsByProgress() {
     if (progressSortOrder.value === 'asc') {
         displayBudgets.value.sort((a, b) => (a.progress || 0) - (b.progress || 0))
@@ -183,12 +174,19 @@ function sortBudgetsByProgress() {
     }
 }
 
-function progressBarColour(amount: number, totalHitAmount: number) {
-    const percentage = (totalHitAmount / amount) * 100
-    if (percentage < 60) return 'primary'
-    if (percentage >= 60 && percentage < 90) return 'warning'
-    if (percentage >= 90) return 'error'
-    return 'error'
+function progressBarColour(amount: number, totalHitAmount: number): string {
+    const percentage = Math.min((totalHitAmount / amount) * 100, 100)
+    const hue = Math.round(120 - (percentage * 1.2))
+    return `hsl(${hue}, 80%, 45%)`
+}
+
+function progressBarStyle(amount: number, totalHitAmount: number) {
+    const percentage = Math.min((totalHitAmount / amount) * 100, 100)
+    const hue = Math.round(120 - (percentage * 1.2))
+    return {
+        color: `hsl(${hue}, 80%, 45%)`,
+        backgroundColor: `hsla(${hue}, 80%, 45%, 0.15)`
+    }
 }
 
 function formatCurrency(value: number | null) {
@@ -204,12 +202,26 @@ function formatCurrency(value: number | null) {
 
 <template>
     <UContainer>
-        <!-- Header -->
-        <div class="flex items-center justify-center pt-2 mb-2">
-            <h2 class="text-3xl font-bold">Budgets</h2>
-        </div>
 
         <MonthSelector />
+
+
+        <!-- Header -->
+        <div class="relative flex items-center justify-center pt-2 mb-2">
+            <h2 class="text-3xl font-bold">Budgets</h2>
+            <div class="absolute right-0">
+                <UDropdownMenu :items="sortDropdownItems" :content="{ align: 'end' }">
+                    <UButton
+                        color="neutral"
+                        variant="ghost"
+                        icon="heroicons:bars-arrow-up-20-solid"
+                        size="md"
+                        :aria-label="`Sort by ${activeSortLabel}`"
+                    />
+                </UDropdownMenu>
+            </div>
+        </div>
+
 
         <div v-if="error" class="mb-4">
             <UAlert
@@ -228,7 +240,7 @@ function formatCurrency(value: number | null) {
             <p class="text-gray-400">No budgets yet. Click the "New" button to create one.</p>
         </div>
 
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 pb-24">
+        <div v-else class="grid grid-cols-1 gap-2 pb-24">
             <UCard
                 v-for="budget in displayBudgets"
                 :key="budget.id"
@@ -236,15 +248,20 @@ function formatCurrency(value: number | null) {
             >
             <div class="flex items-center w-full"> 
                 <div class="flex-1" @click="openEditModal(budget.id)">
-                    <div class="flex">
-                        <h3 class="basis-1/2 text-left text-md font-semibold text-black dark:text-white">
+                    <div class="flex justify-between items-center gap-2 ">
+                        <h3 class="text-md font-semibold text-black dark:text-white">
                             {{ budget.name }}
                         </h3>
-                        <p class="basis-1/2 text-right text-sm pt-1 font-semibold">
-                            {{ formatCurrency(budget?.currentPeriod?.amount) }}
-                        </p>
+                        <UBadge size="lg" :style="progressBarStyle(budget?.currentPeriod?.amount, budget?.totalHitAmount)">
+                            {{ formatCurrency(budget.totalRemainingAmount) }}
+                        </UBadge>
                     </div>
-                    <UProgress class="mt-1" :color="progressBarColour(budget?.currentPeriod?.amount, budget?.totalHitAmount)" v-model="budget.totalHitAmount" :max="budget.totalHitAmount > budget?.currentPeriod?.amount ? budget.totalHitAmount : budget?.currentPeriod?.amount" />
+                        
+                    <ProgressBar
+                        :value="budget.totalHitAmount"
+                        :max="budget.totalHitAmount > budget?.currentPeriod?.amount ? budget.totalHitAmount : budget?.currentPeriod?.amount"
+                        :colour="progressBarColour(budget?.currentPeriod?.amount, budget?.totalHitAmount)"
+                    />
                 </div>
             </div>
 
