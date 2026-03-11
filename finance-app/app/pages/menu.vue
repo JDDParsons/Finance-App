@@ -23,7 +23,7 @@ const remaining = computed(() => Math.max(totalIncome.value - totalExpenses.valu
 const top5Expenses = computed(() => {
   return [...store.budgetHits]
     .sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0))
-    .slice(0, 6)
+    .slice(0, 5)
     .map(h => {
       const budget = store.budgets.find(b => b.id === h.budget_id)
       return {
@@ -142,7 +142,7 @@ const chartOptions = {
         <USeparator class="my-8" />
         
             <!-- Largest Expenses -->
-            <div class="w-full mt-8">
+            <div class="w-full mt-8 pb-20">
                 <h2 class="text-2xl text-center font-bold pb-2">Largest Expenses</h2>
                 <ul v-if="store.loading" class="space-y-2">
                     <li
