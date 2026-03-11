@@ -207,15 +207,6 @@ function formatCurrency(value: number | null) {
         <!-- Header -->
         <div class="flex items-center justify-center pt-2 mb-2">
             <h2 class="text-3xl font-bold">Budgets</h2>
-            <UButton 
-                color="primary" 
-                variant="ghost" 
-                size="lg" 
-                class="ml-2 mt-1"
-                @click="isSlideoverOpen = true"
-            >
-                <UIcon name="fa-solid:plus-circle" class="size-8" />
-            </UButton>
         </div>
 
         <MonthSelector />
@@ -334,5 +325,6 @@ function formatCurrency(value: number | null) {
                 </div>
             </template>
         </USlideover>
+        <GreenAddButton @click="isSlideoverOpen = true" />
     </UContainer>
 </template>

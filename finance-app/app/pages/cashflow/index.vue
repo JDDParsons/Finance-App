@@ -91,15 +91,6 @@ async function saveExpense() {
     <!-- Header -->
     <div class="flex items-center justify-center pt-2 mb-2">
         <h2 class="text-3xl font-bold">Cashflow</h2>
-        <UButton 
-            color="primary" 
-            variant="ghost" 
-            size="lg" 
-            class="ml-2 mt-1"
-            @click="openSlideover"
-        >
-            <UIcon name="fa-solid:plus-circle" class="size-8" />
-        </UButton>
     </div>
 
     <!-- Month Selector -->
@@ -235,5 +226,6 @@ async function saveExpense() {
         </div>
       </template>
     </USlideover>
+    <GreenAddButton @click="openSlideover" />
   </UContainer>
 </template>
