@@ -203,8 +203,8 @@ function formatCurrency(value: number | null) {
 <template>
     <UContainer>
 
+        <!-- Month Selector -->
         <MonthSelector />
-
 
         <!-- Header -->
         <div class="relative flex items-center justify-center pt-2 mb-2">
@@ -222,6 +222,8 @@ function formatCurrency(value: number | null) {
             </div>
         </div>
 
+        <!-- Budget Allocation Chart -->
+        <BudgetAllocationChart class="mt-4 mb-2" />
 
         <div v-if="error" class="mb-4">
             <UAlert
