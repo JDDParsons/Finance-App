@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { insertIncome, createBudgetHit, getBudgets } from '../../composables/supabase'
-import { open } from 'fs'
+import { ref, computed } from 'vue'
+import { useFinanceStore } from '../../stores/finance'
+
+const store = useFinanceStore()
 
 // Tab state — 'income' | 'expenses'
 const activeTab = ref('income')
@@ -20,21 +21,8 @@ const expenseDate = ref(new Date().toLocaleDateString('en-CA'))
 const expenseNote = ref('')
 const selectedBudgetId = ref('')
 const noBudget = ref(false)
-const allBudgets = ref<any[]>([])
-
-// Component refs for triggering refresh
-const incomeListRef = ref<any>(null)
-const expenseListRef = ref<any>(null)
 
 const tabLabel = computed(() => activeTab.value === 'income' ? 'Income' : 'Expense')
-
-onMounted(async () => {
-  try {
-    allBudgets.value = await getBudgets()
-  } catch (e) {
-    // non-critical — budget dropdown may be empty
-  }
-})
 
 function openSlideover() {
   resetForms()
@@ -72,9 +60,8 @@ async function saveIncome() {
   }
   try {
     slideoverLoading.value = true
-    await insertIncome(parseFloat(incomeAmount.value), incomeDate.value, incomeNote.value)
+    await store.addIncome(parseFloat(incomeAmount.value), incomeDate.value, incomeNote.value)
     closeSlideover()
-    await incomeListRef.value?.refresh()
   } catch (err: any) {
     alert('Error saving income: ' + (err?.message || 'Unknown error'))
   } finally {
@@ -89,9 +76,8 @@ async function saveExpense() {
   try {
     slideoverLoading.value = true
     const budgetIdToSubmit = noBudget.value ? null : selectedBudgetId.value
-    await createBudgetHit(budgetIdToSubmit, expenseDate.value, expenseAmount.value, expenseNote.value)
+    await store.addExpense(budgetIdToSubmit, expenseDate.value, expenseAmount.value, expenseNote.value)
     closeSlideover()
-    await expenseListRef.value?.refresh()
   } catch (err: any) {
     alert('Error creating expense: ' + (err?.message || 'Unknown error'))
   } finally {
@@ -127,10 +113,10 @@ async function saveExpense() {
         ]"
       >
         <template #income>
-          <AllIncome ref="incomeListRef" />
+          <AllIncome />
         </template>
         <template #expenses>
-          <AllExpenses ref="expenseListRef" />
+          <AllExpenses />
         </template>
       </UTabs>
     </div>
@@ -208,7 +194,7 @@ async function saveExpense() {
               <UFormField label="Budget" :required="!noBudget">
                 <USelect
                   v-model="selectedBudgetId"
-                  :items="allBudgets.map((b: any) => ({ label: b.name, value: b.id }))"
+                  :items="store.budgets.map((b: any) => ({ label: b.name, value: b.id }))"
                   placeholder="Select a budget..."
                   size="xl"
                   :disabled="noBudget"

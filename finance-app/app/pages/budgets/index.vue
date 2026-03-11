@@ -1,13 +1,20 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { getBudgets, getBudgetHitsByBudgetId, createBudget, signOut } from '../../composables/supabase'
+import { ref, computed } from 'vue'
+import { useFinanceStore } from '../../stores/finance'
 
-const router = useRouter()
-const originalBudgets = ref<any[]>([])
-const budgets = ref<any[]>([])
-const loading = ref(true)
-const error = ref<string | null>(null)
+const store = useFinanceStore()
+const searchText = ref('')
+const displayBudgets = ref<any[]>([])
+const loading = computed(() => store.loading)
+const error = computed(() => store.error)
+
+// Keep displayBudgets in sync with store; re-apply search filter
+watchEffect(() => {
+    const q = searchText.value.toLowerCase().trim()
+    displayBudgets.value = q
+        ? store.budgets.filter((b: any) => b.name.toLowerCase().includes(q))
+        : [...store.budgets]
+})
 const isEditModalOpen = ref(false)
 const editingBudgetId = ref<string | undefined>(undefined)
 const editingBudgetName = ref<string | undefined>(undefined)
@@ -18,22 +25,10 @@ const sortValue = ref('Name')
 const ascendingIcon = 'heroicons-solid:arrow-long-up';
 const descendingIcon = 'heroicons-solid:arrow-long-down';
 const sortIcon = ref(ascendingIcon)
-const searchText = ref('')
 const isSlideoverOpen = ref(false)
 const budgetName = ref('')
 const amount = ref('')
 const createLoading = ref(false)
-
-onMounted(async () => {
-    await fetchBudgets()
-})
-
-watch(searchText, (newValue) => {
-    const searchLower = newValue.toLowerCase()
-    budgets.value = originalBudgets.value.filter((budget) =>
-        budget.name.toLowerCase().includes(searchLower)
-    )
-})
 
 
 function handleNewBudget() {
@@ -56,11 +51,10 @@ async function handleCreateBudget() {
     if (validateBudgetForm()) {
         try {
             createLoading.value = true
-            await createBudget(budgetName.value, amount.value)
+            await store.addBudget(budgetName.value, amount.value)
             budgetName.value = ''
             amount.value = ''
             isSlideoverOpen.value = false
-            await fetchBudgets()
         } catch (error: any) {
             alert('Error creating budget: ' + (error?.message || 'Unknown error'))
         } finally {
@@ -77,15 +71,15 @@ function closeSlideover() {
 
 function openEditModal(budgetId: string) {
     editingBudgetId.value = budgetId
-    editingBudgetName.value = budgets.value.find(b => b.id === budgetId)?.name || null
-    editingBudgetAmount.value = budgets.value.find(b => b.id === budgetId)?.currentPeriod?.amount || null
+    editingBudgetName.value = store.budgets.find((b: any) => b.id === budgetId)?.name || null
+    editingBudgetAmount.value = store.budgets.find((b: any) => b.id === budgetId)?.currentPeriod?.amount || null
     activeEditTab.value = 0
     isEditModalOpen.value = true
 }
 
 function openExpensesTab(budgetId: string) {
     editingBudgetId.value = budgetId
-    editingBudgetName.value = budgets.value.find(b => b.id === budgetId)?.name || null
+    editingBudgetName.value = store.budgets.find((b: any) => b.id === budgetId)?.name || null
     activeEditTab.value = 1
     isEditModalOpen.value = true
 }
@@ -99,13 +93,13 @@ function closeEditModal() {
 
 async function handleEditAction() {
     closeEditModal()
-    await fetchBudgets()
+    await store.refreshBudgets()
 }
 
 function openCreateExpenseModal(budgetId: string) {
     editingBudgetId.value = budgetId
-    editingBudgetName.value = budgets.value.find(b => b.id === budgetId)?.name
-    editingBudgetAmount.value = budgets.value.find(b => b.id === budgetId)?.currentPeriod?.amount
+    editingBudgetName.value = store.budgets.find((b: any) => b.id === budgetId)?.name
+    editingBudgetAmount.value = store.budgets.find((b: any) => b.id === budgetId)?.currentPeriod?.amount
     activeEditTab.value = 0
     isEditModalOpen.value = true
 }
@@ -116,29 +110,7 @@ function closeCreateExpenseModal() {
 }
 
 async function fetchBudgets() {
-    try {
-        loading.value = true
-        error.value = null
-        originalBudgets.value = await getBudgets()
-        budgets.value = [...originalBudgets.value]
-
-        budgets.value.forEach(async (budget) => {
-            const { totalHitAmount, numberOfHits, hits } = await sumBudgetHits(budget.id)
-            budget.hits = hits
-            budget.totalHitAmount = totalHitAmount
-            budget.numberOfHits = numberOfHits
-            budget.progress = budget.currentPeriod?.amount ? (budget.totalHitAmount / budget.currentPeriod.amount) * 100 : 0
-        })
-
-        //sort by progress by default
-        budgets.value.sort((a, b) => (b.progress || 0) - (a.progress || 0))
-
-    } catch (err: any) {
-        error.value = err?.message || 'Failed to load budgets'
-        console.error('Error fetching budgets:', err)
-    } finally {
-        loading.value = false
-    }
+    await store.refreshBudgets()
 }
 
 function handleSortChange() {
@@ -161,11 +133,11 @@ function handleSortChange() {
 const spendingSortOrder = ref<'asc' | 'desc'>('asc')
 function sortBudgetsByTotalHitAmount() {
     if (spendingSortOrder.value === 'asc') {
-        budgets.value.sort((a, b) => (a.totalHitAmount || 0) - (b.totalHitAmount || 0))
+        displayBudgets.value.sort((a, b) => (a.totalHitAmount || 0) - (b.totalHitAmount || 0))
         spendingSortOrder.value = 'desc'
         sortIcon.value = descendingIcon
     } else {
-        budgets.value.sort((a, b) => (b.totalHitAmount || 0) - (a.totalHitAmount || 0))
+        displayBudgets.value.sort((a, b) => (b.totalHitAmount || 0) - (a.totalHitAmount || 0))
         spendingSortOrder.value = 'asc' 
         sortIcon.value = ascendingIcon
     }
@@ -174,11 +146,11 @@ function sortBudgetsByTotalHitAmount() {
 const nameSortOrder = ref<'asc' | 'desc'>('asc')
 function sortBudgetsByName() {
     if (nameSortOrder.value === 'asc') {
-        budgets.value.sort((a, b) => a.name.localeCompare(b.name))
+        displayBudgets.value.sort((a, b) => a.name.localeCompare(b.name))
         nameSortOrder.value = 'desc'
         sortIcon.value = descendingIcon
     } else {
-        budgets.value.sort((a, b) => b.name.localeCompare(a.name))
+        displayBudgets.value.sort((a, b) => b.name.localeCompare(a.name))
         nameSortOrder.value = 'asc'
         sortIcon.value = ascendingIcon
     }
@@ -188,11 +160,11 @@ function sortBudgetsByName() {
 const amountSortOrder = ref<'asc' | 'desc'>('asc')
 function sortBudgetsByAmount() {
         if (amountSortOrder.value === 'asc') {
-            budgets.value.sort((a, b) => (a.currentPeriod?.amount || 0) - (b.currentPeriod?.amount || 0))
+            displayBudgets.value.sort((a, b) => (a.currentPeriod?.amount || 0) - (b.currentPeriod?.amount || 0))
             amountSortOrder.value = 'desc'
             sortIcon.value = descendingIcon
         } else {
-            budgets.value.sort((a, b) => (b.currentPeriod?.amount || 0) - (a.currentPeriod?.amount || 0))
+            displayBudgets.value.sort((a, b) => (b.currentPeriod?.amount || 0) - (a.currentPeriod?.amount || 0))
             amountSortOrder.value = 'asc'
             sortIcon.value = ascendingIcon
         }
@@ -201,41 +173,13 @@ function sortBudgetsByAmount() {
 const progressSortOrder = ref<'asc' | 'desc'>('asc')
 function sortBudgetsByProgress() {
     if (progressSortOrder.value === 'asc') {
-        budgets.value.sort((a, b) => (a.progress || 0) - (b.progress || 0))
+        displayBudgets.value.sort((a, b) => (a.progress || 0) - (b.progress || 0))
         progressSortOrder.value = 'desc'
         sortIcon.value = descendingIcon
     } else {
-        budgets.value.sort((a, b) => (b.progress || 0) - (a.progress || 0))
+        displayBudgets.value.sort((a, b) => (b.progress || 0) - (a.progress || 0))
         progressSortOrder.value = 'asc'
         sortIcon.value = ascendingIcon
-    }
-}
-
-async function sumBudgetHits(budgetId: string) {
-    try {
-        const hits = await getBudgetHitsByBudgetId(budgetId);
-
-        // Get current Year and Month (0-indexed, so January is 0)
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth();
-
-        const totalHitAmount = hits.reduce((sum, hit) => {
-            // Parse hit.date (YYYY-MM-DD)
-            const hitDate = new Date(hit.date.replace(/-/g, '\/'));
-            const isCurrentMonth = 
-                hitDate.getFullYear() === currentYear && 
-                hitDate.getMonth() === currentMonth;
-
-            return isCurrentMonth ? sum + (hit.amount || 0) : sum;
-        }, 0);
-
-        const numberOfHits = hits.length
-        return { totalHitAmount, numberOfHits, hits }
-        
-    } catch (err) {
-        console.error('Error summing budget hits:', err);
-        return { totalHitAmount: 0, numberOfHits: 0, hits: [] };
     }
 }
 
@@ -287,13 +231,13 @@ function formatCurrency(value: number | null) {
             <p class="text-gray-400">Loading budgets...</p>
         </div>
 
-        <div v-else-if="budgets.length === 0" class="text-center py-12">
+        <div v-else-if="displayBudgets.length === 0" class="text-center py-12">
             <p class="text-gray-400">No budgets yet. Click the "New" button to create one.</p>
         </div>
 
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 pb-24">
             <UCard
-                v-for="budget in budgets"
+                v-for="budget in displayBudgets"
                 :key="budget.id"
                 class="flex flex-col cursor-pointer"
             >
@@ -321,7 +265,7 @@ function formatCurrency(value: number | null) {
                 :budget-id="editingBudgetId"
                 :budget-name="editingBudgetName"
                 :budget-amount="editingBudgetAmount"
-                :budget-hits="budgets.find(b => b.id === editingBudgetId)?.hits || []"
+                :budget-hits="store.budgets.find((b: any) => b.id === editingBudgetId)?.hits || []"
                 :active-tab="activeEditTab"
                 @update="handleEditAction"
                 @cancel="closeEditModal"

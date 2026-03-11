@@ -1,40 +1,18 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { getBudgetHits, getBudgets, deleteBudgetHit } from '../composables/supabase'
+import { useFinanceStore } from '../stores/finance'
 
-const rawExpenses = ref<any[]>([])
-const allBudgets = ref<any[]>([])
-const loading = ref(true)
-const error = ref<string | null>(null)
+const store = useFinanceStore()
 
 const today = new Date()
 const currentYear = today.getFullYear()
 const currentMonth = today.getMonth() + 1
 
-onMounted(async () => {
-  await refresh()
-})
-
-async function refresh() {
-  try {
-    loading.value = true
-    error.value = null
-    const [hits, budgets] = await Promise.all([getBudgetHits(), getBudgets()])
-    rawExpenses.value = hits
-    allBudgets.value = budgets
-  } catch (err: any) {
-    error.value = err?.message || 'Failed to load expenses'
-  } finally {
-    loading.value = false
-  }
-}
-
 const budgetMap = computed(() =>
-  new Map<string, string>(allBudgets.value.map((b: any) => [b.id, b.name]))
+  new Map<string, string>(store.budgets.map((b: any) => [b.id, b.name]))
 )
 
 const expenses = computed(() =>
-  rawExpenses.value.filter((hit: any) => {
+  store.budgetHits.filter((hit: any) => {
     if (!hit.date) return false
     const d = new Date(hit.date)
     return d.getUTCFullYear() === currentYear && (d.getUTCMonth() + 1) === currentMonth
@@ -44,8 +22,7 @@ const expenses = computed(() =>
 async function handleDelete(id: string) {
   if (!confirm('Are you sure you want to delete this expense?')) return
   try {
-    await deleteBudgetHit(id)
-    rawExpenses.value = rawExpenses.value.filter((h: any) => h.id !== id)
+    await store.removeExpense(id)
   } catch (err: any) {
     alert(err?.message || 'Failed to delete expense')
   }
@@ -60,17 +37,15 @@ function formatCurrency(value: number | null) {
   if (value == null) return '-'
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
 }
-
-defineExpose({ refresh })
 </script>
 
 <template>
   <div class="flex flex-col gap-4 pt-4">
-    <div v-if="loading" class="flex justify-center py-12">
+    <div v-if="store.loading" class="flex justify-center py-12">
       <UIcon name="heroicons-solid:arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
     </div>
 
-    <UAlert v-else-if="error" color="error" :description="error" />
+    <UAlert v-else-if="store.error" color="error" :description="store.error" />
 
     <div v-else-if="expenses.length === 0" class="text-center text-gray-400 py-16">
       No expenses recorded for this month. Tap <strong>+</strong> to add one.
