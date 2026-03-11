@@ -115,9 +115,11 @@ const chartOptions = {
         <div class="flex flex-col items-center justify-center pt-2 space-y-2">
             <h2 class="text-2xl font-bold">Balance</h2>
 
-            <div v-if="store.loading" class="text-gray-400 text-sm">Loading...</div>
+            <div v-if="store.loading" class="w-full max-w-sm" style="height: 200px;">
+                <USkeleton class="w-full h-full" style="border-radius: 50% 50% 0 0 / 100% 100% 0 0;" />
+            </div>
 
-            <div v-else class="w-full max-w-sm" style="height: 250px;">
+            <div v-else class="w-full max-w-sm" style="height: 200px;">
                 <Doughnut :data="chartData" :options="chartOptions" :plugins="[glowPlugin]" />
             </div>
 
@@ -137,10 +139,27 @@ const chartOptions = {
             </div>
         </div>
 
+        <USeparator class="my-8" />
+        
             <!-- Largest Expenses -->
             <div class="w-full mt-8">
                 <h2 class="text-2xl text-center font-bold pb-2">Largest Expenses</h2>
-                <div v-if="store.loading" class="text-gray-400 text-sm">Loading...</div>
+                <ul v-if="store.loading" class="space-y-2">
+                    <li
+                        v-for="n in 5"
+                        :key="n"
+                        class="flex items-center justify-between rounded-lg px-4 py-3 bg-elevated"
+                    >
+                        <div class="flex items-center gap-3">
+                            <USkeleton class="w-4 h-4 rounded" />
+                            <div class="space-y-1.5">
+                                <USkeleton class="h-3.5 w-28 rounded" />
+                                <USkeleton class="h-3 w-20 rounded" />
+                            </div>
+                        </div>
+                        <USkeleton class="h-4 w-16 rounded" />
+                    </li>
+                </ul>
                 <ul v-else class="space-y-2">
                     <li
                         v-for="(hit, i) in top5Expenses"
