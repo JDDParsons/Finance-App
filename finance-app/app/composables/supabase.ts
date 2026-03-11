@@ -521,3 +521,46 @@ function getSupabase() {
 
     if (error) throw error
   }
+
+  // --- Income ---
+
+  export async function getIncome() {
+    const supabase = getSupabase()
+    const { data: auth } = await supabase.auth.getSession()
+    const { data, error } = await supabase
+      .from('Income')
+      .select('*')
+      .eq('user_id', auth.session?.user?.id)
+      .order('date', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  }
+
+  export async function insertIncome(amount: number, date: string, note: string) {
+    const supabase = getSupabase()
+    const { data: auth } = await supabase.auth.getSession()
+    const { data, error } = await supabase
+      .from('Income')
+      .insert({
+        amount,
+        date,
+        note,
+        user_id: auth.session?.user?.id
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  export async function deleteIncome(id: string) {
+    const supabase = getSupabase()
+    const { error } = await supabase
+      .from('Income')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  }

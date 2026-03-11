@@ -259,143 +259,134 @@ function formatCurrency(value: number | null) {
 </script>
 
 <template>
-    <div>
-        <UHeader title="Finance App">
-          <template #right>
-            <UColorModeSwitch />
-            <UButton class="ml-2" color="neutral" variant="ghost" size="sm" @click="signOut()">Sign out</UButton>
-          </template>
-        </UHeader>
-        <UMain>
-            <UContainer>
-                <div class="flex items-center justify-center pt-2 mb-2">
-                    <h2 class="text-3xl font-bold">Monthly Budgets</h2>
-                    <UButton 
-                        color="primary" 
-                        variant="ghost" 
-                        size="lg" 
-                        class="ml-2 mt-1"
-                        @click="isSlideoverOpen = true"
-                    >
-                        <UIcon name="fa-solid:plus-circle" class="size-8" />
-                    </UButton>
-                </div>
+    <UContainer>
+        <!-- Header -->
+        <div class="flex items-center justify-center pt-2 mb-2">
+            <h2 class="text-3xl font-bold">Budgets</h2>
+            <UButton 
+                color="primary" 
+                variant="ghost" 
+                size="lg" 
+                class="ml-2 mt-1"
+                @click="isSlideoverOpen = true"
+            >
+                <UIcon name="fa-solid:plus-circle" class="size-8" />
+            </UButton>
+        </div>
 
-                <div v-if="error" class="mb-4">
-                    <UAlert
-                        title="Error"
-                        :description="error"
-                        color="error"
-                        variant="soft"
-                    />
-                </div>
+        <div v-if="error" class="mb-4">
+            <UAlert
+                title="Error"
+                :description="error"
+                color="error"
+                variant="soft"
+            />
+        </div>
 
-                <div v-if="loading" class="text-center py-12">
-                    <p class="text-gray-400">Loading budgets...</p>
-                </div>
+        <div v-if="loading" class="text-center py-12">
+            <p class="text-gray-400">Loading budgets...</p>
+        </div>
 
-                <div v-else-if="budgets.length === 0" class="text-center py-12">
-                    <p class="text-gray-400">No budgets yet. Click the "New" button to create one.</p>
-                </div>
+        <div v-else-if="budgets.length === 0" class="text-center py-12">
+            <p class="text-gray-400">No budgets yet. Click the "New" button to create one.</p>
+        </div>
 
-                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 pb-24">
-                    <UCard
-                        v-for="budget in budgets"
-                        :key="budget.id"
-                        class="flex flex-col cursor-pointer"
-                    >
-                    <div class="flex items-center w-full"> 
-                        <div class="flex-1" @click="openEditModal(budget.id)">
-                            <div class="flex">
-                                <h3 class="basis-1/2 text-left text-md font-semibold text-black dark:text-white">
-                                    {{ budget.name }}
-                                </h3>
-                                <p class="basis-1/2 text-right text-sm pt-1 font-semibold">
-                                    {{ formatCurrency(budget?.currentPeriod?.amount) }}
-                                </p>
-                            </div>
-                            <UProgress class="mt-1" :color="progressBarColour(budget?.currentPeriod?.amount, budget?.totalHitAmount)" v-model="budget.totalHitAmount" :max="budget.totalHitAmount > budget?.currentPeriod?.amount ? budget.totalHitAmount : budget?.currentPeriod?.amount" />
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 pb-24">
+            <UCard
+                v-for="budget in budgets"
+                :key="budget.id"
+                class="flex flex-col cursor-pointer"
+            >
+            <div class="flex items-center w-full"> 
+                <div class="flex-1" @click="openEditModal(budget.id)">
+                    <div class="flex">
+                        <h3 class="basis-1/2 text-left text-md font-semibold text-black dark:text-white">
+                            {{ budget.name }}
+                        </h3>
+                        <p class="basis-1/2 text-right text-sm pt-1 font-semibold">
+                            {{ formatCurrency(budget?.currentPeriod?.amount) }}
+                        </p>
+                    </div>
+                    <UProgress class="mt-1" :color="progressBarColour(budget?.currentPeriod?.amount, budget?.totalHitAmount)" v-model="budget.totalHitAmount" :max="budget.totalHitAmount > budget?.currentPeriod?.amount ? budget.totalHitAmount : budget?.currentPeriod?.amount" />
+                </div>
+            </div>
+
+            </UCard>
+        </div>
+
+        <UModal v-model:open="isEditModalOpen">
+            <template #content>
+            <BudgetEditModal
+                v-if="editingBudgetId"
+                :budget-id="editingBudgetId"
+                :budget-name="editingBudgetName"
+                :budget-amount="editingBudgetAmount"
+                :budget-hits="budgets.find(b => b.id === editingBudgetId)?.hits || []"
+                :active-tab="activeEditTab"
+                @update="handleEditAction"
+                @cancel="closeEditModal"
+                @delete="handleEditAction"
+            />
+            </template>
+        </UModal>
+
+        <USlideover 
+            v-model:open="isSlideoverOpen"
+            class="w-full sm:max-w-md"
+            >
+            <template #content>
+                <div class="flex flex-col h-full">
+                    <div class="flex-1 p-6 overflow-y-auto">
+                        <h3 class="text-2xl font-bold mb-6">Create a new budget</h3>
+                        
+                        <div class="space-y-6">
+                            <UFormField label="Budget Name" required>
+                                <UInput
+                                    v-model="budgetName"
+                                    placeholder="e.g., Monthly Groceries"
+                                    type="text"
+                                    size="xl"
+                                />
+                            </UFormField>
+
+                            <UFormField label="Amount" required>
+                                <UInput
+                                    v-model="amount"
+                                    placeholder="0.00"
+                                    type="number"
+                                    step="0.01"
+                                    size="xl"
+                                />
+                            </UFormField>
                         </div>
                     </div>
-
-                    </UCard>
-                </div>
-
-                <UModal v-model:open="isEditModalOpen">
-                    <template #content>
-                    <BudgetEditModal
-                        v-if="editingBudgetId"
-                        :budget-id="editingBudgetId"
-                        :budget-name="editingBudgetName"
-                        :budget-amount="editingBudgetAmount"
-                        :budget-hits="budgets.find(b => b.id === editingBudgetId)?.hits || []"
-                        :active-tab="activeEditTab"
-                        @update="handleEditAction"
-                        @cancel="closeEditModal"
-                        @delete="handleEditAction"
-                    />
-                    </template>
-                </UModal>
-
-                <USlideover 
-                    v-model:open="isSlideoverOpen"
-                    class="w-full sm:max-w-md"
-                    >
-                    <template #content>
-                        <div class="flex flex-col h-full">
-                            <div class="flex-1 p-6 overflow-y-auto">
-                                <h3 class="text-2xl font-bold mb-6">Create a new budget</h3>
-                                
-                                <div class="space-y-6">
-                                    <UFormField label="Budget Name" required>
-                                        <UInput
-                                            v-model="budgetName"
-                                            placeholder="e.g., Monthly Groceries"
-                                            type="text"
-                                            size="xl"
-                                        />
-                                    </UFormField>
-
-                                    <UFormField label="Amount" required>
-                                        <UInput
-                                            v-model="amount"
-                                            placeholder="0.00"
-                                            type="number"
-                                            step="0.01"
-                                            size="xl"
-                                        />
-                                    </UFormField>
-                                </div>
-                            </div>
-                            
-                            <div class="p-6 border-t">
-                                <div class="flex gap-3">
-                                    <UButton
-                                        color="primary"
-                                        @click="handleCreateBudget"
-                                        class="flex-1"
-                                        size="lg"
-                                        :loading="createLoading"
-                                        :disabled="createLoading"
-                                    >
-                                        Create this budget
-                                    </UButton>
-                                    <UButton
-                                        color="neutral"
-                                        variant="outline"
-                                        @click="closeSlideover"
-                                        class="flex-1"
-                                        size="lg"
-                                        :disabled="createLoading"
-                                    >
-                                        Close
-                                    </UButton>
-                                </div>
-                            </div>
+                    
+                    <div class="p-6 border-t">
+                        <div class="flex gap-3">
+                            <UButton
+                                color="primary"
+                                @click="handleCreateBudget"
+                                class="flex-1"
+                                size="lg"
+                                :loading="createLoading"
+                                :disabled="createLoading"
+                            >
+                                Create this budget
+                            </UButton>
+                            <UButton
+                                color="neutral"
+                                variant="outline"
+                                @click="closeSlideover"
+                                class="flex-1"
+                                size="lg"
+                                :disabled="createLoading"
+                            >
+                                Close
+                            </UButton>
                         </div>
-                    </template>
-                </USlideover>
-            </UContainer>
-        </UMain>
-    </div>
+                    </div>
+                </div>
+            </template>
+        </USlideover>
+    </UContainer>
 </template>

@@ -19,8 +19,7 @@
 const navigation = [
   { label: 'Home', icon: 'fa-solid-home', to: '/' },
   { label: 'Budgets', icon: 'fa-solid-dollar-sign', to: '/budgets' },
-  { label: 'Expenses', icon: 'fa-solid-list', to: '/expenses' },
-  { label: 'Reports', icon: 'fa-solid-chart-pie', to: '/reports/monthly' },
-  { label: 'Upload', icon: 'fa-solid-upload', to: '/upload' }
-]
+  { label: 'Cashflow', icon: 'heroicons-solid:arrows-right-left', to: '/cashflow' },
+  { label: 'Reports', icon: 'fa-solid-chart-pie', to: '/reports/monthly' }
+  ]
 </script>
