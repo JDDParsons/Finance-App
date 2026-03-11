@@ -1,12 +1,17 @@
 import { defineStore } from 'pinia'
 import {
-  getBudgets, getBudgetHits, getIncome,
+  getBudgetsByMonth, getBudgetHitsByMonth, getIncomeByMonth,
+  getAvailableBudgetMonths,
   insertIncome, deleteIncome,
   createBudgetHit, deleteBudgetHit,
   createBudget
 } from '../composables/supabase'
 
 export const useFinanceStore = defineStore('finance', () => {
+  const _now = new Date()
+  const selectedMonth = ref({ year: _now.getFullYear(), month: _now.getMonth() + 1 })
+
+  const availableMonths = ref<{ year: number; month: number }[]>([])
   const budgets = ref<any[]>([])
   const budgetHits = ref<any[]>([])
   const income = ref<any[]>([])
@@ -16,28 +21,19 @@ export const useFinanceStore = defineStore('finance', () => {
   // ── helpers ──────────────────────────────────────────────────────────────
 
   function enrichBudgets(rawBudgets: any[], hits: any[]) {
-    const now = new Date()
-    const currentYear = now.getFullYear()
-    const currentMonth = now.getMonth()
+    const { year, month } = selectedMonth.value
 
     return rawBudgets.map(b => {
       const budgetHitList = hits.filter(h => h.budget_id === b.id)
       const totalHitAmount = budgetHitList.reduce((sum, h) => {
         const d = new Date((h.date as string).replace(/-/g, '/'))
-        const isCurrent =
-          d.getFullYear() === currentYear && d.getMonth() === currentMonth
-        return isCurrent ? sum + (Number(h.amount) || 0) : sum
+        const matches = d.getFullYear() === year && (d.getMonth() + 1) === month
+        return matches ? sum + (Number(h.amount) || 0) : sum
       }, 0)
       const progress = b.currentPeriod?.amount
         ? (totalHitAmount / b.currentPeriod.amount) * 100
         : 0
-      return {
-        ...b,
-        hits: budgetHitList,
-        totalHitAmount,
-        numberOfHits: budgetHitList.length,
-        progress
-      }
+      return { ...b, hits: budgetHitList, totalHitAmount, numberOfHits: budgetHitList.length, progress }
     })
   }
 
@@ -47,11 +43,14 @@ export const useFinanceStore = defineStore('finance', () => {
     try {
       loading.value = true
       error.value = null
-      const [rawBudgets, hits, inc] = await Promise.all([
-        getBudgets(),
-        getBudgetHits(),
-        getIncome()
+      const { year, month } = selectedMonth.value
+      const [rawBudgets, hits, inc, avail] = await Promise.all([
+        getBudgetsByMonth(year, month),
+        getBudgetHitsByMonth(year, month),
+        getIncomeByMonth(year, month),
+        getAvailableBudgetMonths()
       ])
+      availableMonths.value = avail
       budgetHits.value = hits
       income.value = inc
       budgets.value = enrichBudgets(rawBudgets, hits)
@@ -63,9 +62,48 @@ export const useFinanceStore = defineStore('finance', () => {
   }
 
   async function refreshBudgets() {
-    const [rawBudgets, hits] = await Promise.all([getBudgets(), getBudgetHits()])
+    const { year, month } = selectedMonth.value
+    const [rawBudgets, hits] = await Promise.all([getBudgetsByMonth(year, month), getBudgetHitsByMonth(year, month)])
     budgetHits.value = hits
     budgets.value = enrichBudgets(rawBudgets, hits)
+  }
+
+  // ── month navigation ──────────────────────────────────────────────────────
+
+  function monthKey(year: number, month: number) { return year * 100 + month }
+
+  const hasPrev = computed(() => {
+    const { year, month } = selectedMonth.value
+    const cur = monthKey(year, month)
+    return availableMonths.value.some(m => monthKey(m.year, m.month) < cur)
+  })
+
+  const hasNext = computed(() => {
+    const { year, month } = selectedMonth.value
+    const cur = monthKey(year, month)
+    return availableMonths.value.some(m => monthKey(m.year, m.month) > cur)
+  })
+
+  async function setMonth(year: number, month: number) {
+    selectedMonth.value = { year, month }
+    await fetchAll()
+  }
+
+  function prevMonth() {
+    const { year, month } = selectedMonth.value
+    const cur = monthKey(year, month)
+    const prev = availableMonths.value
+      .filter(m => monthKey(m.year, m.month) < cur)
+      .at(-1)
+    if (prev) setMonth(prev.year, prev.month)
+  }
+
+  function nextMonth() {
+    const { year, month } = selectedMonth.value
+    const cur = monthKey(year, month)
+    const next = availableMonths.value
+      .find(m => monthKey(m.year, m.month) > cur)
+    if (next) setMonth(next.year, next.month)
   }
 
   // ── income ────────────────────────────────────────────────────────────────
@@ -84,12 +122,7 @@ export const useFinanceStore = defineStore('finance', () => {
 
   // ── expenses ──────────────────────────────────────────────────────────────
 
-  async function addExpense(
-    budgetId: string | null,
-    date: string,
-    amount: string,
-    note: string
-  ) {
+  async function addExpense(budgetId: string | null, date: string, amount: string, note: string) {
     const hit = await createBudgetHit(budgetId, date, amount, note)
     budgetHits.value = [hit, ...budgetHits.value]
     budgets.value = enrichBudgets(budgets.value, budgetHits.value)
@@ -109,6 +142,10 @@ export const useFinanceStore = defineStore('finance', () => {
   }
 
   return {
+    selectedMonth,
+    availableMonths,
+    hasPrev,
+    hasNext,
     budgets,
     budgetHits,
     income,
@@ -116,6 +153,9 @@ export const useFinanceStore = defineStore('finance', () => {
     error,
     fetchAll,
     refreshBudgets,
+    setMonth,
+    prevMonth,
+    nextMonth,
     addIncome,
     removeIncome,
     addExpense,

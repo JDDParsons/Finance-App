@@ -102,6 +102,9 @@ async function saveExpense() {
         </UButton>
     </div>
 
+    <!-- Month Selector -->
+    <MonthSelector />
+
     <!-- Tabs -->
     <div class="px-4 pb-24">
       <UTabs

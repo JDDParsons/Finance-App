@@ -218,6 +218,8 @@ function formatCurrency(value: number | null) {
             </UButton>
         </div>
 
+        <MonthSelector />
+
         <div v-if="error" class="mb-4">
             <UAlert
                 title="Error"

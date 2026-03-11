@@ -3,21 +3,12 @@ import { useFinanceStore } from '../stores/finance'
 
 const store = useFinanceStore()
 
-const today = new Date()
-const currentYear = today.getFullYear()
-const currentMonth = today.getMonth() + 1
-
 const budgetMap = computed(() =>
   new Map<string, string>(store.budgets.map((b: any) => [b.id, b.name]))
 )
 
-const expenses = computed(() =>
-  store.budgetHits.filter((hit: any) => {
-    if (!hit.date) return false
-    const d = new Date(hit.date)
-    return d.getUTCFullYear() === currentYear && (d.getUTCMonth() + 1) === currentMonth
-  })
-)
+// store.budgetHits already contains only the selected month's data
+const expenses = computed(() => store.budgetHits)
 
 async function handleDelete(id: string) {
   if (!confirm('Are you sure you want to delete this expense?')) return

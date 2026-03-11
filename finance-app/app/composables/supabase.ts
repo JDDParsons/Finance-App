@@ -409,6 +409,74 @@ function getSupabase() {
     return budgets || []
   }
 
+  // Returns distinct { year, month } pairs that exist in Budget_Period, sorted ascending.
+  export async function getAvailableBudgetMonths(): Promise<{ year: number; month: number }[]> {
+    const supabase = getSupabase()
+    const { data, error } = await supabase
+      .from('Budget_Period')
+      .select('date')
+      .order('date', { ascending: true })
+    if (error) throw error
+    const seen = new Set<string>()
+    const result: { year: number; month: number }[] = []
+    for (const row of (data || [])) {
+      const [yearStr, monthStr] = (row.date as string).split('-')
+      const key = `${yearStr}-${monthStr}`
+      if (!seen.has(key)) {
+        seen.add(key)
+        result.push({ year: parseInt(yearStr), month: parseInt(monthStr) })
+      }
+    }
+    return result
+  }
+
+  // Returns only budgets that have a Budget_Period row for the given month.
+  // For the current month, missing periods are auto-created (existing behaviour).
+  // For any other month, only budgets with an existing period are returned.
+  export async function getBudgetsByMonth(year: number, month: number) {
+    const supabase = getSupabase()
+    const formattedDate = `${year}-${String(month).padStart(2, '0')}-01`
+
+    const now = new Date()
+    const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1)
+
+    // Fetch all budgets and all periods for this month in parallel
+    const [{ data: allBudgets, error: budgetsError }, { data: periods, error: periodsError }] =
+      await Promise.all([
+        supabase.from('Budgets').select('*').order('created_at', { ascending: false }),
+        supabase.from('Budget_Period').select('*').eq('date', formattedDate)
+      ])
+
+    if (budgetsError) throw budgetsError
+    if (periodsError) throw periodsError
+
+    const periodMap = new Map((periods || []).map((p: any) => [p.budget_id, p]))
+
+    const result: any[] = []
+
+    for (const b of (allBudgets || [])) {
+      let period = periodMap.get(b.id) || null
+
+      if (!period && isCurrentMonth) {
+        // Auto-create the period for the current month only
+        const { data: newPeriod, error: newPeriodError } = await supabase
+          .from('Budget_Period')
+          .insert({ budget_id: b.id, date: formattedDate, amount: b.amount, user_id: b.user_id })
+          .select()
+          .single()
+        if (newPeriodError) console.error('Error creating budget period:', newPeriodError)
+        period = newPeriod || null
+      }
+
+      // Only include this budget if a period exists for the selected month
+      if (period) {
+        result.push({ ...b, currentPeriod: period })
+      }
+    }
+
+    return result
+  }
+
   export async function getBudgetById(id: string) {
     const supabase = getSupabase()
     const { data: budget, error } = await supabase
@@ -563,4 +631,34 @@ function getSupabase() {
       .eq('id', id)
 
     if (error) throw error
+  }
+
+  export async function getBudgetHitsByMonth(year: number, month: number) {
+    const supabase = getSupabase()
+    const startDate = new Date(year, month - 1, 1).toISOString()
+    const endDate   = new Date(year, month,     1).toISOString()
+    const { data, error } = await supabase
+      .from('Budget_Hit')
+      .select('*')
+      .gte('date', startDate)
+      .lt('date', endDate)
+      .order('date', { ascending: false })
+    if (error) throw error
+    return data || []
+  }
+
+  export async function getIncomeByMonth(year: number, month: number) {
+    const supabase = getSupabase()
+    const { data: auth } = await supabase.auth.getSession()
+    const startDate = new Date(year, month - 1, 1).toISOString()
+    const endDate   = new Date(year, month,     1).toISOString()
+    const { data, error } = await supabase
+      .from('Income')
+      .select('*')
+      .eq('user_id', auth.session?.user?.id)
+      .gte('date', startDate)
+      .lt('date', endDate)
+      .order('date', { ascending: false })
+    if (error) throw error
+    return data || []
   }
