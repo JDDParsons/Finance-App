@@ -42,7 +42,7 @@ const chartColors = ref({ expenses: '#ef4444', remaining: '#22c55e' })
 
 function resolveChartColors() {
   const style = getComputedStyle(document.documentElement)
-  const error = style.getPropertyValue('--ui-error').trim()
+  const error = style.getPropertyValue('--ui-warning').trim()
   const primary = style.getPropertyValue('--ui-primary').trim()
   if (error) chartColors.value.expenses = error
   if (primary) chartColors.value.remaining = primary
@@ -75,12 +75,15 @@ const glowPlugin = {
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  cutout: '80%',
+  cutout: '85%',
+  circumference: 180,
+  rotation: -90,
+  radius:'90%',
   plugins: {
     legend: {
+    display: false,
       position: 'bottom',
       labels: {
-        padding: 20,
         font: { size: 14 },
       },
     },
@@ -114,7 +117,7 @@ const chartOptions = {
 
             <div v-if="store.loading" class="text-gray-400 text-sm">Loading...</div>
 
-            <div v-else class="w-full max-w-sm" style="height: 320px;">
+            <div v-else class="w-full max-w-sm" style="height: 250px;">
                 <Doughnut :data="chartData" :options="chartOptions" :plugins="[glowPlugin]" />
             </div>
 
@@ -125,7 +128,7 @@ const chartOptions = {
                 </div>
                 <div>
                     <p class="text-sm text-gray-400">Expenses</p>
-                    <p class="text-lg font-semibold text-error">${{ totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</p>
+                    <p class="text-lg font-semibold text-warning">${{ totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</p>
                 </div>
                 <div>
                     <p class="text-sm text-gray-400">Remaining</p>
