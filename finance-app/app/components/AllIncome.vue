@@ -12,21 +12,6 @@ async function handleDelete(id: string) {
     alert('Error deleting income: ' + (err?.message || 'Unknown error'))
   }
 }
-
-function formatDate(val: string | null) {
-  if (!val) return '—'
-  return new Date(val).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-}
-
-function formatAmount(val: number | null) {
-  if (val == null) return '—'
-  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(val)
-}
-
-function isFuture(val: string | null) {
-  if (!val) return false
-  return new Date(val) > new Date()
-}
 </script>
 
 <template>
@@ -42,28 +27,15 @@ function isFuture(val: string | null) {
     </div>
 
     <div v-else class="flex flex-col gap-3">
-      <UCard v-for="row in incomeRows" :key="row.id">
-        <div class="flex items-start justify-between gap-4">
-          <div class="flex flex-col gap-1 flex-1">
-            <div class="flex items-center gap-2">
-              <span
-                class="text-xl font-semibold"
-                :class="isFuture(row.date) ? 'text-gray-400' : 'text-primary-500'"
-              >{{ formatAmount(row.amount) }}</span>
-              <UBadge v-if="isFuture(row.date)" color="neutral" variant="subtle" class="ml-auto">Scheduled</UBadge>
-            </div>
-            <span class="text-sm text-gray-500">{{ formatDate(row.date) }}</span>
-            <span v-if="row.note" class="text-sm text-gray-600 dark:text-gray-300">{{ row.note }}</span>
-          </div>
-          <UButton
-            icon="heroicons-solid:trash"
-            color="error"
-            variant="ghost"
-            size="sm"
-            @click="handleDelete(row.id)"
-          />
-        </div>
-      </UCard>
+      <IncomeCard
+        v-for="row in incomeRows"
+        :key="row.id"
+        :id="row.id"
+        :amount="row.amount"
+        :date="row.date"
+        :note="row.note"
+        @delete="handleDelete"
+      />
     </div>
   </div>
 </template>

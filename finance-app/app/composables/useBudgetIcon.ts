@@ -1,7 +1,7 @@
 const iconMap: { keywords: string[]; icon: string }[] = [
     { keywords: ['grocer', 'food', 'supermarket', 'market'], icon: 'heroicons:shopping-cart-solid' },
     { keywords: ['rent', 'mortgage', 'housing', 'home', 'house', 'apartment'], icon: 'heroicons:home-solid' },
-    { keywords: ['car', 'gas', 'fuel', 'transport', 'transit', 'parking', 'auto', 'vehicle', 'uber', 'lyft'], icon: 'heroicons:truck-solid' },
+    { keywords: ['car', 'gas', 'fuel', 'transport', 'transit', 'parking', 'auto', 'vehicle', 'uber', 'lyft'], icon: 'streamline-ultimate:car-3-bold' },
     { keywords: ['restaurant', 'dining', 'eat', 'takeout', 'takeaway', 'lunch', 'dinner', 'breakfast', 'cafe', 'coffee'], icon: 'heroicons:cake-solid' },
     { keywords: ['utility', 'utilities', 'electric', 'hydro', 'internet', 'phone', 'bill', 'water', 'heat', 'gas bill'], icon: 'heroicons:bolt-solid' },
     { keywords: ['health', 'medical', 'doctor', 'pharmacy', 'dental', 'vision', 'clinic', 'hospital'], icon: 'heroicons:heart-solid' },

@@ -7,7 +7,6 @@ const budgetMap = computed(() =>
   new Map<string, string>(store.budgets.map((b: any) => [b.id, b.name]))
 )
 
-// store.budgetHits already contains only the selected month's data
 const expenses = computed(() => store.budgetHits)
 
 async function handleDelete(id: string) {
@@ -17,16 +16,6 @@ async function handleDelete(id: string) {
   } catch (err: any) {
     alert(err?.message || 'Failed to delete expense')
   }
-}
-
-function formatDate(dateString: string | null) {
-  if (!dateString) return '-'
-  return new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })
-}
-
-function formatCurrency(value: number | null) {
-  if (value == null) return '-'
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
 }
 </script>
 
@@ -43,25 +32,17 @@ function formatCurrency(value: number | null) {
     </div>
 
     <div v-else class="flex flex-col gap-3">
-      <UCard v-for="hit in expenses" :key="hit.id">
-        <div class="flex items-center gap-4">
-          <p class="text-sm font-semibold">{{ formatDate(hit.date) }}</p>
-          <p class="text-sm font-bold text-info">{{ formatCurrency(hit.amount) }}</p>
-          <UBadge v-if="budgetMap.get(hit.budget_id)" color="primary" variant="subtle" class="ml-auto">
-            {{ budgetMap.get(hit.budget_id) }}
-          </UBadge>
-          <UBadge v-else color="warning" variant="subtle" class="ml-auto">No budget</UBadge>
-          <UButton
-            color="error"
-            variant="ghost"
-            size="sm"
-            @click="handleDelete(hit.id)"
-          >
-            <UIcon name="heroicons-solid:x" class="size-3" />
-          </UButton>
-        </div>
-        <p v-if="hit.note" class="text-sm mt-1 text-gray-400">{{ hit.note }}</p>
-      </UCard>
+      <SevenDayExpenses :expenses="expenses" />
+      <ExpenseCard
+        v-for="hit in expenses"
+        :key="hit.id"
+        :id="hit.id"
+        :amount="hit.amount"
+        :date="hit.date"
+        :note="hit.note"
+        :budget-name="budgetMap.get(hit.budget_id)"
+        @delete="handleDelete"
+      />
     </div>
   </div>
 </template>

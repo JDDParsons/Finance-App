@@ -18,21 +18,6 @@ const emit = defineEmits<{
     cancel: []
 }>()
 
-function formatDate(dateString: string | null) {
-    if (!dateString) return '-'
-    try {
-        const date = new Date(dateString)
-        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })
-    } catch {
-        return dateString
-    }
-}
-
-function formatCurrency(value: number | null) {
-    if (value === null || value === undefined) return '-'
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
-}
-
 
 async function handleDeleteHit(id: string) {
     if (!confirm('Are you sure you want to delete this budget hit?')) return
@@ -73,29 +58,17 @@ async function handleDeleteHit(id: string) {
             <!-- The flex-1 and min-h-0 here are key for iOS Safari -->
             <div class="flex-1 min-h-0">
             <UScrollArea class="max-h-84 pb-2">
-                <div class="space-y-4 p-1"> <!-- Added spacing for clarity -->
-                <UCard v-for="hit in props.budgetHits" :key="hit.id" class="ml-2 mr-2">
-                    <div>
-                        <div class="flex">
-                            <div class="mr-5">
-                                <p class="text-sm font-semibold">{{ formatDate(hit.date) }}</p>
-                            </div>
-                            <div class="mr-5">
-                                <p class="text-sm font-bold text-info">{{ formatCurrency(hit.amount) }}</p>
-                            </div>
-                            <UButton
-                                color="error"
-                                variant="ghost"
-                                size="sm"
-                                class="ml-auto"
-                                @click="() => handleDeleteHit(hit.id)"
-                            >
-                                <UIcon name="heroicons-solid:x" color="error" class="size-3" />
-                            </UButton>
-                        </div>
-                        <p class="text-sm mt-0.75">{{ hit.note }}</p>
-                    </div>
-                </UCard>
+                <div class="space-y-4 p-1">
+                <ExpenseCard
+                    v-for="hit in props.budgetHits"
+                    :key="hit.id"
+                    :id="hit.id"
+                    :amount="hit.amount"
+                    :date="hit.date"
+                    :note="hit.note"
+                    class="ml-2 mr-2"
+                    @delete="handleDeleteHit"
+                />
                 </div>
             </UScrollArea>
             </div>
