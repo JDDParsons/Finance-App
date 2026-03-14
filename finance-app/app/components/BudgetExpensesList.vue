@@ -13,6 +13,20 @@ console.log("BudgetHits", props.budgetHits);
 const hits = ref<any[]>([])
 const error = ref<string | null>(null)
 
+const selectedHit = ref<any>(null)
+const isEditingHit = ref(false)
+
+function handleEditHit(id: string) {
+    selectedHit.value = props.budgetHits?.find((h: any) => h.id === id) ?? null
+    if (selectedHit.value) isEditingHit.value = true
+}
+
+function handleEditHitClose() {
+    isEditingHit.value = false
+    selectedHit.value = null
+    emit('update')
+}
+
 const emit = defineEmits<{
     update: [],
     cancel: []
@@ -68,11 +82,37 @@ async function handleDeleteHit(id: string) {
                     :note="hit.note"
                     class="ml-2 mr-2"
                     @delete="handleDeleteHit"
+                    @edit="handleEditHit"
                 />
                 </div>
             </UScrollArea>
             </div>
         </div>
     </div>
+
+    <UModal v-if="selectedHit" v-model:open="isEditingHit" @update:open="(val) => { if (!val) handleEditHitClose() }">
+        <template #content>
+            <UCard>
+                <template #header>
+                    <h2 class="text-2xl font-bold">Edit Expense</h2>
+                </template>
+                <ExpenseEdit
+                    :expense-id="selectedHit.id"
+                    :expense-amount="selectedHit.amount"
+                    :expense-date="selectedHit.date"
+                    :expense-note="selectedHit.note"
+                    :expense-budget-id="selectedHit.budget_id"
+                    @update="handleEditHitClose"
+                    @cancel="handleEditHitClose"
+                    @delete="handleEditHitClose"
+                />
+                <template #footer>
+                    <UButton color="neutral" variant="ghost" @click="handleEditHitClose" class="mr-2 mt-1">
+                        Close
+                    </UButton>
+                </template>
+            </UCard>
+        </template>
+    </UModal>
 </template>
 

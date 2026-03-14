@@ -590,6 +590,24 @@ function getSupabase() {
     if (error) throw error
   }
 
+  export async function updateBudgetHit(id: string, budgetId: string | null, date: string, amount: string, note: string) {
+    const supabase = getSupabase()
+    const { data, error } = await supabase
+      .from('Budget_Hit')
+      .update({
+        budget_id: budgetId,
+        date: date,
+        amount: parseFloat(amount),
+        note: note,
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
   // --- Income ---
 
   export async function getIncome() {

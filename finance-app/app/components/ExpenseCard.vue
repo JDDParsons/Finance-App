@@ -9,6 +9,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   delete: [id: string]
+  edit: [id: string]
 }>()
 
 function formatDate(dateString: string | null) {
@@ -28,7 +29,7 @@ function formatCurrency(value: number | null) {
 </script>
 
 <template>
-  <UCard>
+  <UCard class="cursor-pointer" @click="emit('edit', id)">
     <div class="flex items-start justify-between gap-4">
       <div class="flex flex-col gap-1 flex-1">
         <div class="flex items-center gap-2">
@@ -45,7 +46,7 @@ function formatCurrency(value: number | null) {
         color="error"
         variant="ghost"
         size="sm"
-        @click="emit('delete', id)"
+        @click.stop="emit('delete', id)"
       />
     </div>
   </UCard>

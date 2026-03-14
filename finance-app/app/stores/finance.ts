@@ -3,7 +3,7 @@ import {
   getBudgetsByMonth, getBudgetHitsByMonth, getIncomeByMonth,
   getAvailableBudgetMonths,
   insertIncome, deleteIncome,
-  createBudgetHit, deleteBudgetHit,
+  createBudgetHit, deleteBudgetHit, updateBudgetHit,
   createBudget
 } from '../composables/supabase'
 
@@ -135,6 +135,12 @@ export const useFinanceStore = defineStore('finance', () => {
     budgets.value = enrichBudgets(budgets.value, budgetHits.value)
   }
 
+  async function updateExpense(id: string, budgetId: string | null, date: string, amount: string, note: string) {
+    const hit = await updateBudgetHit(id, budgetId, date, amount, note)
+    budgetHits.value = budgetHits.value.map(h => h.id === id ? hit : h)
+    budgets.value = enrichBudgets(budgets.value, budgetHits.value)
+  }
+
   // ── budgets ───────────────────────────────────────────────────────────────
 
   async function addBudget(name: string, amount: string) {
@@ -161,6 +167,7 @@ export const useFinanceStore = defineStore('finance', () => {
     removeIncome,
     addExpense,
     removeExpense,
+    updateExpense,
     addBudget
   }
 })

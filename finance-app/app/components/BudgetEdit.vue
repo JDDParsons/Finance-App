@@ -19,8 +19,8 @@ const router = useRouter()
 const route = useRoute()
 const budgetId = route.params.id as string
 
-const name = ref(props.budgetName)
-const amount = ref(props.budgetAmount)
+const name = ref(props.budgetName ?? '')
+const amount = ref(props.budgetAmount ?? 0)
 
 const loading = ref(false)
 const deleting = ref(false)
@@ -43,7 +43,7 @@ async function handleUpdateBudget() {
         try {
             loading.value = true
             error.value = null
-            await updateBudget(props.budgetId, name.value, amount.value)
+            await updateBudget(props.budgetId || '', name.value, amount.value.toString())
             emit('update')
         } catch (err: any) {
             error.value = err?.message || 'Error updating budget'
@@ -62,7 +62,10 @@ async function handleDeleteBudget() {
             await deleteBudget(props.budgetId)
             emit('delete')
         } catch (err: any) {
-            error.value = err?.message || 'Error deleting budget'
+            const isFkViolation = err?.code === '23503' || err?.message?.includes('Budget_Hit')
+            error.value = isFkViolation
+                ? 'This budget has expense records associated with it and cannot be deleted. Remove all expenses from this budget first, then try again.'
+                : err?.message || 'Error deleting budget'
             console.error('Error deleting budget:', err)
             deleting.value = false
         }
