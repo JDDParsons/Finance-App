@@ -75,12 +75,13 @@ const chartOptions = {
       grid: { color: 'rgba(156,163,175,0.15)' },
       ticks: {
         color: '#9CA3AF',
-        callback: (value: number) =>
-          new Intl.NumberFormat('en-US', {
+        callback: function (tickValue: string | number) {
+          return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD',
             maximumFractionDigits: 0,
-          }).format(value),
+          }).format(typeof tickValue === 'number' ? tickValue : Number(tickValue));
+        },
       },
     },
   },

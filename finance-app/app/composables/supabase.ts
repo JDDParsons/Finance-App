@@ -421,10 +421,10 @@ function getSupabase() {
     const result: { year: number; month: number }[] = []
     for (const row of (data || [])) {
       const [yearStr, monthStr] = (row.date as string).split('-')
-      const key = `${yearStr}-${monthStr}`
+      const key = `${yearStr ?? ''}-${monthStr ?? ''}`
       if (!seen.has(key)) {
         seen.add(key)
-        result.push({ year: parseInt(yearStr), month: parseInt(monthStr) })
+        result.push({ year: parseInt(yearStr ?? '0'), month: parseInt(monthStr ?? '0') })
       }
     }
     return result

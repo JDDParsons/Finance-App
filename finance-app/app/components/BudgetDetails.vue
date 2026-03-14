@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { Pie } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement } from 'chart.js'
+import { useFinanceStore } from '../stores/finance'
 
 ChartJS.register(Title, Tooltip, Legend, ArcElement)
 
@@ -9,6 +10,8 @@ const props = defineProps<{
     budgetAmount?: number
     budgetHits?: any[]
 }>()
+
+const financeStore = useFinanceStore()
 
 function parseHitDate(value: string) {
     const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
@@ -26,20 +29,18 @@ const allocatedAmount = computed(() => Number(props.budgetAmount) || 0)
 
 const currentMonthExpenseTotal = computed(() => {
     const hits = props.budgetHits || []
-    const now = new Date()
-    const currentYear = now.getFullYear()
-    const currentMonth = now.getMonth()
+    const { year: selectedYear, month: selectedMonth } = financeStore.selectedMonth
 
     return hits.reduce((sum: number, hit: any) => {
         if (!hit?.date) return sum
         const hitDate = parseHitDate(hit.date)
         if (Number.isNaN(hitDate.getTime())) return sum
 
-        const isCurrentMonth =
-            hitDate.getFullYear() === currentYear &&
-            hitDate.getMonth() === currentMonth
+        const isSelectedMonth =
+            hitDate.getFullYear() === selectedYear &&
+            hitDate.getMonth() === selectedMonth - 1
 
-        return isCurrentMonth ? sum + (Number(hit.amount) || 0) : sum
+        return isSelectedMonth ? sum + (Number(hit.amount) || 0) : sum
     }, 0)
 })
 
@@ -56,7 +57,7 @@ const pieData = computed(() => ({
     labels: ['Remaining', 'Spent'],
     datasets: [
         {
-            backgroundColor: ['#B7E4C7', '#A7C7E7'],
+            backgroundColor: [chartColors.value.allocated, chartColors.value.spent],
             data: [remainingAmountForChart.value, currentMonthExpenseTotal.value]
         }
     ]
@@ -80,6 +81,15 @@ function formatCurrency(value: number) {
 function formatPercent(value: number) {
     return `${value.toFixed(1)}%`
 }
+
+const chartColors = ref({ allocated: '#6366f1', spent: '#87ffa1' })
+onMounted(() => {
+  const style = getComputedStyle(document.documentElement)
+  const primary = style.getPropertyValue('--ui-primary').trim()
+  const secondary = style.getPropertyValue('--ui-secondary').trim()
+  if (primary) chartColors.value.allocated = primary
+  if (secondary) chartColors.value.spent = secondary
+})
 </script>
 
 <template>
