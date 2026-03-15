@@ -548,6 +548,7 @@ function getSupabase() {
         date: date,
         amount: parseFloat(amount),
         note: note,
+        type: 'Expense',
         user_id: auth.session?.user?.id
       })
       .select()
@@ -562,6 +563,7 @@ function getSupabase() {
     const { data: hits, error } = await supabase
       .from('Budget_Hit')
       .select('*')
+      .eq('type', 'Expense')
       .order('date', { ascending: false })
 
     if (error) throw error
@@ -574,6 +576,7 @@ function getSupabase() {
       .from('Budget_Hit')
       .select('*')
       .eq('budget_id', budgetId)
+      .eq('type', 'Expense')
       .order('date', { ascending: false })
 
     if (error) throw error
@@ -614,8 +617,9 @@ function getSupabase() {
     const supabase = getSupabase()
     const { data: auth } = await supabase.auth.getSession()
     const { data, error } = await supabase
-      .from('Income')
+      .from('Budget_Hit')
       .select('*')
+      .eq('type', 'Income')
       .eq('user_id', auth.session?.user?.id)
       .order('date', { ascending: false })
 
@@ -627,11 +631,13 @@ function getSupabase() {
     const supabase = getSupabase()
     const { data: auth } = await supabase.auth.getSession()
     const { data, error } = await supabase
-      .from('Income')
+      .from('Budget_Hit')
       .insert({
         amount,
         date,
         note,
+        type: 'Income',
+        budget_id: null,
         user_id: auth.session?.user?.id
       })
       .select()
@@ -644,7 +650,7 @@ function getSupabase() {
   export async function deleteIncome(id: string) {
     const supabase = getSupabase()
     const { error } = await supabase
-      .from('Income')
+      .from('Budget_Hit')
       .delete()
       .eq('id', id)
 
@@ -658,6 +664,7 @@ function getSupabase() {
     const { data, error } = await supabase
       .from('Budget_Hit')
       .select('*')
+      .eq('type', 'Expense')
       .gte('date', startDate)
       .lt('date', endDate)
       .order('date', { ascending: false })
@@ -671,8 +678,9 @@ function getSupabase() {
     const startDate = new Date(year, month - 1, 1).toISOString()
     const endDate   = new Date(year, month,     1).toISOString()
     const { data, error } = await supabase
-      .from('Income')
+      .from('Budget_Hit')
       .select('*')
+      .eq('type', 'Income')
       .eq('user_id', auth.session?.user?.id)
       .gte('date', startDate)
       .lt('date', endDate)
