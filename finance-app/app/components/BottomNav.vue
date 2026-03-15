@@ -20,6 +20,6 @@ const navigation = [
   { label: 'Home', icon: 'fa-solid-home', to: '/' },
   { label: 'Budgets', icon: 'fa-solid-dollar-sign', to: '/budgets' },
   { label: 'Cashflow', icon: 'heroicons-solid:arrows-right-left', to: '/cashflow' },
-  { label: 'Reports', icon: 'fa-solid-chart-pie', to: '/reports/monthly' }
+  { label: 'Accounts', icon: 'heroicons-solid:credit-card', to: '/accounts' }
   ]
 </script>

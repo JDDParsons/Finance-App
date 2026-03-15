@@ -7,6 +7,10 @@ const budgetMap = computed(() =>
   new Map<string, string>(store.budgets.map((b: any) => [b.id, b.name]))
 )
 
+const accountMap = computed(() =>
+  new Map<string, string>(store.accounts.map((a: any) => [a.id, a.name || a.institution || 'Account']))
+)
+
 const expenses = computed(() => store.budgetHits)
 
 const selectedExpense = ref<any>(null)
@@ -54,6 +58,7 @@ async function handleDelete(id: string) {
         :date="hit.date"
         :note="hit.note"
         :budget-name="budgetMap.get(hit.budget_id)"
+        :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
         @delete="handleDelete"
         @edit="handleEdit"
       />
@@ -72,6 +77,7 @@ async function handleDelete(id: string) {
           :expense-date="selectedExpense.date"
           :expense-note="selectedExpense.note"
           :expense-budget-id="selectedExpense.budget_id"
+          :expense-account-id="selectedExpense.account_id ?? null"
           @update="handleEditClose"
           @cancel="handleEditClose"
           @delete="handleEditClose"

@@ -4,6 +4,10 @@ import { useFinanceStore } from '../stores/finance'
 const store = useFinanceStore()
 const incomeRows = computed(() => store.income)
 
+const accountMap = computed(() =>
+  new Map<string, string>(store.accounts.map((a: any) => [a.id, a.name || a.institution || 'Account']))
+)
+
 async function handleDelete(id: string) {
   if (!confirm('Delete this income record?')) return
   try {
@@ -34,6 +38,7 @@ async function handleDelete(id: string) {
         :amount="row.amount"
         :date="row.date"
         :note="row.note"
+        :account-name="row.account_id ? accountMap.get(row.account_id) ?? null : null"
         @delete="handleDelete"
       />
     </div>

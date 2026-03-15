@@ -538,23 +538,44 @@ function getSupabase() {
     if (error) throw error
   }
 
-  export async function createBudgetHit(budgetId: string | null, date: string, amount: string, note: string) {
+  // Private helper — atomically shifts an account's cumulative_amount by `delta`
+  async function adjustCumulative(supabase: ReturnType<typeof getSupabase>, accountId: string, delta: number) {
+    const { data: acct, error: fetchErr } = await supabase
+      .from('Account')
+      .select('cumulative_amount')
+      .eq('id', accountId)
+      .single()
+    if (fetchErr) throw fetchErr
+    const current: number = Number(acct?.cumulative_amount) || 0
+    const { error: updateErr } = await supabase
+      .from('Account')
+      .update({ cumulative_amount: current + delta })
+      .eq('id', accountId)
+    if (updateErr) throw updateErr
+  }
+
+  export async function createBudgetHit(budgetId: string | null, date: string, amount: string, note: string, accountId: string | null = null) {
     const supabase = getSupabase()
     const { data: auth } = await supabase.auth.getSession()
+    const parsedAmount = parseFloat(amount)
     const { data, error } = await supabase
       .from('Budget_Hit')
       .insert({
         budget_id: budgetId,
         date: date,
-        amount: parseFloat(amount),
+        amount: parsedAmount,
         note: note,
         type: 'Expense',
+        account_id: accountId,
         user_id: auth.session?.user?.id
       })
       .select()
       .single()
 
     if (error) throw error
+
+    if (accountId) await adjustCumulative(supabase, accountId, parsedAmount)
+
     return data
   }
 
@@ -585,29 +606,66 @@ function getSupabase() {
 
   export async function deleteBudgetHit(id: string) {
     const supabase = getSupabase()
+
+    // Fetch the hit first so we can reverse its effect on cumulative_amount
+    const { data: hit, error: fetchError } = await supabase
+      .from('Budget_Hit')
+      .select('amount, account_id')
+      .eq('id', id)
+      .single()
+    if (fetchError) throw fetchError
+
     const { error } = await supabase
       .from('Budget_Hit')
       .delete()
       .eq('id', id)
 
     if (error) throw error
+
+    if (hit?.account_id) await adjustCumulative(supabase, hit.account_id, -(Number(hit.amount) || 0))
   }
 
-  export async function updateBudgetHit(id: string, budgetId: string | null, date: string, amount: string, note: string) {
+  export async function updateBudgetHit(id: string, budgetId: string | null, date: string, amount: string, note: string, accountId: string | null = null) {
     const supabase = getSupabase()
+
+    // Fetch old values before update so we can diff
+    const { data: old, error: fetchError } = await supabase
+      .from('Budget_Hit')
+      .select('amount, account_id')
+      .eq('id', id)
+      .single()
+    if (fetchError) throw fetchError
+
+    const parsedAmount = parseFloat(amount)
     const { data, error } = await supabase
       .from('Budget_Hit')
       .update({
         budget_id: budgetId,
         date: date,
-        amount: parseFloat(amount),
+        amount: parsedAmount,
         note: note,
+        account_id: accountId,
       })
       .eq('id', id)
       .select()
       .single()
 
     if (error) throw error
+
+    const oldAccountId: string | null = old?.account_id ?? null
+    const oldAmount: number = Number(old?.amount) || 0
+
+    if (oldAccountId === accountId) {
+      // Same account — apply the difference
+      if (accountId && parsedAmount !== oldAmount) {
+        await adjustCumulative(supabase, accountId, parsedAmount - oldAmount)
+      }
+    } else {
+      // Account changed — reverse old, apply new
+      if (oldAccountId) await adjustCumulative(supabase, oldAccountId, -oldAmount)
+      if (accountId) await adjustCumulative(supabase, accountId, parsedAmount)
+    }
+
     return data
   }
 
@@ -627,7 +685,7 @@ function getSupabase() {
     return data || []
   }
 
-  export async function insertIncome(amount: number, date: string, note: string) {
+  export async function insertIncome(amount: number, date: string, note: string, accountId: string | null = null) {
     const supabase = getSupabase()
     const { data: auth } = await supabase.auth.getSession()
     const { data, error } = await supabase
@@ -638,6 +696,7 @@ function getSupabase() {
         note,
         type: 'Income',
         budget_id: null,
+        account_id: accountId,
         user_id: auth.session?.user?.id
       })
       .select()
@@ -687,4 +746,87 @@ function getSupabase() {
       .order('date', { ascending: false })
     if (error) throw error
     return data || []
+  }
+
+  // --- Accounts ---
+
+  export async function getAccounts() {
+    const supabase = getSupabase()
+    const { data, error } = await supabase
+      .from('Account')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return data || []
+  }
+
+  export async function createAccount(
+    name: string,
+    institution: string,
+    baselineAmount: string,
+    cardNumber: string,
+    isCreditCard: boolean,
+    isDefaultForExpenses: boolean,
+    isDefaultForIncome: boolean
+  ) {
+    const supabase = getSupabase()
+    const { data: auth } = await supabase.auth.getSession()
+    const parsed = baselineAmount ? parseFloat(baselineAmount) : null
+    const { data, error } = await supabase
+      .from('Account')
+      .insert({
+        name: name || null,
+        institution: institution || null,
+        baseline_amount: parsed,
+        cumulative_amount: parsed,
+        card_number: cardNumber || null,
+        is_credit_card: isCreditCard,
+        is_default_for_expenses: isDefaultForExpenses,
+        is_default_for_income: isDefaultForIncome,
+        user_id: auth.session?.user?.id
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  export async function updateAccount(
+    id: string,
+    name: string,
+    institution: string,
+    baselineAmount: string,
+    cardNumber: string,
+    isCreditCard: boolean,
+    isDefaultForExpenses: boolean,
+    isDefaultForIncome: boolean
+  ) {
+    const supabase = getSupabase()
+    const parsed = baselineAmount ? parseFloat(baselineAmount) : null
+    const { data, error } = await supabase
+      .from('Account')
+      .update({
+        name: name || null,
+        institution: institution || null,
+        baseline_amount: parsed,
+        cumulative_amount: parsed,
+        card_number: cardNumber || null,
+        is_credit_card: isCreditCard,
+        is_default_for_expenses: isDefaultForExpenses,
+        is_default_for_income: isDefaultForIncome,
+      })
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  export async function deleteAccount(id: string) {
+    const supabase = getSupabase()
+    const { error } = await supabase
+      .from('Account')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
   }

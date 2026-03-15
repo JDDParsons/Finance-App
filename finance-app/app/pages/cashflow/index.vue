@@ -14,6 +14,7 @@ const slideoverLoading = ref(false)
 const incomeAmount = ref('')
 const incomeDate = ref(new Date().toISOString().split('T')[0])
 const incomeNote = ref('')
+const incomeAccountId = ref<string | null>(null)
 
 // Expense form
 const expenseAmount = ref('')
@@ -21,6 +22,11 @@ const expenseDate = ref(new Date().toLocaleDateString('en-CA'))
 const expenseNote = ref('')
 const selectedBudgetId = ref('')
 const noBudget = ref(false)
+const expenseAccountId = ref<string | null>(null)
+
+const accountItems = computed(() =>
+  store.accounts.map((a: any) => ({ label: a.name || a.institution || 'Account', value: a.id }))
+)
 
 const tabLabel = computed(() => activeTab.value === 'income' ? 'Income' : 'Expense')
 
@@ -38,11 +44,13 @@ function resetForms() {
   incomeAmount.value = ''
   incomeDate.value = new Date().toISOString().split('T')[0]
   incomeNote.value = ''
+  incomeAccountId.value = store.defaultIncomeAccount?.id ?? null
   expenseAmount.value = ''
   expenseDate.value = new Date().toLocaleDateString('en-CA')
   expenseNote.value = ''
   selectedBudgetId.value = ''
   noBudget.value = false
+  expenseAccountId.value = store.defaultExpenseAccount?.id ?? null
 }
 
 async function handleSave() {
@@ -60,7 +68,7 @@ async function saveIncome() {
   }
   try {
     slideoverLoading.value = true
-    await store.addIncome(parseFloat(incomeAmount.value), incomeDate.value, incomeNote.value)
+    await store.addIncome(parseFloat(incomeAmount.value), incomeDate.value, incomeNote.value, incomeAccountId.value)
     closeSlideover()
   } catch (err: any) {
     alert('Error saving income: ' + (err?.message || 'Unknown error'))
@@ -76,7 +84,7 @@ async function saveExpense() {
   try {
     slideoverLoading.value = true
     const budgetIdToSubmit = noBudget.value ? null : selectedBudgetId.value
-    await store.addExpense(budgetIdToSubmit, expenseDate.value, expenseAmount.value, expenseNote.value)
+    await store.addExpense(budgetIdToSubmit, expenseDate.value, expenseAmount.value, expenseNote.value, expenseAccountId.value)
     closeSlideover()
   } catch (err: any) {
     alert('Error creating expense: ' + (err?.message || 'Unknown error'))
@@ -155,6 +163,15 @@ async function saveExpense() {
                   size="xl"
                 />
               </UFormField>
+
+              <UFormField label="Account">
+                <USelect
+                  v-model="incomeAccountId"
+                  :items="accountItems"
+                  placeholder="Select an account..."
+                  size="xl"
+                />
+              </UFormField>
             </div>
 
             <!-- Expense form -->
@@ -197,6 +214,15 @@ async function saveExpense() {
               </UFormField>
 
               <UCheckbox v-model="noBudget" label="No budget" />
+
+              <UFormField label="Account">
+                <USelect
+                  v-model="expenseAccountId"
+                  :items="accountItems"
+                  placeholder="Select an account..."
+                  size="xl"
+                />
+              </UFormField>
             </div>
           </div>
 

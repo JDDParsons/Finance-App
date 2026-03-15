@@ -4,7 +4,7 @@ import {
   getAvailableBudgetMonths,
   insertIncome, deleteIncome,
   createBudgetHit, deleteBudgetHit, updateBudgetHit,
-  createBudget
+  createBudget, getAccounts
 } from '../composables/supabase'
 
 export const useFinanceStore = defineStore('finance', () => {
@@ -15,8 +15,16 @@ export const useFinanceStore = defineStore('finance', () => {
   const budgets = ref<any[]>([])
   const budgetHits = ref<any[]>([])
   const income = ref<any[]>([])
+  const accounts = ref<any[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+
+  const defaultExpenseAccount = computed(() =>
+    accounts.value.find((a: any) => a.is_default_for_expenses) ?? null
+  )
+  const defaultIncomeAccount = computed(() =>
+    accounts.value.find((a: any) => a.is_default_for_income) ?? null
+  )
 
   // ── helpers ──────────────────────────────────────────────────────────────
 
@@ -45,15 +53,17 @@ export const useFinanceStore = defineStore('finance', () => {
       loading.value = true
       error.value = null
       const { year, month } = selectedMonth.value
-      const [rawBudgets, hits, inc, avail] = await Promise.all([
+      const [rawBudgets, hits, inc, avail, accts] = await Promise.all([
         getBudgetsByMonth(year, month),
         getBudgetHitsByMonth(year, month),
         getIncomeByMonth(year, month),
-        getAvailableBudgetMonths()
+        getAvailableBudgetMonths(),
+        getAccounts()
       ])
       availableMonths.value = avail
       budgetHits.value = hits
       income.value = inc
+      accounts.value = accts
       budgets.value = enrichBudgets(rawBudgets, hits)
     } catch (err: any) {
       error.value = err?.message || 'Failed to load data'
@@ -109,8 +119,8 @@ export const useFinanceStore = defineStore('finance', () => {
 
   // ── income ────────────────────────────────────────────────────────────────
 
-  async function addIncome(amount: number, date: string, note: string) {
-    const row = await insertIncome(amount, date, note)
+  async function addIncome(amount: number, date: string, note: string, accountId: string | null = null) {
+    const row = await insertIncome(amount, date, note, accountId)
     income.value = [row, ...income.value].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     )
@@ -123,8 +133,8 @@ export const useFinanceStore = defineStore('finance', () => {
 
   // ── expenses ──────────────────────────────────────────────────────────────
 
-  async function addExpense(budgetId: string | null, date: string, amount: string, note: string) {
-    const hit = await createBudgetHit(budgetId, date, amount, note)
+  async function addExpense(budgetId: string | null, date: string, amount: string, note: string, accountId: string | null = null) {
+    const hit = await createBudgetHit(budgetId, date, amount, note, accountId)
     budgetHits.value = [hit, ...budgetHits.value]
     budgets.value = enrichBudgets(budgets.value, budgetHits.value)
   }
@@ -135,8 +145,8 @@ export const useFinanceStore = defineStore('finance', () => {
     budgets.value = enrichBudgets(budgets.value, budgetHits.value)
   }
 
-  async function updateExpense(id: string, budgetId: string | null, date: string, amount: string, note: string) {
-    const hit = await updateBudgetHit(id, budgetId, date, amount, note)
+  async function updateExpense(id: string, budgetId: string | null, date: string, amount: string, note: string, accountId: string | null = null) {
+    const hit = await updateBudgetHit(id, budgetId, date, amount, note, accountId)
     budgetHits.value = budgetHits.value.map(h => h.id === id ? hit : h)
     budgets.value = enrichBudgets(budgets.value, budgetHits.value)
   }
@@ -156,6 +166,9 @@ export const useFinanceStore = defineStore('finance', () => {
     budgets,
     budgetHits,
     income,
+    accounts,
+    defaultExpenseAccount,
+    defaultIncomeAccount,
     loading,
     error,
     fetchAll,

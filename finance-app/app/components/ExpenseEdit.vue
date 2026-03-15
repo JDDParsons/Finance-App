@@ -7,6 +7,7 @@ const props = defineProps<{
     expenseDate?: string
     expenseNote?: string | null
     expenseBudgetId?: string | null
+    expenseAccountId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -31,6 +32,12 @@ const budgetOptions = computed(() =>
     store.budgets.map((b: any) => ({ label: b.name, value: b.id }))
 )
 
+const selectedAccountId = ref(props.expenseAccountId ?? '')
+
+const accountOptions = computed(() =>
+    store.accounts?.map((a: any) => ({ label: a.name, value: a.id })) ?? []
+)
+
 function validateForm() {
     if (!date.value) {
         alert('Please select a date')
@@ -49,7 +56,7 @@ async function handleUpdate() {
         loading.value = true
         error.value = null
         const budgetIdToSubmit = noBudget.value ? null : (selectedBudgetId.value || null)
-        await store.updateExpense(props.expenseId, budgetIdToSubmit, date.value, amount.value.toString(), note.value)
+        await store.updateExpense(props.expenseId, budgetIdToSubmit, date.value, amount.value.toString(), note.value, selectedAccountId.value)
         emit('update')
     } catch (err: any) {
         error.value = err?.message || 'Error updating expense'
@@ -131,6 +138,17 @@ async function handleDelete() {
         </UFormField>
 
         <UCheckbox v-model="noBudget" color="info" label="No budget" />
+
+        <UFormField label="Account">
+            <USelect
+                v-model="selectedAccountId"
+                :items="accountOptions"
+                placeholder="No account"
+                size="xl"
+                color="info"
+                highlight
+            />
+        </UFormField>
 
         <UButton
             color="secondary"

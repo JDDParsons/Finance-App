@@ -5,6 +5,7 @@ const props = defineProps<{
   date: string | null
   note?: string | null
   budgetName?: string | null
+  accountName?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -40,6 +41,7 @@ function formatCurrency(value: number | null) {
         </div>
         <span class="text-sm text-gray-500">{{ formatDate(date) }}</span>
         <span v-if="note" class="text-sm text-gray-600 dark:text-gray-300">{{ note }}</span>
+        <span v-if="accountName" class="text-xs text-gray-400">{{ accountName }}</span>
       </div>
       <UButton
         icon="heroicons-solid:trash"
