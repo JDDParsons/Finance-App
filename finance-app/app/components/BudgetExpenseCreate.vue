@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { createBudgetHit } from '../composables/supabase'
 import AnimatedCheckmark from './AnimatedCheckmark.vue'
 import { useFinanceStore } from '../stores/finance'
 
@@ -70,7 +69,7 @@ async function handleCreateHit() {
             loading.value = true
             error.value = null
             const budgetIdToSubmit = noBudget.value ? null : (selectedBudgetId.value || props.budgetId || null)
-            await createBudgetHit(budgetIdToSubmit, date.value, amount.value, note.value, expenseAccountId.value)
+            await store.addExpense(budgetIdToSubmit, date.value, amount.value, note.value, expenseAccountId.value)
             showSuccess.value = true
 
             closeTimer = setTimeout(() => {

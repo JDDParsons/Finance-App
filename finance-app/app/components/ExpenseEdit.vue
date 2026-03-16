@@ -32,11 +32,18 @@ const budgetOptions = computed(() =>
     store.budgets.map((b: any) => ({ label: b.name, value: b.id }))
 )
 
-const selectedAccountId = ref(props.expenseAccountId ?? '')
+const immutableAccountId = computed<string | null>(() => {
+    if (props.expenseAccountId !== undefined) return props.expenseAccountId
+    const hit = store.budgetHits.find((h: any) => h.id === props.expenseId)
+    return hit?.account_id ?? null
+})
 
-const accountOptions = computed(() =>
-    store.accounts?.map((a: any) => ({ label: a.name, value: a.id })) ?? []
-)
+const immutableAccountLabel = computed(() => {
+    if (!immutableAccountId.value) return 'No account'
+    const account = store.accounts.find((a: any) => a.id === immutableAccountId.value)
+    if (!account) return 'Account'
+    return account.name || account.institution || 'Account'
+})
 
 function validateForm() {
     if (!date.value) {
@@ -56,7 +63,7 @@ async function handleUpdate() {
         loading.value = true
         error.value = null
         const budgetIdToSubmit = noBudget.value ? null : (selectedBudgetId.value || null)
-        await store.updateExpense(props.expenseId, budgetIdToSubmit, date.value, amount.value.toString(), note.value, selectedAccountId.value)
+        await store.updateExpense(props.expenseId, budgetIdToSubmit, date.value, amount.value.toString(), note.value, immutableAccountId.value)
         emit('update')
     } catch (err: any) {
         error.value = err?.message || 'Error updating expense'
@@ -140,13 +147,12 @@ async function handleDelete() {
         <UCheckbox v-model="noBudget" color="info" label="No budget" />
 
         <UFormField label="Account">
-            <USelect
-                v-model="selectedAccountId"
-                :items="accountOptions"
-                placeholder="No account"
+            <UInput
+                :model-value="immutableAccountLabel"
                 size="xl"
                 color="info"
                 highlight
+                readonly
             />
         </UFormField>
 
