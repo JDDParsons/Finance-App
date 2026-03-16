@@ -160,16 +160,4 @@ async function handleDelete() {
             Update Expense
         </UButton>
     </div>
-
-    <UButton
-        color="error"
-        variant="outline"
-        size="sm"
-        @click="handleDelete"
-        class="w-25 mt-5 mb-5"
-        :loading="deleting"
-        :disabled="loading || deleting"
-    >
-        Delete Expense
-    </UButton>
 </template>

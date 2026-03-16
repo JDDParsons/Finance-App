@@ -53,7 +53,7 @@ function handleExpenseCreated() {
 </script>
 
 <template>
-    <div class="w-full h-140">
+    <div class="w-full h-160">
         <div class="flex items-center justify-between mb-4 mt-4 ml-3 mr-3">
             <h1 class="text-3xl font-bold">{{ budgetName || 'Budget Details' }}</h1>
             <UButton

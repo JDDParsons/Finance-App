@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { createBudgetHit } from '../composables/supabase'
 import AnimatedCheckmark from './AnimatedCheckmark.vue'
+import { useFinanceStore } from '../stores/finance'
 
 const props = defineProps<{
     budgetId?: string,
@@ -10,6 +11,7 @@ const props = defineProps<{
 
 const selectedBudgetId = ref(props.budgetId ?? '')
 const noBudget = ref(false)
+const store = useFinanceStore()
 
 const emit = defineEmits<{
     update: [],
@@ -27,6 +29,11 @@ const note = ref('')
 const loading = ref(false)
 const error = ref<string | null>(null)
 const showSuccess = ref(false)
+const expenseAccountId = ref<string | null>(store.defaultExpenseAccount?.id ?? null)
+
+const accountItems = computed(() =>
+    store.accounts.map((a: any) => ({ label: a.name || a.institution || 'Account', value: a.id }))
+)
 
 let closeTimer: ReturnType<typeof setTimeout> | null = null
 const CLOSE_AFTER_SUCCESS_MS = 1500
@@ -63,7 +70,7 @@ async function handleCreateHit() {
             loading.value = true
             error.value = null
             const budgetIdToSubmit = noBudget.value ? null : (selectedBudgetId.value || props.budgetId || null)
-            await createBudgetHit(budgetIdToSubmit, date.value, amount.value, note.value)
+            await createBudgetHit(budgetIdToSubmit, date.value, amount.value, note.value, expenseAccountId.value)
             showSuccess.value = true
 
             closeTimer = setTimeout(() => {
@@ -86,7 +93,7 @@ async function handleCreateHit() {
         <AnimatedCheckmark style="--checkmark-size: 18rem;" />
     </div>
 
-    <div v-else class="w-full h-100 ml-3">
+    <div v-else class="w-full h-120 ml-3">
 
         <h3 class="text-2xl font-semibold text-gray-500 pb-4 pt-4">Add Expense</h3>
 
@@ -130,6 +137,17 @@ async function handleCreateHit() {
                     placeholder="Leave a note..."
                     type="text"
                     size="xl"
+                />
+            </UFormField>
+
+            <UFormField label="Account">
+                <USelect
+                    v-model="expenseAccountId"
+                    :items="accountItems"
+                    placeholder="Select an account..."
+                    size="xl"
+                    color="info"
+                    highlight
                 />
             </UFormField>
 

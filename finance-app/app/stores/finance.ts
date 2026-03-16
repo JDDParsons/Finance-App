@@ -4,10 +4,13 @@ import {
   getAvailableBudgetMonths,
   insertIncome, deleteIncome,
   createBudgetHit, deleteBudgetHit, updateBudgetHit,
-  createBudget, getAccounts
+  createBudget
 } from '../composables/supabase'
+import { useAccountsStore } from './accounts'
 
 export const useFinanceStore = defineStore('finance', () => {
+  const accountsStore = useAccountsStore()
+
   const _now = new Date()
   const selectedMonth = ref({ year: _now.getFullYear(), month: _now.getMonth() + 1 })
 
@@ -15,7 +18,7 @@ export const useFinanceStore = defineStore('finance', () => {
   const budgets = ref<any[]>([])
   const budgetHits = ref<any[]>([])
   const income = ref<any[]>([])
-  const accounts = ref<any[]>([])
+  const accounts = computed(() => accountsStore.accounts)
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -53,17 +56,16 @@ export const useFinanceStore = defineStore('finance', () => {
       loading.value = true
       error.value = null
       const { year, month } = selectedMonth.value
-      const [rawBudgets, hits, inc, avail, accts] = await Promise.all([
+      const [rawBudgets, hits, inc, avail] = await Promise.all([
         getBudgetsByMonth(year, month),
         getBudgetHitsByMonth(year, month),
         getIncomeByMonth(year, month),
         getAvailableBudgetMonths(),
-        getAccounts()
+        accountsStore.ensureLoaded()
       ])
       availableMonths.value = avail
       budgetHits.value = hits
       income.value = inc
-      accounts.value = accts
       budgets.value = enrichBudgets(rawBudgets, hits)
     } catch (err: any) {
       error.value = err?.message || 'Failed to load data'

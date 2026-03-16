@@ -93,7 +93,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="p-4 w-full h-100">
+    <div class="p-4 w-full h-120">
         <h3 class="text-2xl font-semibold text-gray-500 pb-1">Budget Details</h3>
 
         <div class="h-52 w-full mt-4 mb-4">

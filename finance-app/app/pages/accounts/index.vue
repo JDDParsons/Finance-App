@@ -1,15 +1,10 @@
 <script setup lang="ts">
-import {
-  getAccounts,
-  createAccount,
-  updateAccount,
-  deleteAccount,
-} from '../../composables/supabase'
+import { storeToRefs } from 'pinia'
+import { useAccountsStore } from '../../stores/accounts'
 
 // --- State ---
-const accounts = ref<any[]>([])
-const loading = ref(false)
-const error = ref<string | null>(null)
+const accountsStore = useAccountsStore()
+const { accounts, loading, error } = storeToRefs(accountsStore)
 
 // Create modal
 const isCreateOpen = ref(false)
@@ -35,20 +30,9 @@ const editIsCreditCard = ref(false)
 const editIsDefaultForExpenses = ref(false)
 const editIsDefaultForIncome = ref(false)
 
-// --- Fetch ---
-async function fetchAccounts() {
-  loading.value = true
-  error.value = null
-  try {
-    accounts.value = await getAccounts()
-  } catch (e: any) {
-    error.value = e?.message || 'Failed to load accounts.'
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(fetchAccounts)
+onMounted(() => {
+  accountsStore.ensureLoaded()
+})
 
 // --- Create ---
 function openCreate() {
@@ -73,8 +57,7 @@ async function handleCreate() {
   }
   createLoading.value = true
   try {
-    await createAccount(createName.value, createInstitution.value, createBaseline.value, createCardNumber.value, createIsCreditCard.value, createIsDefaultForExpenses.value, createIsDefaultForIncome.value)
-    await fetchAccounts()
+    await accountsStore.addAccount(createName.value, createInstitution.value, createBaseline.value, createCardNumber.value, createIsCreditCard.value, createIsDefaultForExpenses.value, createIsDefaultForIncome.value)
     closeCreate()
   } catch (e: any) {
     alert('Error creating account: ' + (e?.message || 'Unknown error'))
@@ -109,8 +92,7 @@ async function handleUpdate() {
   }
   editLoading.value = true
   try {
-    await updateAccount(selectedAccount.value.id, editName.value, editInstitution.value, editBaseline.value, editCardNumber.value, editIsCreditCard.value, editIsDefaultForExpenses.value, editIsDefaultForIncome.value)
-    await fetchAccounts()
+    await accountsStore.editAccount(selectedAccount.value.id, editName.value, editInstitution.value, editBaseline.value, editCardNumber.value, editIsCreditCard.value, editIsDefaultForExpenses.value, editIsDefaultForIncome.value)
     closeDetail()
   } catch (e: any) {
     alert('Error updating account: ' + (e?.message || 'Unknown error'))
@@ -124,8 +106,7 @@ async function handleDelete() {
   if (!confirm(`Delete "${selectedAccount.value.name || selectedAccount.value.institution || 'this account'}"?`)) return
   deleteLoading.value = true
   try {
-    await deleteAccount(selectedAccount.value.id)
-    await fetchAccounts()
+    await accountsStore.removeAccount(selectedAccount.value.id)
     closeDetail()
   } catch (e: any) {
     alert('Error deleting account: ' + (e?.message || 'Unknown error'))

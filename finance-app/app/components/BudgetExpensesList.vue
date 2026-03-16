@@ -51,7 +51,7 @@ async function handleDeleteHit(id: string) {
 </script>
 
 <template>
-    <div class="h-100 w-full"> 
+    <div class="h-120 w-full"> 
     
         <h3 class="text-2xl font-semibold text-gray-500 pb-4 pt-4 pl-3">View Expenses</h3>
 
