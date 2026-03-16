@@ -10,9 +10,21 @@ onMounted(() => {
   resolveChartColors()
 })
 
-const totalExpenses = computed(() =>
+const baseTotalExpenses = computed(() =>
   store.budgetHits.reduce((sum, h) => sum + (Number(h.amount) || 0), 0)
 )
+
+const excludedExpenseIds = ref([])
+
+const excludedTop5Total = computed(() => {
+  const excludedSet = new Set(excludedExpenseIds.value)
+  return top5Expenses.value.reduce((sum, hit) => {
+    if (!excludedSet.has(hit.id)) return sum
+    return sum + (Number(hit.amount) || 0)
+  }, 0)
+})
+
+const totalExpenses = computed(() => Math.max(baseTotalExpenses.value - excludedTop5Total.value, 0))
 
 const totalIncome = computed(() =>
   store.income.reduce((sum, i) => sum + (Number(i.amount) || 0), 0)
@@ -32,6 +44,23 @@ const top5Expenses = computed(() => {
       }
     })
 })
+
+watch(top5Expenses, (hits) => {
+  const validIds = new Set(hits.map(h => h.id))
+  excludedExpenseIds.value = excludedExpenseIds.value.filter(id => validIds.has(id))
+})
+
+function isExpenseExcluded(expenseId) {
+  return excludedExpenseIds.value.includes(expenseId)
+}
+
+function toggleExpenseFromTotal(expenseId) {
+  if (isExpenseExcluded(expenseId)) {
+    excludedExpenseIds.value = excludedExpenseIds.value.filter(id => id !== expenseId)
+    return
+  }
+  excludedExpenseIds.value = [...excludedExpenseIds.value, expenseId]
+}
 
 const monthLabel = computed(() => {
   const { year, month } = store.selectedMonth
@@ -164,7 +193,9 @@ const chartOptions = {
                     <li
                         v-for="(hit, i) in top5Expenses"
                         :key="hit.id"
-                        class="flex items-center justify-between rounded-lg px-4 py-3 bg-elevated"
+                      class="flex items-center justify-between rounded-lg px-4 py-3 bg-elevated cursor-pointer transition-opacity"
+                      :class="{ 'opacity-50': isExpenseExcluded(hit.id) }"
+                      @click="toggleExpenseFromTotal(hit.id)"
                     >
                         <div class="flex items-center gap-3">
                             <span class="text-sm text-muted w-4">{{ i + 1 }}</span>
