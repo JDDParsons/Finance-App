@@ -21,7 +21,9 @@ const createIsDefaultForIncome = ref(false)
 const isDetailOpen = ref(false)
 const selectedAccount = ref<any | null>(null)
 const editLoading = ref(false)
+const baselineLoading = ref(false)
 const deleteLoading = ref(false)
+const editTab = ref('details')
 const editName = ref('')
 const editInstitution = ref('')
 const editBaseline = ref('')
@@ -29,6 +31,11 @@ const editCardNumber = ref('')
 const editIsCreditCard = ref(false)
 const editIsDefaultForExpenses = ref(false)
 const editIsDefaultForIncome = ref(false)
+
+const editTabItems = [
+  { label: 'Account', value: 'details', slot: 'details', icon: 'heroicons-solid:pencil-square' },
+  { label: 'Baseline', value: 'baseline', slot: 'baseline', icon: 'heroicons-solid:banknotes' },
+]
 
 onMounted(() => {
   accountsStore.ensureLoaded()
@@ -69,6 +76,7 @@ async function handleCreate() {
 // --- Detail / edit ---
 function openDetail(account: any) {
   selectedAccount.value = account
+  editTab.value = 'details'
   editName.value = account.name ?? ''
   editInstitution.value = account.institution ?? ''
   editBaseline.value = account.baseline_amount != null ? String(account.baseline_amount) : ''
@@ -81,6 +89,7 @@ function openDetail(account: any) {
 
 function closeDetail() {
   isDetailOpen.value = false
+  editTab.value = 'details'
   selectedAccount.value = null
 }
 
@@ -92,12 +101,30 @@ async function handleUpdate() {
   }
   editLoading.value = true
   try {
-    await accountsStore.editAccount(selectedAccount.value.id, editName.value, editInstitution.value, editBaseline.value, editCardNumber.value, editIsCreditCard.value, editIsDefaultForExpenses.value, editIsDefaultForIncome.value)
+    const updated = await accountsStore.editAccount(selectedAccount.value.id, editName.value, editInstitution.value, editCardNumber.value, editIsCreditCard.value, editIsDefaultForExpenses.value, editIsDefaultForIncome.value)
+    selectedAccount.value = updated
     closeDetail()
   } catch (e: any) {
     alert('Error updating account: ' + (e?.message || 'Unknown error'))
   } finally {
     editLoading.value = false
+  }
+}
+
+async function handleBaselineUpdate() {
+  if (!selectedAccount.value) return
+  baselineLoading.value = true
+  try {
+    const updated = await accountsStore.editAccountBaseline(selectedAccount.value.id, editBaseline.value)
+    if (updated) {
+      selectedAccount.value = updated
+      editBaseline.value = updated.baseline_amount != null ? String(updated.baseline_amount) : ''
+    }
+    closeDetail()
+  } catch (e: any) {
+    alert('Error updating baseline amount: ' + (e?.message || 'Unknown error'))
+  } finally {
+    baselineLoading.value = false
   }
 }
 
@@ -201,7 +228,7 @@ function institutionIcon(institution: string | null | undefined) {
         @click="openDetail(account)"
       >
         <div class="flex items-center gap-4">
-          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
+          <div class="shrink-0 w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
             <UIcon :name="institutionIcon(account.institution)" class="w-5 h-5 text-primary-500" />
           </div>
           <div class="flex-1 min-w-0">
@@ -209,7 +236,7 @@ function institutionIcon(institution: string | null | undefined) {
             <p v-if="account.institution && account.name" class="text-xs truncate">{{ account.institution }}</p>
             <p v-if="account.card_number" class="text-xs text-gray-400">{{ maskedCard(account.card_number) }}</p>
           </div>
-          <div class="text-right flex-shrink-0">
+          <div class="text-right shrink-0">
             <p v-if="account.cumulative_amount != null" class="font-semibold text-sm" :class="account.is_credit_card ? 'text-warning-500' : 'text-primary-500'">
               {{ formatCurrency(account.cumulative_amount) }}
             </p>
@@ -292,56 +319,80 @@ function institutionIcon(institution: string | null | undefined) {
               icon="heroicons-solid:trash"
               size="sm"
               :loading="deleteLoading"
-              :disabled="deleteLoading || editLoading"
+              :disabled="deleteLoading || editLoading || baselineLoading"
               @click="handleDelete"
               aria-label="Delete account"
             />
           </div>
 
-          <UFormField label="Account Name">
-            <UInput v-model="editName" placeholder="e.g., Chequing" size="xl" />
-          </UFormField>
-          <UFormField label="Institution">
-            <UInput v-model="editInstitution" placeholder="e.g., BMO" size="xl" />
-          </UFormField>
-          <UFormField label="Baseline Amount">
-            <UInput v-model="editBaseline" placeholder="0.00" type="number" step="0.01" size="xl" />
-          </UFormField>
-          <UFormField label="Card Number (last 4 or full)">
-            <UInput v-model="editCardNumber" placeholder="e.g., 1234" size="xl" />
-          </UFormField>
-          <div class="space-y-3">
-            <UCheckbox v-model="editIsCreditCard" label="Credit card" />
-            <div>
-              <UCheckbox
-                v-model="editIsDefaultForExpenses"
-                :disabled="editExpensesDisabled"
-                label="Default account for expenses"
-              />
-              <p v-if="editExpensesDisabled" class="text-xs text-gray-400 mt-1 ml-6">
-                Already set to {{ defaultHolderName(existingDefaultExpenses) }}
-              </p>
-            </div>
-            <div>
-              <UCheckbox
-                v-model="editIsDefaultForIncome"
-                :disabled="editIncomeDisabled"
-                label="Default account for income"
-              />
-              <p v-if="editIncomeDisabled" class="text-xs text-gray-400 mt-1 ml-6">
-                Already set to {{ defaultHolderName(existingDefaultIncome) }}
-              </p>
-            </div>
-          </div>
+          <UTabs v-model="editTab" color="primary" :items="editTabItems">
+            <template #details>
+              <div class="space-y-5 pt-4">
+                <UFormField label="Account Name">
+                  <UInput v-model="editName" placeholder="e.g., Chequing" size="xl" />
+                </UFormField>
+                <UFormField label="Institution">
+                  <UInput v-model="editInstitution" placeholder="e.g., BMO" size="xl" />
+                </UFormField>
+                <UFormField label="Card Number (last 4 or full)">
+                  <UInput v-model="editCardNumber" placeholder="e.g., 1234" size="xl" />
+                </UFormField>
+                <div class="space-y-3">
+                  <UCheckbox v-model="editIsCreditCard" label="Credit card" />
+                  <div>
+                    <UCheckbox
+                      v-model="editIsDefaultForExpenses"
+                      :disabled="editExpensesDisabled"
+                      label="Default account for expenses"
+                    />
+                    <p v-if="editExpensesDisabled" class="text-xs text-gray-400 mt-1 ml-6">
+                      Already set to {{ defaultHolderName(existingDefaultExpenses) }}
+                    </p>
+                  </div>
+                  <div>
+                    <UCheckbox
+                      v-model="editIsDefaultForIncome"
+                      :disabled="editIncomeDisabled"
+                      label="Default account for income"
+                    />
+                    <p v-if="editIncomeDisabled" class="text-xs text-gray-400 mt-1 ml-6">
+                      Already set to {{ defaultHolderName(existingDefaultIncome) }}
+                    </p>
+                  </div>
+                </div>
 
-          <div class="flex gap-3 pt-2">
-            <UButton color="primary" class="flex-1" size="lg" :loading="editLoading" :disabled="editLoading || deleteLoading" @click="handleUpdate">
-              Save Changes
-            </UButton>
-            <UButton color="neutral" variant="outline" class="flex-1" size="lg" :disabled="editLoading || deleteLoading" @click="closeDetail">
-              Cancel
-            </UButton>
-          </div>
+                <div class="flex gap-3 pt-2">
+                  <UButton color="primary" class="flex-1" size="lg" :loading="editLoading" :disabled="editLoading || deleteLoading || baselineLoading" @click="handleUpdate">
+                    Save Changes
+                  </UButton>
+                  <UButton color="neutral" variant="outline" class="flex-1" size="lg" :disabled="editLoading || deleteLoading || baselineLoading" @click="closeDetail">
+                    Cancel
+                  </UButton>
+                </div>
+              </div>
+            </template>
+
+            <template #baseline>
+              <div class="space-y-5 pt-4">
+                <UFormField label="Baseline Amount">
+                  <UInput v-model="editBaseline" placeholder="0.00" type="number" step="0.01" size="xl" />
+                </UFormField>
+
+                <p class="text-sm text-gray-400">
+                  This updates only the baseline amount stored for this account.
+                </p>
+
+                <div class="flex gap-3 pt-2">
+                  <UButton color="primary" class="flex-1" size="lg" :loading="baselineLoading" :disabled="baselineLoading || deleteLoading || editLoading" @click="handleBaselineUpdate">
+                    Update Baseline
+                  </UButton>
+                  <UButton color="neutral" variant="outline" class="flex-1" size="lg" :disabled="baselineLoading || deleteLoading || editLoading" @click="closeDetail">
+                    Cancel
+                  </UButton>
+                </div>
+              </div>
+            </template>
+          </UTabs>
         </div>
       </template>
     </UModal>

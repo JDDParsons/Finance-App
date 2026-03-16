@@ -3,6 +3,7 @@ import {
   getAccounts,
   createAccount,
   updateAccount,
+  updateAccountBaseline,
   deleteAccount,
 } from '../composables/supabase'
 
@@ -59,7 +60,6 @@ export const useAccountsStore = defineStore('accounts', () => {
     id: string,
     name: string,
     institution: string,
-    baselineAmount: string,
     cardNumber: string,
     isCreditCard: boolean,
     isDefaultForExpenses: boolean,
@@ -69,7 +69,6 @@ export const useAccountsStore = defineStore('accounts', () => {
       id,
       name,
       institution,
-      baselineAmount,
       cardNumber,
       isCreditCard,
       isDefaultForExpenses,
@@ -77,6 +76,21 @@ export const useAccountsStore = defineStore('accounts', () => {
     )
     accounts.value = accounts.value.map(a => (a.id === id ? row : a))
     return row
+  }
+
+  async function editAccountBaseline(id: string, baselineAmount: string) {
+    const valueRow = await updateAccountBaseline(id, baselineAmount)
+    const updated = accounts.value.map(a => (
+      a.id === id
+        ? {
+            ...a,
+            baseline_amount: valueRow.baseline_amount,
+            cumulative_amount: valueRow.cumulative_amount,
+          }
+        : a
+    ))
+    accounts.value = updated
+    return updated.find(a => a.id === id) ?? null
   }
 
   async function removeAccount(id: string) {
@@ -93,6 +107,7 @@ export const useAccountsStore = defineStore('accounts', () => {
     ensureLoaded,
     addAccount,
     editAccount,
+    editAccountBaseline,
     removeAccount,
   }
 })
