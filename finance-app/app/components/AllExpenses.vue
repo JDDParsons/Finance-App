@@ -13,6 +13,80 @@ const accountMap = computed(() =>
 
 const expenses = computed(() => store.budgetHits)
 
+function toDateKey(value: string | null | undefined) {
+  if (!value) return ''
+  return value.slice(0, 10)
+}
+
+function formatDateSubheader(date: Date) {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  }).format(date)
+}
+
+function formatDateRange(start: Date, end: Date) {
+  return `${formatDateSubheader(start)} - ${formatDateSubheader(end)}`
+}
+
+const sevenDayExpenseSections = computed(() => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const trailingDays = Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(today)
+    day.setDate(today.getDate() - index)
+    return day
+  })
+
+  return trailingDays
+    .map((day, index) => {
+      const dateKey = day.toISOString().slice(0, 10)
+      const dayExpenses = expenses.value.filter((hit: any) => toDateKey(hit.date) === dateKey)
+
+      let title = day.toLocaleDateString('en-US', { weekday: 'long' })
+      if (index === 0) title = 'Today'
+      if (index === 1) title = 'Yesterday'
+
+      return {
+        key: dateKey,
+        title,
+        dateLabel: formatDateSubheader(day),
+        items: dayExpenses
+      }
+    })
+    .filter(section => section.items.length > 0)
+})
+
+const overWeekAgoSection = computed(() => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const sevenDayStart = new Date(today)
+  sevenDayStart.setDate(today.getDate() - 6)
+
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
+  const olderRangeEnd = new Date(sevenDayStart)
+  olderRangeEnd.setDate(sevenDayStart.getDate() - 1)
+
+  if (olderRangeEnd < monthStart) return null
+
+  const items = expenses.value.filter((hit: any) => {
+    const key = toDateKey(hit.date)
+    return key >= monthStart.toISOString().slice(0, 10) && key <= olderRangeEnd.toISOString().slice(0, 10)
+  })
+
+  if (items.length === 0) return null
+
+  return {
+    key: 'over-week-ago',
+    title: 'Over a week ago',
+    dateLabel: formatDateRange(monthStart, olderRangeEnd),
+    items
+  }
+})
+
 const selectedExpense = ref<any>(null)
 const isEditingExpense = ref(false)
 
@@ -50,18 +124,45 @@ async function handleDelete(id: string) {
 
     <div v-else class="flex flex-col gap-3">
       <SevenDayExpenses :expenses="expenses" />
-      <ExpenseCard
-        v-for="hit in expenses"
-        :key="hit.id"
-        :id="hit.id"
-        :amount="hit.amount"
-        :date="hit.date"
-        :note="hit.note"
-        :budget-name="budgetMap.get(hit.budget_id)"
-        :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
-        @delete="handleDelete"
-        @edit="handleEdit"
-      />
+      <div class="flex flex-col gap-4">
+        <section v-for="section in sevenDayExpenseSections" :key="section.key" class="flex flex-col gap-2">
+          <div>
+            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ section.title }}</h3>
+            <p class="text-xs text-gray-500">{{ section.dateLabel }}</p>
+          </div>
+          <ExpenseCard
+            v-for="hit in section.items"
+            :key="hit.id"
+            :id="hit.id"
+            :amount="hit.amount"
+            :date="hit.date"
+            :note="hit.note"
+            :budget-name="budgetMap.get(hit.budget_id)"
+            :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
+            @delete="handleDelete"
+            @edit="handleEdit"
+          />
+        </section>
+
+        <section v-if="overWeekAgoSection" :key="overWeekAgoSection.key" class="flex flex-col gap-2">
+          <div>
+            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ overWeekAgoSection.title }}</h3>
+            <p class="text-xs text-gray-500">{{ overWeekAgoSection.dateLabel }}</p>
+          </div>
+          <ExpenseCard
+            v-for="hit in overWeekAgoSection.items"
+            :key="hit.id"
+            :id="hit.id"
+            :amount="hit.amount"
+            :date="hit.date"
+            :note="hit.note"
+            :budget-name="budgetMap.get(hit.budget_id)"
+            :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
+            @delete="handleDelete"
+            @edit="handleEdit"
+          />
+        </section>
+      </div>
     </div>
   </div>
 
