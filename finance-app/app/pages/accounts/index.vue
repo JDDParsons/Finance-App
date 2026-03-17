@@ -39,9 +39,9 @@ const editTabItems = [
 
 const accountMenuItems = [[
   {
-    label: 'Add new budget',
+    label: 'Add account',
     icon: 'heroicons-solid:plus-circle',
-    onSelect: () => navigateTo('/budgets')
+    onSelect: () => openCreate()
   }
 ]]
 
