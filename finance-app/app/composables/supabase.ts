@@ -974,22 +974,17 @@ function getSupabase() {
     const { data: auth } = await supabase.auth.getSession()
     const parsed = baselineAmount ? parseFloat(baselineAmount) : null
 
-    const existing = await getLatestAccountValueRecord(supabase, id)
-    const cumulativeAmount = existing?.cumulative_amount != null
-      ? Number(existing.cumulative_amount)
-      : parsed
-
     const data = await saveAccountValue(
       supabase,
       id,
       parsed,
-      cumulativeAmount,
+      parsed,
       auth.session?.user?.id
     )
 
     return {
       baseline_amount: data?.baseline_amount ?? parsed,
-      cumulative_amount: data?.cumulative_amount ?? cumulativeAmount,
+      cumulative_amount: data?.cumulative_amount ?? parsed,
     }
   }
 

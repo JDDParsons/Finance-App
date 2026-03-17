@@ -37,6 +37,14 @@ const editTabItems = [
   { label: 'Baseline', value: 'baseline', slot: 'baseline', icon: 'heroicons-solid:banknotes' },
 ]
 
+const accountMenuItems = [[
+  {
+    label: 'Add new budget',
+    icon: 'heroicons-solid:plus-circle',
+    onSelect: () => navigateTo('/budgets')
+  }
+]]
+
 onMounted(() => {
   accountsStore.ensureLoaded()
 })
@@ -199,8 +207,19 @@ function institutionIcon(institution: string | null | undefined) {
 <template>
   <UContainer>
     <!-- Header -->
-    <div class="flex items-center justify-center pt-2 mb-4">
+    <div class="relative flex items-center justify-center pt-2 mb-4">
       <h2 class="text-3xl font-bold">Accounts</h2>
+      <div class="absolute right-0">
+        <UDropdownMenu :items="accountMenuItems" :content="{ align: 'end' }">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            icon="heroicons-solid:ellipsis-vertical"
+            size="md"
+            aria-label="Accounts menu"
+          />
+        </UDropdownMenu>
+      </div>
     </div>
 
     <!-- Error -->
@@ -220,7 +239,7 @@ function institutionIcon(institution: string | null | undefined) {
     </div>
 
     <!-- Account list -->
-    <div v-else class="grid grid-cols-1 gap-3 pb-28">
+    <div v-else class="grid grid-cols-1 gap-3 pb-36">
       <UCard
         v-for="account in accounts"
         :key="account.id"
@@ -245,9 +264,6 @@ function institutionIcon(institution: string | null | undefined) {
         </div>
       </UCard>
     </div>
-
-    <!-- GreenAddButton -->
-    <GreenAddButton @click="openCreate" />
 
     <!-- ===== Create Modal / Slideover ===== -->
     <USlideover v-model:open="isCreateOpen" class="w-full sm:max-w-md">
@@ -396,5 +412,11 @@ function institutionIcon(institution: string | null | undefined) {
         </div>
       </template>
     </UModal>
+
+    <div class="fixed left-0 right-0 bottom-20 z-40 px-4">
+      <UContainer>
+        <AccountTotalAlert :accounts="accounts" />
+      </UContainer>
+    </div>
   </UContainer>
 </template>
