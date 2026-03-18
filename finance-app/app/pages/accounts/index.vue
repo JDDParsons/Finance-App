@@ -202,6 +202,15 @@ function institutionIcon(institution: string | null | undefined) {
   if (name.includes('visa') || name.includes('mastercard') || name.includes('card')) return 'heroicons-solid:credit-card'
   return 'heroicons-solid:banknotes'
 }
+
+function institutionBgColor(institution: string | null | undefined) {
+  if (!institution) return 'bg-primary-100 dark:bg-primary-900'
+  const name = institution.toLowerCase()
+  if (name === 'bmo') return 'bg-secondary-100 dark:bg-secondary-900'
+  if (name === 'scotiabank') return 'bg-error-100 dark:bg-error-900'
+  if (name.includes('questrade')) return 'bg-primary-100 dark:bg-primary-900'
+  return 'bg-primary-100 dark:bg-primary-900'
+}
 </script>
 
 <template>
@@ -247,8 +256,11 @@ function institutionIcon(institution: string | null | undefined) {
         @click="openDetail(account)"
       >
         <div class="flex items-center gap-4">
-          <div class="shrink-0 w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
-            <UIcon :name="institutionIcon(account.institution)" class="w-5 h-5 text-primary-500" />
+          <div :class="['shrink-0 w-10 h-10 rounded-full flex items-center justify-center', institutionBgColor(account.institution)]">
+            <img v-if="account.institution?.toLowerCase() === 'bmo'" src="@/assets/images/BMO.png" alt="BMO" class="w-6 h-6" />
+            <img v-else-if="account.institution?.toLowerCase().includes('questrade')" src="@/assets/images/Questrade.png" alt="Questrade" class="w-6 h-6" />
+            <img v-else-if="account.institution?.toLowerCase() === 'scotiabank'" src="@/assets/images/Scotiabank.JPG" alt="Scotiabank" class="w-6 h-6" />
+            <UIcon v-else :name="institutionIcon(account.institution)" class="w-5 h-5 text-primary-500" />
           </div>
           <div class="flex-1 min-w-0">
             <p class="font-semibold text-sm truncate">{{ account.name || account.institution || 'Unnamed Account' }}</p>
