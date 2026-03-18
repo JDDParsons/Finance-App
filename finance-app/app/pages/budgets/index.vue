@@ -87,15 +87,13 @@ function openEditModal(budgetId: string) {
 function openExpensesTab(budgetId: string) {
     editingBudgetId.value = budgetId
     editingBudgetName.value = store.budgets.find((b: any) => b.id === budgetId)?.name || null
+    editingBudgetAmount.value = store.budgets.find((b: any) => b.id === budgetId)?.currentPeriod?.amount || null
     activeEditTab.value = 1
     isEditModalOpen.value = true
 }
 
 function closeEditModal() {
     isEditModalOpen.value = false
-    editingBudgetId.value = undefined
-    editingBudgetName.value = undefined
-    activeEditTab.value = 0
 }
 
 async function handleEditAction() {

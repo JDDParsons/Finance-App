@@ -97,8 +97,6 @@ function openDetail(account: any) {
 
 function closeDetail() {
   isDetailOpen.value = false
-  editTab.value = 'details'
-  selectedAccount.value = null
 }
 
 async function handleUpdate() {
