@@ -2,11 +2,22 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getBudgetHitsByBudgetId, deleteBudgetHit } from '../composables/supabase'
+import { useFinanceStore } from '../stores/finance'
 
 const props = defineProps<{
     budgetId: string
     budgetHits?: any[]
 }>()
+
+const store = useFinanceStore()
+
+const accountMap = computed(() =>
+    new Map<string, string>(store.accounts.map((a: any) => [a.id, a.name || a.institution || 'Account']))
+)
+
+const accountInstitutionMap = computed(() =>
+    new Map<string, string | null>(store.accounts.map((a: any) => [a.id, a.institution ?? null]))
+)
 
 console.log("BudgetHits", props.budgetHits);
 
@@ -71,7 +82,7 @@ async function handleDeleteHit(id: string) {
     <div v-else class="">
             <!-- The flex-1 and min-h-0 here are key for iOS Safari -->
             <div class="flex-1 min-h-0">
-            <UScrollArea class="max-h-84 pb-2">
+            <UScrollArea class="max-h-104 pb-2">
                 <div class="space-y-4 p-1">
                 <ExpenseCard
                     v-for="hit in props.budgetHits"
@@ -80,6 +91,8 @@ async function handleDeleteHit(id: string) {
                     :amount="hit.amount"
                     :date="hit.date"
                     :note="hit.note"
+                    :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
+                    :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
                     class="ml-2 mr-2"
                     @delete="handleDeleteHit"
                     @edit="handleEditHit"

@@ -11,6 +11,10 @@ const accountMap = computed(() =>
   new Map<string, string>(store.accounts.map((a: any) => [a.id, a.name || a.institution || 'Account']))
 )
 
+const accountInstitutionMap = computed(() =>
+  new Map<string, string | null>(store.accounts.map((a: any) => [a.id, a.institution ?? null]))
+)
+
 const expenses = computed(() => store.budgetHits)
 
 function toDateKey(value: string | null | undefined) {
@@ -139,6 +143,7 @@ async function handleDelete(id: string) {
             :note="hit.note"
             :budget-name="budgetMap.get(hit.budget_id)"
             :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
+            :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
             @delete="handleDelete"
             @edit="handleEdit"
           />
@@ -158,6 +163,7 @@ async function handleDelete(id: string) {
             :note="hit.note"
             :budget-name="budgetMap.get(hit.budget_id)"
             :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
+            :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
             @delete="handleDelete"
             @edit="handleEdit"
           />
