@@ -18,8 +18,9 @@
 <script setup>
 const navigation = [
   { label: 'Home', icon: 'fa-solid-home', to: '/' },
-  { label: 'Budgets', icon: 'fa-solid-dollar-sign', to: '/budgets' },
+  { label: 'Budgets', icon: 'tabler:mail-filled', to: '/budgets' },
   { label: 'Cashflow', icon: 'heroicons-solid:arrows-right-left', to: '/cashflow' },
+  { label: 'Savings', icon: 'fa-solid-dollar-sign', to: '/savings' },
   { label: 'Accounts', icon: 'heroicons-solid:credit-card', to: '/accounts' }
   ]
 </script>
