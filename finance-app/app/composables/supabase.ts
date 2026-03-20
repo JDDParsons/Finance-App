@@ -413,8 +413,9 @@ function getSupabase() {
   export async function getAvailableBudgetMonths(): Promise<{ year: number; month: number }[]> {
     const supabase = getSupabase()
     const { data, error } = await supabase
-      .from('Budget_Period')
+      .from('Budget_Hit')
       .select('date')
+      .eq('type', 'Expense')
       .order('date', { ascending: true })
     if (error) throw error
     const seen = new Set<string>()
@@ -837,8 +838,9 @@ function getSupabase() {
 
   export async function getBudgetHitsByMonth(year: number, month: number) {
     const supabase = getSupabase()
-    const startDate = new Date(year, month - 1, 1).toISOString()
-    const endDate   = new Date(year, month,     1).toISOString()
+    const nextMonth = month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 }
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`
+    const endDate   = `${nextMonth.year}-${String(nextMonth.month).padStart(2, '0')}-01`
     const { data, error } = await supabase
       .from('Budget_Hit')
       .select('*')
@@ -853,8 +855,9 @@ function getSupabase() {
   export async function getIncomeByMonth(year: number, month: number) {
     const supabase = getSupabase()
     const { data: auth } = await supabase.auth.getSession()
-    const startDate = new Date(year, month - 1, 1).toISOString()
-    const endDate   = new Date(year, month,     1).toISOString()
+    const nextMonth = month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 }
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`
+    const endDate   = `${nextMonth.year}-${String(nextMonth.month).padStart(2, '0')}-01`
     const { data, error } = await supabase
       .from('Budget_Hit')
       .select('*')

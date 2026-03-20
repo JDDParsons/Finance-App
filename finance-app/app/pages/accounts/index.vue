@@ -263,13 +263,10 @@ function institutionBgColor(institution: string | null | undefined) {
           <div class="flex-1 min-w-0">
             <p class="font-semibold text-sm truncate">{{ account.name || account.institution || 'Unnamed Account' }}</p>
             <p v-if="account.institution && account.name" class="text-xs truncate">{{ account.institution }}</p>
-            <p v-if="account.card_number" class="text-xs text-gray-400">{{ maskedCard(account.card_number) }}</p>
           </div>
           <div class="text-right shrink-0">
-            <p v-if="account.cumulative_amount != null" class="font-semibold text-sm" :class="account.is_credit_card ? 'text-warning-500' : 'text-primary-500'">
-              {{ formatCurrency(account.cumulative_amount) }}
-            </p>
-            <p v-else class="text-xs text-gray-400">No balance set</p>
+            <p v-if="account.card_number" class="text-xs text-gray-400">{{ maskedCard(account.card_number) }}</p>
+            <p v-else class="text-xs text-gray-400">—</p>
           </div>
         </div>
       </UCard>
@@ -422,11 +419,5 @@ function institutionBgColor(institution: string | null | undefined) {
         </div>
       </template>
     </UModal>
-
-    <div class="fixed left-0 right-0 bottom-20 z-40 px-4">
-      <UContainer>
-        <AccountTotalAlert :accounts="accounts" />
-      </UContainer>
-    </div>
   </UContainer>
 </template>

@@ -99,14 +99,13 @@ onMounted(async () => {
         >
           <span class="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
             {{ m.label }}
-            <UBadge v-if="m.isCurrent" color="info" label="Current" variant="subtle" size="sm" />
           </span>
           <UIcon v-if="m.loading" name="heroicons-solid:arrow-path" class="w-4 h-4 animate-spin text-gray-400" />
           <span v-else-if="!m.hasData" class="text-sm text-gray-400 dark:text-gray-500 italic">No data</span>
           <span
             v-else
             class="font-semibold"
-            :class="m.savings >= 0 ? 'text-green-500' : 'text-red-500'"
+            :class="m.savings >= 0 ? 'text-green-500' : 'text-yellow-500'"
           >
             {{ formatCurrency(m.savings) }}
           </span>
@@ -115,10 +114,10 @@ onMounted(async () => {
 
       <!-- Grand total -->
       <div class="rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
-        <span class="font-bold text-gray-800 dark:text-gray-100">Total savings to date:</span>
+        <span class="font-bold text-gray-800 dark:text-gray-100">Trailing savings:</span>
         <span
           class="text-2xl font-bold"
-          :class="savingsStore.grandTotal >= 0 ? 'text-green-500' : 'text-red-500'"
+          :class="savingsStore.grandTotal >= 0 ? 'text-green-500' : 'text-yellow-500'"
         >
           {{ grandTotalFormatted }}
         </span>
