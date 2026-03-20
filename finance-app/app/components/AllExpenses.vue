@@ -91,6 +91,20 @@ const overWeekAgoSection = computed(() => {
   }
 })
 
+const now = new Date()
+const isCurrentMonth = computed(() =>
+  store.selectedMonth.year === now.getFullYear() &&
+  store.selectedMonth.month === now.getMonth() + 1
+)
+
+const sortedExpenses = computed(() =>
+  [...expenses.value].sort((a: any, b: any) => {
+    const da = toDateKey(a.date)
+    const db = toDateKey(b.date)
+    return da < db ? 1 : da > db ? -1 : 0
+  })
+)
+
 const selectedExpense = ref<any>(null)
 const isEditingExpense = ref(false)
 
@@ -127,35 +141,55 @@ async function handleDelete(id: string) {
     </div>
 
     <div v-else class="flex flex-col gap-3">
-      <SevenDayExpenses :expenses="expenses" />
-      <div class="flex flex-col gap-4">
-        <section v-for="section in sevenDayExpenseSections" :key="section.key" class="flex flex-col gap-2">
-          <div>
-            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ section.title }}</h3>
-            <p class="text-xs text-gray-500">{{ section.dateLabel }}</p>
-          </div>
-          <ExpenseCard
-            v-for="hit in section.items"
-            :key="hit.id"
-            :id="hit.id"
-            :amount="hit.amount"
-            :date="hit.date"
-            :note="hit.note"
-            :budget-name="budgetMap.get(hit.budget_id)"
-            :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
-            :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
-            @delete="handleDelete"
-            @edit="handleEdit"
-          />
-        </section>
+      <template v-if="isCurrentMonth">
+        <SevenDayExpenses :expenses="expenses" />
+        <div class="flex flex-col gap-4">
+          <section v-for="section in sevenDayExpenseSections" :key="section.key" class="flex flex-col gap-2">
+            <div>
+              <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ section.title }}</h3>
+              <p class="text-xs text-gray-500">{{ section.dateLabel }}</p>
+            </div>
+            <ExpenseCard
+              v-for="hit in section.items"
+              :key="hit.id"
+              :id="hit.id"
+              :amount="hit.amount"
+              :date="hit.date"
+              :note="hit.note"
+              :budget-name="budgetMap.get(hit.budget_id)"
+              :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
+              :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
+              @delete="handleDelete"
+              @edit="handleEdit"
+            />
+          </section>
 
-        <section v-if="overWeekAgoSection" :key="overWeekAgoSection.key" class="flex flex-col gap-2">
-          <div>
-            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ overWeekAgoSection.title }}</h3>
-            <p class="text-xs text-gray-500">{{ overWeekAgoSection.dateLabel }}</p>
-          </div>
+          <section v-if="overWeekAgoSection" :key="overWeekAgoSection.key" class="flex flex-col gap-2">
+            <div>
+              <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ overWeekAgoSection.title }}</h3>
+              <p class="text-xs text-gray-500">{{ overWeekAgoSection.dateLabel }}</p>
+            </div>
+            <ExpenseCard
+              v-for="hit in overWeekAgoSection.items"
+              :key="hit.id"
+              :id="hit.id"
+              :amount="hit.amount"
+              :date="hit.date"
+              :note="hit.note"
+              :budget-name="budgetMap.get(hit.budget_id)"
+              :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
+              :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
+              @delete="handleDelete"
+              @edit="handleEdit"
+            />
+          </section>
+        </div>
+      </template>
+
+      <template v-else>
+        <div class="flex flex-col gap-2">
           <ExpenseCard
-            v-for="hit in overWeekAgoSection.items"
+            v-for="hit in sortedExpenses"
             :key="hit.id"
             :id="hit.id"
             :amount="hit.amount"
@@ -167,8 +201,8 @@ async function handleDelete(id: string) {
             @delete="handleDelete"
             @edit="handleEdit"
           />
-        </section>
-      </div>
+        </div>
+      </template>
     </div>
   </div>
 
