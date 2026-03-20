@@ -2,54 +2,97 @@ import { defineStore } from 'pinia'
 import { getIncomeByMonth, getBudgetHitsByMonth } from '../composables/supabase'
 import { useFinanceStore } from './finance'
 
+const MONTH_NAMES = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+]
+
+function offsetMonth(year: number, month: number, delta: number) {
+  let m = month - 1 + delta // 0-based
+  let y = year + Math.floor(m / 12)
+  m = ((m % 12) + 12) % 12
+  return { year: y, month: m + 1 }
+}
+
+function cacheKey(year: number, month: number) {
+  return `${year}-${String(month).padStart(2, '0')}`
+}
+
 export const useSavingsStore = defineStore('savings', () => {
   const financeStore = useFinanceStore()
 
-  const income = ref<number>(0)
-  const expenses = ref<number>(0)
-  const loading = ref(false)
+  // Fetched data cache keyed by "YYYY-MM" (null = fetched but empty, undefined = not fetched)
+  const cache = ref<Record<string, { income: number; expenses: number } | null>>({})
+  const loadingKeys = ref<Set<string>>(new Set())
   const error = ref<string | null>(null)
 
-  // Cache fetched results by "YYYY-MM" key so navigating back doesn't re-fetch
-  const cache = ref<Record<string, { income: number; expenses: number }>>({})
-
-  const previousMonth = computed(() => {
+  // The 6 month slots, newest (current selected month) first
+  const trailingMonths = computed(() => {
     const { year, month } = financeStore.selectedMonth
-    if (month === 1) return { year: year - 1, month: 12 }
-    return { year, month: month - 1 }
+    return Array.from({ length: 6 }, (_, i) => offsetMonth(year, month, -i))
   })
 
-  // Current month — derived from the already-loaded financeStore data
+  function monthLabel(year: number, month: number) {
+    return `${MONTH_NAMES[month - 1]} ${year}`
+  }
+
+  // Current (selected) month totals come directly from the already-loaded financeStore
   const currentIncome = computed(() =>
     financeStore.income.reduce((sum: number, r: any) => sum + (Number(r.amount) || 0), 0)
   )
   const currentExpenses = computed(() =>
     financeStore.budgetHits.reduce((sum: number, r: any) => sum + (Number(r.amount) || 0), 0)
   )
-  const currentSavings = computed(() => currentIncome.value - currentExpenses.value)
 
-  // Previous month left-over
-  const savings = computed(() => income.value - expenses.value)
+  // Resolved per-month data array for display
+  const months = computed(() => {
+    return trailingMonths.value.map(({ year, month }, i) => {
+      const key = cacheKey(year, month)
+      const isCurrent = i === 0
+      const isLoading = isCurrent ? financeStore.loading : loadingKeys.value.has(key)
 
-  // Grand total: what remains this month + what was saved last month
-  const grandTotal = computed(() => currentSavings.value + savings.value)
+      let income = 0
+      let expenses = 0
+      let hasData = false
 
-  function cacheKey(year: number, month: number) {
-    return `${year}-${String(month).padStart(2, '0')}`
-  }
+      if (isCurrent) {
+        income = currentIncome.value
+        expenses = currentExpenses.value
+        hasData = income > 0 || expenses > 0
+      } else {
+        const entry = cache.value[key]
+        if (entry !== undefined && entry !== null) {
+          income = entry.income
+          expenses = entry.expenses
+          hasData = income > 0 || expenses > 0
+        }
+      }
 
-  async function fetchPrevMonthData(force = false) {
-    const { year, month } = previousMonth.value
+      return {
+        year,
+        month,
+        key,
+        label: monthLabel(year, month),
+        isCurrent,
+        income,
+        expenses,
+        savings: income - expenses,
+        hasData,
+        loading: isLoading,
+        fetched: isCurrent || cache.value[key] !== undefined
+      }
+    })
+  })
+
+  const grandTotal = computed(() =>
+    months.value.reduce((sum, m) => sum + (m.hasData ? m.savings : 0), 0)
+  )
+
+  async function fetchMonth(year: number, month: number, force = false) {
     const key = cacheKey(year, month)
+    if (!force && cache.value[key] !== undefined) return
 
-    if (!force && cache.value[key]) {
-      income.value = cache.value[key].income
-      expenses.value = cache.value[key].expenses
-      return
-    }
-
-    loading.value = true
-    error.value = null
+    loadingKeys.value = new Set([...loadingKeys.value, key])
     try {
       const [incomeRows, expenseRows] = await Promise.all([
         getIncomeByMonth(year, month),
@@ -57,35 +100,35 @@ export const useSavingsStore = defineStore('savings', () => {
       ])
       const totalIncome = incomeRows.reduce((sum: number, r: any) => sum + (Number(r.amount) || 0), 0)
       const totalExpenses = expenseRows.reduce((sum: number, r: any) => sum + (Number(r.amount) || 0), 0)
-
-      income.value = totalIncome
-      expenses.value = totalExpenses
-      cache.value[key] = { income: totalIncome, expenses: totalExpenses }
+      cache.value = { ...cache.value, [key]: { income: totalIncome, expenses: totalExpenses } }
     } catch (e: any) {
       error.value = e?.message || 'Failed to load savings data.'
+      cache.value = { ...cache.value, [key]: null }
     } finally {
-      loading.value = false
+      const next = new Set(loadingKeys.value)
+      next.delete(key)
+      loadingKeys.value = next
     }
   }
+
+  async function fetchAll(force = false) {
+    // Fetch all non-current months in the trailing window in parallel
+    const toFetch = trailingMonths.value.slice(1)
+    await Promise.all(toFetch.map(({ year, month }) => fetchMonth(year, month, force)))
+  }
+
+  // Re-fetch when selected month changes
+  watch(() => financeStore.selectedMonth, () => fetchAll(), { deep: true })
 
   function invalidateCache() {
     cache.value = {}
   }
 
-  watch(() => financeStore.selectedMonth, () => fetchPrevMonthData(), { deep: true })
-
   return {
-    income,
-    expenses,
-    savings,
-    currentIncome,
-    currentExpenses,
-    currentSavings,
+    months,
     grandTotal,
-    loading,
     error,
-    previousMonth,
-    fetchPrevMonthData,
+    fetchAll,
     invalidateCache
   }
 })

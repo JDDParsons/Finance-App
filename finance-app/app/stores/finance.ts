@@ -21,6 +21,7 @@ export const useFinanceStore = defineStore('finance', () => {
   const accounts = computed(() => accountsStore.accounts)
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const initialized = ref(false)
 
   const defaultExpenseAccount = computed(() =>
     accounts.value.find((a: any) => a.is_default_for_expenses) ?? null
@@ -67,11 +68,16 @@ export const useFinanceStore = defineStore('finance', () => {
       budgetHits.value = hits
       income.value = inc
       budgets.value = enrichBudgets(rawBudgets, hits)
+      initialized.value = true
     } catch (err: any) {
       error.value = err?.message || 'Failed to load data'
     } finally {
       loading.value = false
     }
+  }
+
+  async function ensureLoaded() {
+    if (!initialized.value) await fetchAll()
   }
 
   async function refreshBudgets() {
@@ -178,7 +184,9 @@ export const useFinanceStore = defineStore('finance', () => {
     defaultIncomeAccount,
     loading,
     error,
+    initialized,
     fetchAll,
+    ensureLoaded,
     refreshBudgets,
     setMonth,
     prevMonth,
