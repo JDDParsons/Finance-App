@@ -246,7 +246,7 @@ const { budgetIcon } = useBudgetIcon()
             <UCard
                 v-for="budget in displayBudgets"
                 :key="budget.id"
-                class="flex flex-col cursor-pointer"
+                class="flex flex-col cursor-pointer shadow"
             >
             <div class="flex items-center w-full"> 
                 <div class="flex-1" @click="openEditModal(budget.id)">

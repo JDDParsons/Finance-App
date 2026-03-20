@@ -25,10 +25,11 @@ const label = computed(() => {
       size="sm"
       icon="heroicons-solid:chevron-left"
       :loading="store.loading"
+      class="drop-shadow"
       @click="store.prevMonth()"
     />
     <div v-else class="w-8" />
-    <span class="text-md font-semibold w-36 text-center">{{ label }}</span>
+    <span class="text-md font-semibold w-36 text-center drop-shadow">{{ label }}</span>
     <UButton
       v-if="store.hasNext"
       color="neutral"
@@ -36,6 +37,7 @@ const label = computed(() => {
       size="sm"
       icon="heroicons-solid:chevron-right"
       :loading="store.loading"
+      class="drop-shadow"
       @click="store.nextMonth()"
     />
     <div v-else class="w-8" />

@@ -250,7 +250,7 @@ function institutionBgColor(institution: string | null | undefined) {
       <UCard
         v-for="account in accounts"
         :key="account.id"
-        class="cursor-pointer active:scale-[0.98] transition-transform"
+        class="cursor-pointer active:scale-[0.98] transition-transform shadow"
         @click="openDetail(account)"
       >
         <div class="flex items-center gap-4">

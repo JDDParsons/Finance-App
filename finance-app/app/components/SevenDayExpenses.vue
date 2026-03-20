@@ -89,7 +89,7 @@ const chartOptions = {
 </script>
 
 <template>
-  <UCard>
+  <UCard class="shadow">
     <p class="text-sm font-semibold text-gray-500 mb-3">Last 7 Days</p>
     <div class="h-40">
       <Bar :data="chartData" :options="chartOptions" />

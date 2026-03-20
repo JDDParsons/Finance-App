@@ -32,7 +32,7 @@ function isFuture(val: string | null) {
 </script>
 
 <template>
-  <UCard>
+  <UCard class="shadow">
     <div class="flex items-start justify-between gap-4">
       <div class="flex flex-col gap-1 flex-1">
         <div class="flex items-center gap-2">

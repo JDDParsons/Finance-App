@@ -18,9 +18,9 @@
 <script setup>
 const navigation = [
   { label: 'Home', icon: 'fa-solid-home', to: '/' },
-  { label: 'Budgets', icon: 'tabler:mail-filled', to: '/budgets' },
+  { label: 'Budgets', icon: 'pepicons-pop:dollar-circle-filled', to: '/budgets' },
   { label: 'Cashflow', icon: 'heroicons-solid:arrows-right-left', to: '/cashflow' },
-  { label: 'Savings', icon: 'fa-solid-dollar-sign', to: '/savings' },
+  { label: 'Savings', icon: 'streamline-flex:decent-work-and-economic-growth-solid', to: '/savings' },
   { label: 'Accounts', icon: 'heroicons-solid:credit-card', to: '/accounts' }
   ]
 </script>

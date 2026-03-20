@@ -54,7 +54,7 @@ function institutionBgColor(institution: string | null | undefined, accountName:
 </script>
 
 <template>
-  <UCard class="cursor-pointer" @click="emit('edit', id)">
+  <UCard class="cursor-pointer shadow" @click="emit('edit', id)">
     <div class="flex items-start justify-between gap-4">
       <div class="flex flex-col gap-1 flex-1">
         <div class="flex items-center gap-2">

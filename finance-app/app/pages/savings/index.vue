@@ -86,12 +86,12 @@ onMounted(async () => {
     <div class="px-4 pt-4 flex flex-col gap-4">
 
       <!-- Savings line chart -->
-      <div class="rounded-2xl border border-gray-200 dark:border-gray-700 p-4">
+      <div class="rounded-2xl border border-gray-200 dark:border-gray-700 p-4 shadow">
         <Line :data="chartData" :options="chartOptions" />
       </div>
 
       <!-- Month line items -->
-      <div class="rounded-2xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700 overflow-hidden">
+      <div class="rounded-2xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700 overflow-hidden shadow">
         <div
           v-for="m in savingsStore.months"
           :key="m.key"
@@ -113,7 +113,7 @@ onMounted(async () => {
       </div>
 
       <!-- Grand total -->
-      <div class="rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
+      <div class="rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center shadow">
         <span class="font-bold text-gray-800 dark:text-gray-100">Trailing savings:</span>
         <span
           class="text-2xl font-bold"
