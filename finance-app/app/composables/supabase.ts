@@ -10,6 +10,33 @@ function getSupabase() {
   )
 }
 
+// --- Household ID cache ---
+let _householdId: string | null = null
+
+export function setHouseholdId(id: string | null) {
+  _householdId = id
+}
+
+export function getCachedHouseholdId(): string | null {
+  return _householdId
+}
+
+export async function resolveHouseholdId(): Promise<string> {
+  if (_householdId) return _householdId
+  const supabase = getSupabase()
+  const { data: auth } = await supabase.auth.getSession()
+  const userId = auth.session?.user?.id
+  if (!userId) throw new Error('Not authenticated')
+  const { data, error } = await supabase
+    .from('Household_Member')
+    .select('household_id')
+    .eq('user_id', userId)
+    .single()
+  if (error || !data?.household_id) throw new Error('No household found for user')
+  _householdId = data.household_id as string
+  return _householdId
+}
+
 
   // Return all transactions sorted by date (newest first)
   export async function getAllSorted() {
@@ -253,6 +280,7 @@ function getSupabase() {
     if (!parsed || parsed.length === 0) return { count: 0 }
 
     const { data: auth } = await supabase.auth.getSession(); 
+    const householdId = await resolveHouseholdId()
 
     const data = parsed.map((it: any) => ({
       id: it.Id,
@@ -261,7 +289,8 @@ function getSupabase() {
       amount: it.Amount,
       description: it.Description,
       transaction_date: new Date(it.TransactionDate),
-      user_id: auth.session?.user?.id
+      user_id: auth.session?.user?.id,
+      household_id: householdId
     }))
 
     const { count, error } = await (supabase as any)
@@ -323,18 +352,21 @@ function getSupabase() {
     const supabase = getSupabase()
     const { error } = await supabase.auth.signOut()
     if (error) throw error
-    else window.location.href = '/'; 
+    setHouseholdId(null)
+    window.location.href = '/'; 
   }
 
   export async function createBudget(name: string, amount: string) {
     const supabase = getSupabase()
     const { data: auth } = await supabase.auth.getSession(); 
+    const householdId = await resolveHouseholdId()
     const { data, error } = await supabase
       .from('Budgets')
       .insert({
         name,
         amount: parseFloat(amount),
-        user_id: auth.session?.user?.id
+        user_id: auth.session?.user?.id,
+        household_id: householdId
       })
       .select()
       .single()
@@ -355,7 +387,8 @@ function getSupabase() {
         budget_id: data?.id, 
         date: result,
         amount: parseFloat(amount),
-        user_id: auth.session?.user?.id
+        user_id: auth.session?.user?.id,
+        household_id: householdId
        })
       .select()
       .single()
@@ -396,7 +429,8 @@ function getSupabase() {
             budget_id: b.id, 
             date: formattedDate,
             amount: b.amount,
-            user_id: b.user_id
+            user_id: b.user_id,
+            household_id: _householdId ?? null
           })
           .select()
           .single()
@@ -462,7 +496,7 @@ function getSupabase() {
         // Auto-create the period for the current month only
         const { data: newPeriod, error: newPeriodError } = await supabase
           .from('Budget_Period')
-          .insert({ budget_id: b.id, date: formattedDate, amount: b.amount, user_id: b.user_id })
+          .insert({ budget_id: b.id, date: formattedDate, amount: b.amount, user_id: b.user_id, household_id: _householdId ?? null })
           .select()
           .single()
         if (newPeriodError) console.error('Error creating budget period:', newPeriodError)
@@ -595,6 +629,7 @@ function getSupabase() {
           baseline_amount: baselineAmount,
           cumulative_amount: cumulativeAmount,
           user_id: existing.user_id ?? userId ?? null,
+          household_id: _householdId ?? null,
         })
         .eq('id', existing.id)
         .select()
@@ -611,6 +646,7 @@ function getSupabase() {
         baseline_amount: baselineAmount,
         cumulative_amount: cumulativeAmount,
         user_id: userId ?? null,
+        household_id: _householdId ?? null,
       })
       .select()
       .single()
@@ -641,6 +677,7 @@ function getSupabase() {
         baseline_amount: null,
         cumulative_amount: current + delta,
         user_id: auth.session?.user?.id ?? null,
+        household_id: _householdId ?? null,
       })
     if (insertErr) throw insertErr
   }
@@ -663,6 +700,7 @@ function getSupabase() {
   export async function createBudgetHit(budgetId: string | null, date: string, amount: string, note: string, accountId: string | null = null) {
     const supabase = getSupabase()
     const { data: auth } = await supabase.auth.getSession()
+    const householdId = await resolveHouseholdId()
     const parsedAmount = parseFloat(amount)
     const { data, error } = await supabase
       .from('Budget_Hit')
@@ -673,7 +711,8 @@ function getSupabase() {
         note: note,
         type: 'Expense',
         account_id: accountId,
-        user_id: auth.session?.user?.id
+        user_id: auth.session?.user?.id,
+        household_id: householdId
       })
       .select()
       .single()
@@ -793,12 +832,12 @@ function getSupabase() {
 
   export async function getIncome() {
     const supabase = getSupabase()
-    const { data: auth } = await supabase.auth.getSession()
+    const householdId = await resolveHouseholdId()
     const { data, error } = await supabase
       .from('Budget_Hit')
       .select('*')
       .eq('type', 'Income')
-      .eq('user_id', auth.session?.user?.id)
+      .eq('household_id', householdId)
       .order('date', { ascending: false })
 
     if (error) throw error
@@ -808,6 +847,7 @@ function getSupabase() {
   export async function insertIncome(amount: number, date: string, note: string, accountId: string | null = null) {
     const supabase = getSupabase()
     const { data: auth } = await supabase.auth.getSession()
+    const householdId = await resolveHouseholdId()
     const { data, error } = await supabase
       .from('Budget_Hit')
       .insert({
@@ -817,7 +857,8 @@ function getSupabase() {
         type: 'Income',
         budget_id: null,
         account_id: accountId,
-        user_id: auth.session?.user?.id
+        user_id: auth.session?.user?.id,
+        household_id: householdId
       })
       .select()
       .single()
@@ -854,7 +895,7 @@ function getSupabase() {
 
   export async function getIncomeByMonth(year: number, month: number) {
     const supabase = getSupabase()
-    const { data: auth } = await supabase.auth.getSession()
+    const householdId = await resolveHouseholdId()
     const nextMonth = month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 }
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`
     const endDate   = `${nextMonth.year}-${String(nextMonth.month).padStart(2, '0')}-01`
@@ -862,7 +903,7 @@ function getSupabase() {
       .from('Budget_Hit')
       .select('*')
       .eq('type', 'Income')
-      .eq('user_id', auth.session?.user?.id)
+      .eq('household_id', householdId)
       .gte('date', startDate)
       .lt('date', endDate)
       .order('date', { ascending: false })
@@ -907,6 +948,7 @@ function getSupabase() {
   ) {
     const supabase = getSupabase()
     const { data: auth } = await supabase.auth.getSession()
+    const householdId = await resolveHouseholdId()
     const parsed = baselineAmount ? parseFloat(baselineAmount) : null
     const { data, error } = await supabase
       .from('Account')
@@ -917,7 +959,8 @@ function getSupabase() {
         is_credit_card: isCreditCard,
         is_default_for_expenses: isDefaultForExpenses,
         is_default_for_income: isDefaultForIncome,
-        user_id: auth.session?.user?.id
+        user_id: auth.session?.user?.id,
+        household_id: householdId
       })
       .select()
       .single()
