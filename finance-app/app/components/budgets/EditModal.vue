@@ -68,7 +68,7 @@ function handleExpenseCreated() {
         <div class="w-full">
             <UTabs color="info" :items="[{ icon: 'heroicons:plus-circle', slot: 'add-expense' }, { icon: 'heroicons:list-bullet', slot: 'expenses' }, { icon: 'heroicons:chart-pie', slot: 'details' }]" v-model="tab" class="ml-2 mr-2">
                 <template #add-expense>
-                    <BudgetExpenseCreate
+                    <BudgetsExpenseCreate
                         :budget-id="budgetId"
                         :budget-name="budgetName"
                         @update="handleExpenseCreated"
@@ -77,7 +77,7 @@ function handleExpenseCreated() {
                 </template>
 
                 <template #expenses="{ item }">
-                    <BudgetExpensesList
+                    <BudgetsExpensesList
                         :budget-id="budgetId"
                         :budget-hits="budgetHits"
                         @update="handleExpensesUpdate"
@@ -86,7 +86,7 @@ function handleExpenseCreated() {
                 </template>
 
                 <template #details>
-                    <BudgetDetails
+                    <BudgetsDetails
                         :budget-amount="budgetAmount"
                         :budget-hits="budgetHits"
                     />
@@ -99,7 +99,7 @@ function handleExpenseCreated() {
                     <template #header>
                         <h2 class="text-2xl font-bold">Edit Budget</h2>
                     </template>
-                    <BudgetEdit
+                    <BudgetsEdit
                         :budget-id="budgetId"
                         :budget-name="budgetName"
                         :budget-amount="budgetAmount"

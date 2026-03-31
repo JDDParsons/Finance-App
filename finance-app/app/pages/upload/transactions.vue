@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import CategoryDropdown from '~/components/CategoryDropdown.vue'
+import CategoryDropdown from '~/components/upload/CategoryDropdown.vue'
 import { getAllSorted, getCategories } from '../../composables/supabase'
 
 

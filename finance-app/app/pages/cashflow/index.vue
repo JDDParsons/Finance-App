@@ -116,10 +116,10 @@ async function saveExpense() {
         ]"
       >
         <template #income>
-          <AllIncome />
+          <CashflowAllIncome />
         </template>
         <template #expenses>
-          <AllExpenses />
+          <CashflowAllExpenses />
         </template>
       </UTabs>
     </div>

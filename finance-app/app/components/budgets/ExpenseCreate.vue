@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import AnimatedCheckmark from './AnimatedCheckmark.vue'
-import { useFinanceStore } from '../stores/finance'
+import { useFinanceStore } from '../../stores/finance'
 
 const props = defineProps<{
     budgetId?: string,
@@ -89,7 +88,7 @@ async function handleCreateHit() {
 
 <template>        
     <div v-if="showSuccess" class="w-full h-100 flex items-center justify-center">
-        <AnimatedCheckmark style="--checkmark-size: 18rem;" />
+        <BudgetsAnimatedCheckmark style="--checkmark-size: 18rem;" />
     </div>
 
     <div v-else class="w-full h-120 ml-3">

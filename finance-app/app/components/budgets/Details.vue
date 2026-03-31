@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { Pie } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement } from 'chart.js'
-import { useFinanceStore } from '../stores/finance'
+import { useFinanceStore } from '../../stores/finance'
 
 ChartJS.register(Title, Tooltip, Legend, ArcElement)
 

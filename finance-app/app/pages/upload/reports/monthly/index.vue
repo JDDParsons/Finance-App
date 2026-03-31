@@ -2,9 +2,9 @@
 
 import { h, ref, computed, watch, onMounted } from 'vue';
 import type { TableColumn } from '@nuxt/ui'
-import DoughnutChartA from '~/components/DoughnutChartA.vue';
-import DoughnutChartB from '~/components/DoughnutChartB.vue';
-import CategoryDropdown from '~/components/CategoryDropdown.vue';
+import DoughnutChartA from '~/components/upload/DoughnutChartA.vue';
+import DoughnutChartB from '~/components/upload/DoughnutChartB.vue';
+import CategoryDropdown from '~/components/upload/CategoryDropdown.vue';
 
 import { getAllByMonth, getCategories, getStatementGroups } from '../../../../composables/supabase.js';
 

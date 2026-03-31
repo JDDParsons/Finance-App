@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useFinanceStore } from '../stores/finance'
+import { useFinanceStore } from '../../stores/finance'
 
 const store = useFinanceStore()
 
@@ -142,7 +142,7 @@ async function handleDelete(id: string) {
 
     <div v-else class="flex flex-col gap-3">
       <template v-if="isCurrentMonth">
-        <SevenDayExpenses :expenses="expenses" />
+        <CashflowSevenDayExpenses :expenses="expenses" />
         <div class="flex flex-col gap-4">
           <section v-for="section in sevenDayExpenseSections" :key="section.key" class="flex flex-col gap-2">
             <div>

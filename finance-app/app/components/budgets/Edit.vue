@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { getBudgetById, updateBudget, deleteBudget, signOut } from '../composables/supabase'
+import { getBudgetById, updateBudget, deleteBudget, signOut } from '../../composables/supabase'
 
 const props = defineProps<{
     budgetId: string

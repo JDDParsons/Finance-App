@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useFinanceStore } from '../stores/finance'
+import { useFinanceStore } from '../../stores/finance'
 
 const store = useFinanceStore()
 const incomeRows = computed(() => store.income)
@@ -31,7 +31,7 @@ async function handleDelete(id: string) {
     </div>
 
     <div v-else class="flex flex-col gap-3">
-      <IncomeCard
+      <CashflowIncomeCard
         v-for="row in incomeRows"
         :key="row.id"
         :id="row.id"

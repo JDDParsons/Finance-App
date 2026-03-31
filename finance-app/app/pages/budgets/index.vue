@@ -223,7 +223,7 @@ const { budgetIcon } = useBudgetIcon()
         </div>
 
         <!-- Budget Allocation Chart -->
-        <BudgetAllocationChart class="mt-4 mb-2" />
+        <BudgetsAllocationChart class="mt-4 mb-2" />
 
         <div v-if="error" class="mb-4">
             <UAlert
@@ -262,7 +262,7 @@ const { budgetIcon } = useBudgetIcon()
                         </UBadge>
                     </div>
                         
-                    <ProgressBar
+                    <BudgetsProgressBar
                         :value="budget.totalHitAmount"
                         :max="budget.totalHitAmount > budget?.currentPeriod?.amount ? budget.totalHitAmount : budget?.currentPeriod?.amount"
                         :colour="progressBarColour(budget?.currentPeriod?.amount, budget?.totalHitAmount)"
@@ -275,7 +275,7 @@ const { budgetIcon } = useBudgetIcon()
 
         <UModal v-model:open="isEditModalOpen">
             <template #content>
-            <BudgetEditModal
+            <BudgetsEditModal
                 v-if="editingBudgetId"
                 :budget-id="editingBudgetId"
                 :budget-name="editingBudgetName"
