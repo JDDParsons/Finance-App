@@ -68,11 +68,6 @@ async function upload() {
                         </div>
                     </div>
                 </div>
-                <!--
-                <div class="flex flex-col items-center justify-center">
-                    <UploadTimeline />
-                </div>
-                -->
             </UContainer>
         </UMain>
     </div>
