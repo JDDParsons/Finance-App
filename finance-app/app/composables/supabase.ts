@@ -111,34 +111,6 @@ export async function resolveHouseholdId(): Promise<string> {
     return (data || []).map((c: any) => ({ id: c.id, label: c.label }))
   }
 
-  // Save a balance snapshot (used by the Snap page)
-  export async function saveBalance(input: any) {
-    const supabase = getSupabase()
-    const payload = {
-      bmo_chequing_1: input.bmoChequing1 ?? null,
-      bmo_chequing_2: input.bmoChequing2 ?? null,
-      bmo_mastercard: input.bmoMastercard ?? null,
-      questrade_tfsa: input.questradeTfsa ?? null,
-      questrade_rrsp: input.questradeRrsp ?? null,
-      questrade_lrsp: input.questradeLrsp ?? null,
-      questrade_fhsa: input.questradeFhsa ?? null,
-      scotiabank_chequing: input.scotiabankChequing ?? null,
-      scotiabank_savings: input.scotiabankSavings ?? null,
-      scotiabank_visa: input.scotiabankVisa ?? null,
-      pcfinancial_mastercard: input.pcMastercard ?? null,
-      total: input.total ?? null
-    }
-
-    const { data, error } = await supabase
-      .from('Balance')
-      .insert(payload as any)
-      .select()
-      .single()
-
-    if (error) throw error
-    return data
-  }
-
   // Get statement groups and transform/sort (copied from server implementation)
   export async function getStatementGroups() {
     const supabase = getSupabase()

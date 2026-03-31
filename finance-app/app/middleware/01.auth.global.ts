@@ -15,7 +15,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
             }
         } else if (session) {
             if (to.path === '/') {
-                return navigateTo('/menu');
+                return navigateTo('/home');
             }
             // Ensure household_id is resolved and cached for all authenticated routes
             const householdStore = useHouseholdStore()

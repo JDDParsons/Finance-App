@@ -1,6 +1,6 @@
 <script setup>
 
-import { uploadFile } from '../composables/supabase'
+import { uploadFile } from '../../composables/supabase'
 
 const toast = useToast();
 const fileInput = ref(null);
@@ -49,7 +49,7 @@ async function upload() {
                         <UButton to="/" color="neutral" variant="outline" size="xl">Go to Home</UButton>
                         <UButton to="/upload" color="primary" variant="outline" size="xl" @click="resetForm()">Upload Another File</UButton>
                     </div>
-                    <UButton to="/transactions" color="secondary" variant="outline" size="xl">View transaction data</UButton>
+                    <UButton to="/upload/transactions" color="secondary" variant="outline" size="xl">View transaction data</UButton>
                 </div>
                 <div v-else class="divider mb-8">
                     <div class="flex flex-col items-center justify-center p-8 space-y-4">                     
@@ -61,9 +61,9 @@ async function upload() {
                         <div class="flex flex-col items-center justify-center pt-5">
                             <UButton to="/upload" color="primary" active-color="primary" size="xl" @click="upload()">Submit bank statement</UButton>
                             <div class="flex space-x-4 pt-7">
-                                <UButton to="/menu" color="neutral" variant="outline" size="sm">Back</UButton>
+                                <UButton to="/home" color="neutral" variant="outline" size="sm">Back</UButton>
                                 
-                                <UButton to="/reports/monthly" color="secondary" variant="outline" size="sm">View reports</UButton>
+                                <UButton to="/upload/reports/monthly" color="secondary" variant="outline" size="sm">View reports</UButton>
                             </div>
                         </div>
                     </div>

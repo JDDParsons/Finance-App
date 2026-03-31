@@ -9,7 +9,7 @@ const codeRequested = ref(false);
 onMounted(async () => {
     const session = await getSession();
     if (session) {
-        await navigateTo('/menu');
+        await navigateTo('/home');
     }
 });
 
@@ -40,7 +40,7 @@ async function handleVerificationCode() {
     const result = await validateCode(email.value, pinCode);
 
     if (result.session) {
-        await navigateTo('/menu');
+        await navigateTo('/home');
     }
     else if (result.error) {
         alert(result.error.message);

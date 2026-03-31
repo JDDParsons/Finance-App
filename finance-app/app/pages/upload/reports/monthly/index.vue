@@ -6,7 +6,7 @@ import DoughnutChartA from '~/components/DoughnutChartA.vue';
 import DoughnutChartB from '~/components/DoughnutChartB.vue';
 import CategoryDropdown from '~/components/CategoryDropdown.vue';
 
-import { getAllByMonth, getCategories, getStatementGroups } from '../../../composables/supabase.js';
+import { getAllByMonth, getCategories, getStatementGroups } from '../../../../composables/supabase.js';
 
 // Utility function to attach category labels
 function attachCategoryLabel(
@@ -267,7 +267,7 @@ const carouselItems = computed(() => ([
             <UButton class="ml-2" color="neutral" variant="ghost" size="sm" @click="signOut()">Sign out</UButton>
           </template>
         </UHeader>
-        <UBanner v-if="numberOfUncategorized > 0" icon="i-lucide-info" color="neutral" to="/transactions" :title="`${numberOfUncategorized} uncategorized transactions in ${selectedMonthLabel} ${selectedYear}.`" />
+        <UBanner v-if="numberOfUncategorized > 0" icon="i-lucide-info" color="neutral" to="/upload/transactions" :title="`${numberOfUncategorized} uncategorized transactions in ${selectedMonthLabel} ${selectedYear}.`" />
         <UMain class="flex-1 flex items-center justify-center pt-5">
             <UContainer>
               <transition name="fade" mode="out-in">
@@ -279,14 +279,14 @@ const carouselItems = computed(() => ([
                             <USelect v-model="selectedMonth" placeholder="Month" :items="availableMonthItems" class="w-25 m-2" />
                         </div>
                         <div>
-                            <UButton to="/menu" color="neutral" variant="outline" size="sm" class="m-2">Back</UButton>
-                            <UButton to="/reports/monthly" color="primary"  variant="outline" size="sm" class="m-2" @click="fetchReportDetails(selectedYear, selectedMonth)">See report</UButton>
+                            <UButton to="/home" color="neutral" variant="outline" size="sm" class="m-2">Back</UButton>
+                            <UButton to="/upload/reports/monthly" color="primary"  variant="outline" size="sm" class="m-2" @click="fetchReportDetails(selectedYear, selectedMonth)">See report</UButton>
                         </div>
                     </div>
                 </div>
                 <div v-else>
                     <div class="flex justify-center mb-8">
-                      <UButton to="/reports/monthly" color="neutral" variant="outline" size="sm" class="m-2" @click="viewReport = false">Choose a different month</UButton>
+                      <UButton to="/upload/reports/monthly" color="neutral" variant="outline" size="sm" class="m-2" @click="viewReport = false">Choose a different month</UButton>
                       <UButton v-if="!viewData" color="info" variant="outline" size="sm" class="m-2" @click="viewData = true">View data</UButton>
                       <UButton v-if="viewData" color="info" variant="outline" size="sm" class="m-2" @click="viewData = false">View reports</UButton>
                     </div> 
