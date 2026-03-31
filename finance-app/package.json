@@ -12,8 +12,6 @@
   "dependencies": {
     "@nuxt/ui": "^4.2.1",
     "@pinia/nuxt": "^0.11.3",
-    "@prisma/adapter-pg": "^7.1.0",
-    "@prisma/client": "^7.1.0",
     "@supabase/supabase-js": "^2.94.1",
     "chart.js": "^4.5.1",
     "csv-parse": "^6.1.0",
@@ -30,7 +28,6 @@
     "@iconify-json/noto": "^1.2.7",
     "@types/node": "^24.10.1",
     "@types/papaparse": "^5.5.2",
-    "prisma": "^6.19.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { setTransactionCategory } from '../composables/supabase'
+import { setTransactionCategory } from '../../composables/supabase'
 
 interface Category {
   id: string
