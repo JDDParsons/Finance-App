@@ -145,14 +145,12 @@ export const useFinanceStore = defineStore('finance', () => {
     const hit = await createBudgetHit(budgetId, date, amount, note, accountId)
     budgetHits.value = [hit, ...budgetHits.value]
     budgets.value = enrichBudgets(budgets.value, budgetHits.value)
-    await accountsStore.fetchAccounts(true)
   }
 
   async function removeExpense(id: string) {
     await deleteBudgetHit(id)
     budgetHits.value = budgetHits.value.filter(h => h.id !== id)
     budgets.value = enrichBudgets(budgets.value, budgetHits.value)
-    await accountsStore.fetchAccounts(true)
   }
 
   async function updateExpense(id: string, budgetId: string | null, date: string, amount: string, note: string, accountId?: string | null) {
@@ -161,7 +159,6 @@ export const useFinanceStore = defineStore('finance', () => {
     const hit = await updateBudgetHit(id, budgetId, date, amount, note, resolvedAccountId)
     budgetHits.value = budgetHits.value.map(h => h.id === id ? hit : h)
     budgets.value = enrichBudgets(budgets.value, budgetHits.value)
-    await accountsStore.fetchAccounts(true)
   }
 
   // ── budgets ───────────────────────────────────────────────────────────────

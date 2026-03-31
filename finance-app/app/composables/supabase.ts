@@ -655,48 +655,6 @@ export async function resolveHouseholdId(): Promise<string> {
     return data
   }
 
-  // Private helper — atomically shifts an account's cumulative_amount by `delta`
-  async function adjustCumulative(supabase: ReturnType<typeof getSupabase>, accountId: string, delta: number) {
-    const accountValue = await getLatestAccountValueRecord(supabase, accountId)
-    const current: number = Number(accountValue?.cumulative_amount) || 0
-
-    if (accountValue) {
-      const { error: updateErr } = await supabase
-        .from('Account_Value')
-        .update({ cumulative_amount: current + delta })
-        .eq('id', accountValue.id)
-      if (updateErr) throw updateErr
-      return
-    }
-
-    const { data: auth } = await supabase.auth.getSession()
-    const { error: insertErr } = await supabase
-      .from('Account_Value')
-      .insert({
-        account_id: accountId,
-        baseline_amount: null,
-        cumulative_amount: current + delta,
-        user_id: auth.session?.user?.id ?? null,
-        household_id: _householdId ?? null,
-      })
-    if (insertErr) throw insertErr
-  }
-
-  async function getExpenseCumulativeDelta(
-    supabase: ReturnType<typeof getSupabase>,
-    accountId: string,
-    amount: number
-  ) {
-    const { data: account, error } = await supabase
-      .from('Account')
-      .select('is_credit_card')
-      .eq('id', accountId)
-      .single()
-    if (error) throw error
-    const parsedAmount = Number(amount) || 0
-    return account?.is_credit_card ? parsedAmount : -parsedAmount
-  }
-
   export async function createBudgetHit(budgetId: string | null, date: string, amount: string, note: string, accountId: string | null = null) {
     const supabase = getSupabase()
     const { data: auth } = await supabase.auth.getSession()
@@ -718,11 +676,6 @@ export async function resolveHouseholdId(): Promise<string> {
       .single()
 
     if (error) throw error
-
-    if (accountId) {
-      const delta = await getExpenseCumulativeDelta(supabase, accountId, parsedAmount)
-      await adjustCumulative(supabase, accountId, delta)
-    }
 
     return data
   }
@@ -755,37 +708,16 @@ export async function resolveHouseholdId(): Promise<string> {
   export async function deleteBudgetHit(id: string) {
     const supabase = getSupabase()
 
-    // Fetch the hit first so we can reverse its effect on cumulative_amount
-    const { data: hit, error: fetchError } = await supabase
-      .from('Budget_Hit')
-      .select('amount, account_id')
-      .eq('id', id)
-      .single()
-    if (fetchError) throw fetchError
-
     const { error } = await supabase
       .from('Budget_Hit')
       .delete()
       .eq('id', id)
 
     if (error) throw error
-
-    if (hit?.account_id) {
-      const appliedDelta = await getExpenseCumulativeDelta(supabase, hit.account_id, Number(hit.amount) || 0)
-      await adjustCumulative(supabase, hit.account_id, -appliedDelta)
-    }
   }
 
   export async function updateBudgetHit(id: string, budgetId: string | null, date: string, amount: string, note: string, accountId: string | null = null) {
     const supabase = getSupabase()
-
-    // Fetch old values before update so we can diff
-    const { data: old, error: fetchError } = await supabase
-      .from('Budget_Hit')
-      .select('amount, account_id')
-      .eq('id', id)
-      .single()
-    if (fetchError) throw fetchError
 
     const parsedAmount = parseFloat(amount)
     const { data, error } = await supabase
@@ -802,28 +734,6 @@ export async function resolveHouseholdId(): Promise<string> {
       .single()
 
     if (error) throw error
-
-    const oldAccountId: string | null = old?.account_id ?? null
-    const oldAmount: number = Number(old?.amount) || 0
-
-    if (oldAccountId === accountId) {
-      // Same account — apply the difference
-      if (accountId && parsedAmount !== oldAmount) {
-        const oldDelta = await getExpenseCumulativeDelta(supabase, accountId, oldAmount)
-        const newDelta = await getExpenseCumulativeDelta(supabase, accountId, parsedAmount)
-        await adjustCumulative(supabase, accountId, newDelta - oldDelta)
-      }
-    } else {
-      // Account changed — reverse old, apply new
-      if (oldAccountId) {
-        const oldDelta = await getExpenseCumulativeDelta(supabase, oldAccountId, oldAmount)
-        await adjustCumulative(supabase, oldAccountId, -oldDelta)
-      }
-      if (accountId) {
-        const newDelta = await getExpenseCumulativeDelta(supabase, accountId, parsedAmount)
-        await adjustCumulative(supabase, accountId, newDelta)
-      }
-    }
 
     return data
   }
