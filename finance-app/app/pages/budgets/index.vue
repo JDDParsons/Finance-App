@@ -138,6 +138,13 @@ function progressBarColour(amount: number, totalHitAmount: number): string {
     return `hsl(${hue}, 80%, 45%)`
 }
 
+// Use the budget's own colour if set; lighten it slightly with opacity for the fill.
+// Fall back to the green→red hue shift when no colour is assigned.
+function barColour(budgetColor: string | null | undefined, amount: number, totalHitAmount: number): string {
+    if (budgetColor) return budgetColor + 'cc'
+    return progressBarColour(amount, totalHitAmount)
+}
+
 function progressBarStyle(amount: number, totalHitAmount: number) {
     const percentage = Math.min((totalHitAmount / amount) * 100, 100)
     const hue = Math.round(120 - (percentage * 1.2))
@@ -201,7 +208,7 @@ function cardStyle(color: string | null | undefined) {
         </div>
         <!-- Uncategorized expenses alert -->
         <BudgetsUncategorizedAlert class="my-2" />
-        
+
         <!-- Budget Allocation Chart -->
         <BudgetsAllocationChart class="mt-4 mb-2" />
 
@@ -249,7 +256,7 @@ function cardStyle(color: string | null | undefined) {
                         <BudgetsProgressBar
                             :value="budget.totalHitAmount"
                             :max="budget.totalHitAmount > budget?.currentPeriod?.amount ? budget.totalHitAmount : budget?.currentPeriod?.amount"
-                            :colour="progressBarColour(budget?.currentPeriod?.amount, budget?.totalHitAmount)"
+                            :colour="barColour(budget.color, budget?.currentPeriod?.amount, budget?.totalHitAmount)"
                         />
                     </div>
                 </div>

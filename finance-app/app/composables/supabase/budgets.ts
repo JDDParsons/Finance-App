@@ -171,7 +171,7 @@ export async function getBudgetById(id: string) {
   return budget
 }
 
-export async function updateBudget(id: string, name: string, amount: string, color?: string) {
+export async function updateBudget(id: string, name: string, amount: string, color?: string, year?: number, month?: number) {
   const supabase = getSupabase()
   const { data, error } = await supabase
     .from('Budgets')
@@ -184,10 +184,9 @@ export async function updateBudget(id: string, name: string, amount: string, col
     .select()
     .single()
 
-  const currentMonth = new Date().getMonth() + 1
-  const currentYear = new Date().getFullYear()
-  const currentMonthFirstDate = new Date(currentYear, currentMonth - 1, 1)
-  const formattedDate = currentMonthFirstDate.toISOString().split('T')[0]
+  const targetYear = year ?? new Date().getFullYear()
+  const targetMonth = month ?? (new Date().getMonth() + 1)
+  const formattedDate = `${targetYear}-${String(targetMonth).padStart(2, '0')}-01`
 
   const { data: periodData, error: periodError } = await supabase
     .from('Budget_Period')

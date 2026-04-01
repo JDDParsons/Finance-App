@@ -19,6 +19,11 @@ function progressBarColour(amount: number, totalHitAmount: number): string {
     return `hsl(${hue}, 80%, 45%)`
 }
 
+function barColour(budgetColor: string | null | undefined, amount: number, totalHitAmount: number): string {
+    if (budgetColor) return budgetColor + 'cc'
+    return progressBarColour(amount, totalHitAmount)
+}
+
 function formatCurrency(value: number | null | undefined) {
     if (value === null || value === undefined) return '-'
     return new Intl.NumberFormat('en-US', {
@@ -93,7 +98,7 @@ function handleExpenseUpdate() {
                 <BudgetsProgressBar
                     :value="budget.totalHitAmount"
                     :max="budget.totalHitAmount > budget.currentPeriod?.amount ? budget.totalHitAmount : budget.currentPeriod?.amount"
-                    :colour="progressBarColour(budget.currentPeriod?.amount, budget.totalHitAmount)"
+                    :colour="barColour(budget.color, budget.currentPeriod?.amount, budget.totalHitAmount)"
                 />
                 <p class="text-xs text-gray-400 text-right mt-1">
                     {{ budget.progress?.toFixed(1) ?? '0.0' }}% used

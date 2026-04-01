@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { getBudgetById, updateBudget, deleteBudget, signOut } from '~/composables/supabase'
+import { ref } from 'vue'
+import { updateBudget, deleteBudget } from '~/composables/supabase'
 
 const props = defineProps<{
     budgetId: string
@@ -16,9 +15,7 @@ const emit = defineEmits<{
     delete: []
 }>()
 
-const router = useRouter()
-const route = useRoute()
-const budgetId = route.params.id as string
+const store = useFinanceStore()
 
 const name = ref(props.budgetName ?? '')
 const amount = ref(props.budgetAmount ?? 0)
@@ -45,7 +42,7 @@ async function handleUpdateBudget() {
         try {
             loading.value = true
             error.value = null
-            await updateBudget(props.budgetId || '', name.value, amount.value.toString(), color.value)
+            await updateBudget(props.budgetId || '', name.value, amount.value.toString(), color.value, store.selectedMonth.year, store.selectedMonth.month)
             emit('update')
         } catch (err: any) {
             error.value = err?.message || 'Error updating budget'
