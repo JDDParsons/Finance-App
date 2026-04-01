@@ -32,6 +32,10 @@ const sortDropdownItems = computed(() => [[
     { label: 'Amount',   icon: activeSortLabel.value === 'Amount'  ? sortIcon.value : undefined, onSelect: () => { activeSortLabel.value = 'Amount';   sortBudgetsByAmount() } },
     { label: 'Progress', icon: activeSortLabel.value === 'Progress' ? sortIcon.value : undefined, onSelect: () => { activeSortLabel.value = 'Progress'; sortBudgetsByProgress() } },
 ]])
+
+const headerMenuItems = computed(() => [[
+    { label: 'Add Budget', icon: 'heroicons-solid:plus', onSelect: () => { isSlideoverOpen.value = true } },
+]])
 const isSlideoverOpen = ref(false)
 const budgetName = ref('')
 const amount = ref('')
@@ -209,7 +213,7 @@ const { budgetIcon } = useBudgetIcon()
         <!-- Header -->
         <div class="relative flex items-center justify-center pt-2 mb-2">
             <h2 class="text-3xl font-bold">Budgets</h2>
-            <div class="absolute right-0">
+            <div class="absolute right-0 flex items-center gap-1">
                 <UDropdownMenu :items="sortDropdownItems" :content="{ align: 'end' }">
                     <UButton
                         color="neutral"
@@ -217,6 +221,15 @@ const { budgetIcon } = useBudgetIcon()
                         icon="heroicons:bars-arrow-up-20-solid"
                         size="md"
                         :aria-label="`Sort by ${activeSortLabel}`"
+                    />
+                </UDropdownMenu>
+                <UDropdownMenu :items="headerMenuItems" :content="{ align: 'end' }">
+                    <UButton
+                        color="neutral"
+                        variant="ghost"
+                        icon="heroicons-solid:ellipsis-vertical"
+                        size="md"
+                        aria-label="More options"
                     />
                 </UDropdownMenu>
             </div>
@@ -239,10 +252,10 @@ const { budgetIcon } = useBudgetIcon()
         </div>
 
         <div v-else-if="displayBudgets.length === 0" class="text-center py-12">
-            <p class="text-gray-400">No budgets yet. Click the "New" button to create one.</p>
+            <p class="text-gray-400">No budgets yet. Use the menu to create one.</p>
         </div>
 
-        <div v-else class="grid grid-cols-1 gap-2 pb-24">
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-24">
             <UCard
                 v-for="budget in displayBudgets"
                 :key="budget.id"
@@ -347,6 +360,5 @@ const { budgetIcon } = useBudgetIcon()
                 </div>
             </template>
         </USlideover>
-        <GreenAddButton @click="isSlideoverOpen = true" />
     </UContainer>
 </template>
