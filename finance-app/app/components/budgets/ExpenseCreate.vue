@@ -33,6 +33,26 @@ const accountItems = computed(() =>
     store.accounts.map((a: any) => ({ label: a.name || a.institution || 'Account', value: a.id }))
 )
 
+const activeBudgetId = computed(() => {
+    if (noBudget.value) return null
+    return props.budgetId || selectedBudgetId.value || null
+})
+
+const noteSuggestions = computed((): string[] => {
+    if (!activeBudgetId.value) return []
+    const seen = new Set<string>()
+    const results: string[] = []
+    const allHits = [...(store.budgetHits as any[]), ...(store.prevMonthBudgetHits as any[])]
+    for (const h of allHits) {
+        const n = h.note?.trim()
+        if (h.budget_id === activeBudgetId.value && n && !seen.has(n)) {
+            seen.add(n)
+            results.push(n)
+        }
+    }
+    return results.slice(0, 8)
+})
+
 let closeTimer: ReturnType<typeof setTimeout> | null = null
 const CLOSE_AFTER_SUCCESS_MS = 1500
 
@@ -141,6 +161,20 @@ async function handleCreateHit() {
                     highlight
                 />
             </UFormField>
+
+            <!-- Note suggestions -->
+            <div v-if="noteSuggestions.length" class="lg:col-span-4 flex flex-wrap gap-2">
+                <p class="w-full text-xs text-gray-400 mb-1">Previous notes:</p>
+                <button
+                    v-for="suggestion in noteSuggestions"
+                    :key="suggestion"
+                    type="button"
+                    class="px-3 py-1 text-sm rounded-full border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:border-primary-400 dark:hover:border-primary-500 transition-colors cursor-pointer"
+                    @click="note = suggestion"
+                >
+                    {{ suggestion }}
+                </button>
+            </div>
 
             <template v-if="!props.budgetId && props.budgets?.length">
                 <UFormField label="Budget" :required="!noBudget">

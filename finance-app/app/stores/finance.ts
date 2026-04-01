@@ -17,6 +17,7 @@ export const useFinanceStore = defineStore('finance', () => {
   const availableMonths = ref<{ year: number; month: number }[]>([])
   const budgets = ref<any[]>([])
   const budgetHits = ref<any[]>([])
+  const prevMonthBudgetHits = ref<any[]>([])
   const income = ref<any[]>([])
   const accounts = computed(() => accountsStore.accounts)
   const loading = ref(false)
@@ -57,15 +58,19 @@ export const useFinanceStore = defineStore('finance', () => {
       loading.value = true
       error.value = null
       const { year, month } = selectedMonth.value
-      const [rawBudgets, hits, inc, avail] = await Promise.all([
+      const prevYear = month === 1 ? year - 1 : year
+      const prevMonth = month === 1 ? 12 : month - 1
+      const [rawBudgets, hits, prevHits, inc, avail] = await Promise.all([
         getBudgetsByMonth(year, month),
         getBudgetHitsByMonth(year, month),
+        getBudgetHitsByMonth(prevYear, prevMonth),
         getIncomeByMonth(year, month),
         getAvailableBudgetMonths(),
         accountsStore.ensureLoaded()
       ])
       availableMonths.value = avail
       budgetHits.value = hits
+      prevMonthBudgetHits.value = prevHits
       income.value = inc
       budgets.value = enrichBudgets(rawBudgets, hits)
       initialized.value = true
@@ -186,6 +191,7 @@ export const useFinanceStore = defineStore('finance', () => {
     hasNext,
     budgets,
     budgetHits,
+    prevMonthBudgetHits,
     income,
     accounts,
     defaultExpenseAccount,

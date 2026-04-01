@@ -5,6 +5,22 @@ import { useFinanceStore } from '~/stores/finance'
 const store = useFinanceStore()
 const { show: showOverlay } = useSuccessOverlay()
 
+// Note suggestions for expense form
+const expenseNoteSuggestions = computed((): string[] => {
+  if (noBudget.value || !selectedBudgetId.value) return []
+  const seen = new Set<string>()
+  const results: string[] = []
+  const allHits = [...(store.budgetHits as any[]), ...(store.prevMonthBudgetHits as any[])]
+  for (const h of allHits) {
+    const n = (h.note as string | null | undefined)?.trim()
+    if (h.budget_id === selectedBudgetId.value && n && !seen.has(n)) {
+      seen.add(n)
+      results.push(n)
+    }
+  }
+  return results.slice(0, 8)
+})
+
 // Tab state — 'income' | 'expenses'
 const activeTab = ref('income')
 
@@ -197,15 +213,6 @@ async function saveExpense() {
                 />
               </UFormField>
 
-              <UFormField label="Note">
-                <UInput
-                  v-model="expenseNote"
-                  placeholder="Leave a note..."
-                  type="text"
-                  size="xl"
-                />
-              </UFormField>
-
               <UFormField label="Budget" :required="!noBudget">
                 <USelect
                   v-model="selectedBudgetId"
@@ -217,6 +224,29 @@ async function saveExpense() {
               </UFormField>
 
               <UCheckbox v-model="noBudget" label="No budget" />
+
+              <UFormField label="Note">
+                <UInput
+                  v-model="expenseNote"
+                  placeholder="Leave a note..."
+                  type="text"
+                  size="xl"
+                />
+              </UFormField>
+
+              <!-- Note suggestions -->
+              <div v-if="expenseNoteSuggestions.length" class="flex flex-wrap gap-2">
+                <p class="w-full text-xs text-gray-400 mb-1">Previous notes:</p>
+                <button
+                  v-for="suggestion in expenseNoteSuggestions"
+                  :key="suggestion"
+                  type="button"
+                  class="px-3 py-1 text-sm rounded-full border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:border-primary-400 dark:hover:border-primary-500 transition-colors cursor-pointer"
+                  @click="expenseNote = suggestion"
+                >
+                  {{ suggestion }}
+                </button>
+              </div>
 
               <UFormField label="Account">
                 <USelect
