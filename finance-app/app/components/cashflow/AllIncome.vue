@@ -20,6 +20,9 @@ async function handleDelete(id: string) {
 
 <template>
   <div class="flex flex-col gap-4 pt-4">
+    <!-- Income calendar -->
+    <CashflowIncomeCalendar />
+
     <div v-if="store.loading" class="flex justify-center py-12">
       <UIcon name="heroicons-solid:arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
     </div>
