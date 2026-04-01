@@ -1,19 +1,12 @@
 <script setup>
 import { Bar } from 'vue-chartjs'
-import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js'
-ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
+import { Chart as ChartJS, Tooltip, BarElement, CategoryScale, LinearScale } from 'chart.js'
+ChartJS.register(Tooltip, BarElement, CategoryScale, LinearScale)
 
-// Custom positioner: centres the tooltip horizontally on the bar, anchors below it
-Tooltip.positioners.belowBar = function (elements) {
-  if (!elements.length) return false
-  const el = elements[0].element
-  return {
-    x: (el.x + el.base) / 2,
-    y: el.y + el.height / 2 + 6,
-    xAlign: 'center',
-    yAlign: 'top',
-  }
-}
+const FALLBACK_COLORS = [
+  '#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f97316',
+  '#eab308', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6',
+]
 
 const store = useFinanceStore()
 
@@ -21,110 +14,95 @@ const totalAllocated = computed(() =>
   store.budgets.reduce((sum, b) => sum + (Number(b.currentPeriod?.amount) || 0), 0)
 )
 
+const totalSpent = computed(() =>
+  store.budgets.reduce((sum, b) => sum + (Number(b.totalHitAmount) || 0), 0)
+)
+
 const totalIncome = computed(() =>
   store.income.reduce((sum, i) => sum + (Number(i.amount) || 0), 0)
 )
 
-const unallocated = computed(() => Math.max(totalIncome.value - totalAllocated.value, 0))
-
-const overAllocated = computed(() => totalAllocated.value > totalIncome.value)
-
-const chartColors = ref({ allocated: '#6366f1', unallocated: '#87ffa1', over: '#ef4444' })
-
-onMounted(() => {
-  const style = getComputedStyle(document.documentElement)
-  const primary = style.getPropertyValue('--ui-primary').trim()
-  const error = style.getPropertyValue('--ui-error').trim()
-  const success = style.getPropertyValue('--ui-success').trim()
-  if (primary) chartColors.value.allocated = primary
-  if (error) chartColors.value.over = error
+const pctOfIncome = computed(() => {
+  if (!totalIncome.value) return null
+  return Math.round((totalAllocated.value / totalIncome.value) * 100)
 })
 
-const chartData = computed(() => ({
-  labels: [''],
-  datasets: overAllocated.value
-    ? [
-        {
-          label: 'Budgeted',
-          data: [totalIncome.value],
-          backgroundColor: chartColors.value.allocated,
-          borderRadius: 4,
-          barThickness: 28,
-        },
-        {
-          label: 'Over budget',
-          data: [totalAllocated.value - totalIncome.value],
-          backgroundColor: chartColors.value.over,
-          borderRadius: 4,
-          barThickness: 28,
-        },
-      ]
-    : [
-        {
-          label: 'Budgeted',
-          data: [totalAllocated.value],
-          backgroundColor: chartColors.value.allocated,
-          borderRadius: 4,
-          barThickness: 28,
-        },
-        {
-          label: 'Remaining',
-          data: [unallocated.value],
-          backgroundColor: chartColors.value.unallocated,
-          borderRadius: 4,
-          barThickness: 28,
-        },
-      ],
-}))
+const xMax = computed(() => Math.max(totalAllocated.value, totalSpent.value, 1))
 
-const chartOptions = computed(() => ({
-  indexAxis: 'y',
-  responsive: true,
-  maintainAspectRatio: false,
-  layout: { padding: 0 },
-  scales: {
-    x: {
-      stacked: true,
-      display: false,
-      max: Math.max(totalIncome.value, totalAllocated.value),
-      afterFit(scale) { scale.height = 0 },
+// Sort by allocated amount descending so the largest budget is always on the left
+const sortedBudgets = computed(() =>
+  [...store.budgets].sort((a, b) =>
+    (Number(b.currentPeriod?.amount) || 0) - (Number(a.currentPeriod?.amount) || 0)
+  )
+)
+
+function formatUSD(val) {
+  return `$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+}
+
+function makeChartData(key) {
+  return {
+    labels: [''],
+    datasets: sortedBudgets.value.map((b, i) => ({
+      label: b.name,
+      data: [key === 'allocated'
+        ? (Number(b.currentPeriod?.amount) || 0)
+        : (Number(b.totalHitAmount) || 0)],
+      backgroundColor: b.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length],
+      borderRadius: 3,
+      barThickness: 22,
+    })),
+  }
+}
+
+const allocatedData = computed(() => makeChartData('allocated'))
+const spentData = computed(() => makeChartData('spent'))
+
+function makeOptions() {
+  return {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    layout: { padding: 0 },
+    scales: {
+      x: { stacked: true, display: false, max: xMax.value },
+      y: { stacked: true, display: false },
     },
-    y: {
-      stacked: true,
-      display: false,
-      afterFit(scale) { scale.width = 0 },
-    },
-  },
-  plugins: {
-    legend: {
-      display: false,
-    },
-    tooltip: {
-      position: 'belowBar',
-      xAlign: 'center',
-      yAlign: 'top',
-      callbacks: {
-        label: (ctx) =>
-          ` ${ctx.dataset.label}: $${ctx.parsed.x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => ` ${ctx.dataset.label}: ${formatUSD(ctx.parsed.x)}`,
+        },
       },
     },
-  },
-}))
+  }
+}
+
+const chartOptions = computed(() => makeOptions())
 </script>
 
 <template>
-  <div class="w-full">
-    <div class="flex justify-between text-xs text-muted mb-0 px-0.5">
-      <span>Budgeted: ${{ totalAllocated.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</span>
-      <span :class="overAllocated ? 'text-error font-semibold' : ''">
-        {{ overAllocated
-          ? `Over by $${(totalAllocated - totalIncome).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-          : `Remaining: $${unallocated.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` }}
-      </span>
-    </div>
-    <USkeleton v-if="store.loading" class="w-full rounded" style="height: 36px;" />
-    <div v-else style="height: 36px;">
-      <Bar :data="chartData" :options="chartOptions" />
-    </div>
+  <div class="w-full space-y-3">
+    <USkeleton v-if="store.loading" class="w-full rounded" style="height: 72px;" />
+    <template v-else>
+      <div>
+        <p class="text-xs text-muted text-center mb-1 font-bold">
+          Allocated {{ formatUSD(totalAllocated) }}
+          <span v-if="pctOfIncome !== null" :class="pctOfIncome > 100 ? 'text-error font-light' : ''">
+            ({{ pctOfIncome }}% of income)
+          </span>
+        </p>
+        <div style="height: 26px;">
+          <Bar :data="allocatedData" :options="chartOptions" />
+        </div>
+      </div>
+      <div>
+        <p class="text-xs text-muted text-center mb-1 font-bold">Spent {{ formatUSD(totalSpent) }}</p>
+        <div style="height: 26px;">
+          <Bar :data="spentData" :options="chartOptions" />
+        </div>
+      </div>
+    </template>
   </div>
 </template>

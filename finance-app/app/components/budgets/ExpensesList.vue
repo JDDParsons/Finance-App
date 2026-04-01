@@ -57,15 +57,33 @@ async function handleDeleteHit(id: string) {
         alert(err?.message || 'Failed to delete budget hit')
         console.error('Error deleting budget hit:', err)
     }
-}   
+}
+
+function formatDate(dateString: string | null) {
+    if (!dateString) return '-'
+    return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC',
+    })
+}
+
+function formatCurrency(value: number | null) {
+    if (value == null) return '-'
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+}
+
+const tableColumns = [
+    { accessorKey: 'date',    header: 'Date',    id: 'date'    },
+    { accessorKey: 'amount',  header: 'Amount',  id: 'amount'  },
+    { accessorKey: 'note',    header: 'Note',    id: 'note'    },
+    { accessorKey: 'account', header: 'Account', id: 'account' },
+    { id: 'actions',          header: ''                       },
+]
 
 </script>
 
 <template>
-    <div class="h-120 w-full"> 
+    <div class="w-full"> 
     
-        <h3 class="text-2xl font-semibold text-gray-500 pb-4 pt-4 pl-3">View Expenses</h3>
-
     <div v-if="error" class="mb-4">
         <UAlert
             title="Error"
@@ -75,32 +93,65 @@ async function handleDeleteHit(id: string) {
         />
     </div>
 
-    <div v-else-if="props.budgetHits?.length === 0" class="text-center py-12">
-        <p class="text-gray-400">No budget hits recorded yet.</p>
+    <div v-else-if="props.budgetHits?.length === 0" class="py-12">
+        <p class="text-gray-400">When you add an expense, it will appear here.</p>
     </div>
 
-    <div v-else class="">
-            <!-- The flex-1 and min-h-0 here are key for iOS Safari -->
-            <div class="flex-1 min-h-0">
+    <template v-else>
+        <!-- Mobile: cards -->
+        <div class="lg:hidden">
             <UScrollArea class="max-h-104 pb-2">
                 <div class="space-y-4 p-1">
-                <ExpenseCard
-                    v-for="hit in props.budgetHits"
-                    :key="hit.id"
-                    :id="hit.id"
-                    :amount="hit.amount"
-                    :date="hit.date"
-                    :note="hit.note"
-                    :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
-                    :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
-                    class="ml-2 mr-2"
-                    @delete="handleDeleteHit"
-                    @edit="handleEditHit"
-                />
+                    <ExpenseCard
+                        v-for="hit in props.budgetHits"
+                        :key="hit.id"
+                        :id="hit.id"
+                        :amount="hit.amount"
+                        :date="hit.date"
+                        :note="hit.note"
+                        :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
+                        :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
+                        class="ml-2 mr-2"
+                        @delete="handleDeleteHit"
+                        @edit="handleEditHit"
+                    />
                 </div>
             </UScrollArea>
-            </div>
         </div>
+
+        <!-- Desktop: table -->
+        <div class="hidden lg:block">
+            <UTable
+                :data="props.budgetHits"
+                :columns="tableColumns"
+            >
+                <template #date-cell="{ row }">{{ formatDate(row.original.date) }}</template>
+                <template #amount-cell="{ row }">{{ formatCurrency(row.original.amount) }}</template>
+                <template #note-cell="{ row }">{{ row.original.note || '-' }}</template>
+                <template #account-cell="{ row }">
+                    {{ row.original.account_id ? accountMap.get(row.original.account_id) ?? '-' : '-' }}
+                </template>
+                <template #actions-cell="{ row }">
+                    <div class="flex items-center gap-1">
+                        <UButton
+                            icon="heroicons-solid:pencil"
+                            color="neutral"
+                            variant="ghost"
+                            size="xs"
+                            @click="handleEditHit(row.original.id)"
+                        />
+                        <UButton
+                            icon="heroicons-solid:trash"
+                            color="error"
+                            variant="ghost"
+                            size="xs"
+                            @click="handleDeleteHit(row.original.id)"
+                        />
+                    </div>
+                </template>
+            </UTable>
+        </div>
+    </template>
     </div>
 
     <UModal v-if="selectedHit" v-model:open="isEditingHit" @update:open="(val) => { if (!val) handleEditHitClose() }">

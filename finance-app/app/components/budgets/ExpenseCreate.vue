@@ -91,7 +91,7 @@ async function handleCreateHit() {
         <BudgetsAnimatedCheckmark style="--checkmark-size: 18rem;" />
     </div>
 
-    <div v-else class="w-full h-120 ml-3">
+    <div v-else class="w-full ml-3">
 
         <h3 class="text-2xl font-semibold text-gray-500 pb-4 pt-4">Add Expense</h3>
 
@@ -104,12 +104,13 @@ async function handleCreateHit() {
             />
         </div>
 
-        <div class="space-y-6">
+        <!-- Mobile: stacked; Desktop: 4-column grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-x-6 gap-y-6">
             <UFormField label="Amount" required>
                 <UInput
                     v-model="amount"
                     highlight
-                    color="info"
+                    color="primary""
                     placeholder="0.00"
                     type="number"
                     step="0.01"
@@ -121,7 +122,7 @@ async function handleCreateHit() {
                 <UInput
                     v-model="date"
                     highlight
-                    color="info"
+                    color="primary""
                     type="date"
                     size="xl"
                 />
@@ -131,7 +132,7 @@ async function handleCreateHit() {
                 <UInput
                     v-model="note"
                     highlight
-                    color="info"
+                    color="primary""
                     placeholder="Leave a note..."
                     type="text"
                     size="xl"
@@ -144,7 +145,7 @@ async function handleCreateHit() {
                     :items="accountItems"
                     placeholder="Select an account..."
                     size="xl"
-                    color="info"
+                    color="primary""
                     highlight
                 />
             </UFormField>
@@ -156,24 +157,24 @@ async function handleCreateHit() {
                         :items="props.budgets.map((b: any) => ({ label: b.name, value: b.id }))"
                         placeholder="Select a budget..."
                         size="xl"
-                        color="info"
+                        color="primary""
                         highlight
                         :disabled="noBudget"
                     />
                 </UFormField>
-                <UCheckbox v-model="noBudget" color="info" label="No budget" />
+                <UCheckbox v-model="noBudget" color="primary"" label="No budget" />
             </template>
-
-            <UButton
-                color="info"
-                variant="solid"
-                @click="handleCreateHit"
-                class="flex-1 mt-2"
-                :disabled="loading || showSuccess"
-                :loading="loading"
-            >
-                Submit expense
-            </UButton>
         </div>
+
+        <UButton
+            color="primary""
+            variant="solid"
+            @click="handleCreateHit"
+            class="mt-6"
+            :disabled="loading || showSuccess"
+            :loading="loading"
+        >
+            Submit expense
+        </UButton>
     </div>
 </template>

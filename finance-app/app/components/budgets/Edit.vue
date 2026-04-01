@@ -7,6 +7,7 @@ const props = defineProps<{
     budgetId: string
     budgetName?: string
     budgetAmount?: number
+    budgetColor?: string
 }>()
 
 const emit = defineEmits<{
@@ -21,6 +22,7 @@ const budgetId = route.params.id as string
 
 const name = ref(props.budgetName ?? '')
 const amount = ref(props.budgetAmount ?? 0)
+const color = ref(props.budgetColor ?? '#6366f1')
 
 const loading = ref(false)
 const deleting = ref(false)
@@ -43,7 +45,7 @@ async function handleUpdateBudget() {
         try {
             loading.value = true
             error.value = null
-            await updateBudget(props.budgetId || '', name.value, amount.value.toString())
+            await updateBudget(props.budgetId || '', name.value, amount.value.toString(), color.value)
             emit('update')
         } catch (err: any) {
             error.value = err?.message || 'Error updating budget'
@@ -106,6 +108,10 @@ async function handleDeleteBudget() {
                     step="0.01"
                     size="xl"
                 />
+            </UFormField>
+
+            <UFormField label="Colour">
+                <BudgetsColorPicker v-model="color" />
             </UFormField>
             <UButton
                 color="secondary"

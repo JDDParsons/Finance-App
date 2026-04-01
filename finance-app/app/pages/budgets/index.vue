@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useFinanceStore } from '~/stores/finance'
 
 const store = useFinanceStore()
+const router = useRouter()
 const searchText = ref('')
 const displayBudgets = ref<any[]>([])
 const loading = computed(() => store.loading)
@@ -16,11 +17,6 @@ watchEffect(() => {
         : [...store.budgets]
     displayBudgets.value = filtered.sort((a: any, b: any) => (a.progress || 0) - (b.progress || 0))
 })
-const isEditModalOpen = ref(false)
-const editingBudgetId = ref<string | undefined>(undefined)
-const editingBudgetName = ref<string | undefined>(undefined)
-const editingBudgetAmount = ref<number | undefined>(undefined)
-const activeEditTab = ref(0)
 const activeSortLabel = ref('Progress')
 const ascendingIcon = 'heroicons-solid:arrow-long-up';
 const descendingIcon = 'heroicons-solid:arrow-long-down';
@@ -39,12 +35,9 @@ const headerMenuItems = computed(() => [[
 const isSlideoverOpen = ref(false)
 const budgetName = ref('')
 const amount = ref('')
+const budgetColor = ref('#6366f1')
 const createLoading = ref(false)
 
-
-function handleNewBudget() {
-    isSlideoverOpen.value = true
-}
 
 function validateBudgetForm() {
     if (!budgetName.value.trim()) {
@@ -62,7 +55,7 @@ async function handleCreateBudget() {
     if (validateBudgetForm()) {
         try {
             createLoading.value = true
-            await store.addBudget(budgetName.value, amount.value)
+            await store.addBudget(budgetName.value, amount.value, budgetColor.value)
             budgetName.value = ''
             amount.value = ''
             isSlideoverOpen.value = false
@@ -78,48 +71,11 @@ function closeSlideover() {
     isSlideoverOpen.value = false
     budgetName.value = ''
     amount.value = ''
+    budgetColor.value = '#6366f1'
 }
 
-function openEditModal(budgetId: string) {
-    editingBudgetId.value = budgetId
-    editingBudgetName.value = store.budgets.find((b: any) => b.id === budgetId)?.name || null
-    editingBudgetAmount.value = store.budgets.find((b: any) => b.id === budgetId)?.currentPeriod?.amount || null
-    activeEditTab.value = 0
-    isEditModalOpen.value = true
-}
-
-function openExpensesTab(budgetId: string) {
-    editingBudgetId.value = budgetId
-    editingBudgetName.value = store.budgets.find((b: any) => b.id === budgetId)?.name || null
-    editingBudgetAmount.value = store.budgets.find((b: any) => b.id === budgetId)?.currentPeriod?.amount || null
-    activeEditTab.value = 1
-    isEditModalOpen.value = true
-}
-
-function closeEditModal() {
-    isEditModalOpen.value = false
-}
-
-async function handleEditAction() {
-    closeEditModal()
-    await store.refreshBudgets()
-}
-
-function openCreateExpenseModal(budgetId: string) {
-    editingBudgetId.value = budgetId
-    editingBudgetName.value = store.budgets.find((b: any) => b.id === budgetId)?.name
-    editingBudgetAmount.value = store.budgets.find((b: any) => b.id === budgetId)?.currentPeriod?.amount
-    activeEditTab.value = 0
-    isEditModalOpen.value = true
-}
-
-function closeCreateExpenseModal() {
-    isEditModalOpen.value = false
-    editingBudgetId.value = undefined
-}
-
-async function fetchBudgets() {
-    await store.refreshBudgets()
+function goToBudget(budgetId: string) {
+    router.push(`/budgets/${budgetId}`)
 }
 
 
@@ -202,6 +158,15 @@ function formatCurrency(value: number | null) {
 }
 
 const { budgetIcon } = useBudgetIcon()
+
+function cardStyle(color: string | null | undefined) {
+    if (!color) return {}
+    return {
+        backgroundColor: `${color}5`,
+        borderColor: `${color}55`,
+        borderTop: `3px solid ${color}`,
+    }
+}
 </script>
 
 <template>
@@ -234,9 +199,13 @@ const { budgetIcon } = useBudgetIcon()
                 </UDropdownMenu>
             </div>
         </div>
-
+        <!-- Uncategorized expenses alert -->
+        <BudgetsUncategorizedAlert class="my-2" />
+        
         <!-- Budget Allocation Chart -->
         <BudgetsAllocationChart class="mt-4 mb-2" />
+
+
 
         <div v-if="error" class="mb-4">
             <UAlert
@@ -259,10 +228,11 @@ const { budgetIcon } = useBudgetIcon()
             <UCard
                 v-for="budget in displayBudgets"
                 :key="budget.id"
-                class="flex flex-col cursor-pointer shadow"
+                class="flex flex-col cursor-pointer shadow overflow-hidden"
+                :style="cardStyle(budget.color)"
             >
             <div class="flex items-center w-full"> 
-                <div class="flex-1" @click="openEditModal(budget.id)">
+                <div class="flex-1" @click="goToBudget(budget.id)">
                     <div class="flex justify-between items-center gap-2 ">
                         <div class="flex items-center gap-2">
                             <UIcon :name="budgetIcon(budget.name)" class="w-5 h-5 shrink-0 text-muted" />
@@ -275,32 +245,18 @@ const { budgetIcon } = useBudgetIcon()
                         </UBadge>
                     </div>
                         
-                    <BudgetsProgressBar
-                        :value="budget.totalHitAmount"
-                        :max="budget.totalHitAmount > budget?.currentPeriod?.amount ? budget.totalHitAmount : budget?.currentPeriod?.amount"
-                        :colour="progressBarColour(budget?.currentPeriod?.amount, budget?.totalHitAmount)"
-                    />
+                    <div class="rounded-full ring-1 ring-black/20 dark:ring-white/20">
+                        <BudgetsProgressBar
+                            :value="budget.totalHitAmount"
+                            :max="budget.totalHitAmount > budget?.currentPeriod?.amount ? budget.totalHitAmount : budget?.currentPeriod?.amount"
+                            :colour="progressBarColour(budget?.currentPeriod?.amount, budget?.totalHitAmount)"
+                        />
+                    </div>
                 </div>
             </div>
 
             </UCard>
         </div>
-
-        <UModal v-model:open="isEditModalOpen">
-            <template #content>
-            <BudgetsEditModal
-                v-if="editingBudgetId"
-                :budget-id="editingBudgetId"
-                :budget-name="editingBudgetName"
-                :budget-amount="editingBudgetAmount"
-                :budget-hits="store.budgets.find((b: any) => b.id === editingBudgetId)?.hits || []"
-                :active-tab="activeEditTab"
-                @update="handleEditAction"
-                @cancel="closeEditModal"
-                @delete="handleEditAction"
-            />
-            </template>
-        </UModal>
 
         <USlideover 
             v-model:open="isSlideoverOpen"
@@ -329,6 +285,10 @@ const { budgetIcon } = useBudgetIcon()
                                     step="0.01"
                                     size="xl"
                                 />
+                            </UFormField>
+
+                            <UFormField label="Colour">
+                                <BudgetsColorPicker v-model="budgetColor" />
                             </UFormField>
                         </div>
                     </div>
