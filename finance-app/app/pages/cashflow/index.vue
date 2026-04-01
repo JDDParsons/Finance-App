@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useFinanceStore } from '~/stores/finance'
 
 const store = useFinanceStore()
+const { show: showOverlay } = useSuccessOverlay()
 
 // Tab state — 'income' | 'expenses'
 const activeTab = ref('income')
@@ -70,6 +71,7 @@ async function saveIncome() {
     slideoverLoading.value = true
     await store.addIncome(parseFloat(incomeAmount.value), incomeDate.value, incomeNote.value, incomeAccountId.value)
     closeSlideover()
+    showOverlay()
   } catch (err: any) {
     alert('Error saving income: ' + (err?.message || 'Unknown error'))
   } finally {
@@ -86,6 +88,7 @@ async function saveExpense() {
     const budgetIdToSubmit = noBudget.value ? null : selectedBudgetId.value
     await store.addExpense(budgetIdToSubmit, expenseDate.value, expenseAmount.value, expenseNote.value, expenseAccountId.value)
     closeSlideover()
+    showOverlay()
   } catch (err: any) {
     alert('Error creating expense: ' + (err?.message || 'Unknown error'))
   } finally {

@@ -18,5 +18,6 @@ onMounted(() => {
       <NuxtPage />
     </div>
     <BottomNav class="lg:hidden" />
+    <SuccessOverlay />
   </UApp>
 </template>

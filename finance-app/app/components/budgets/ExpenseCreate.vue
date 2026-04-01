@@ -26,8 +26,8 @@ const amount = ref('')
 const note = ref('')
 const loading = ref(false)
 const error = ref<string | null>(null)
-const showSuccess = ref(false)
 const expenseAccountId = ref<string | null>(store.defaultExpenseAccount?.id ?? null)
+const { show: showOverlay } = useSuccessOverlay()
 
 const accountItems = computed(() =>
     store.accounts.map((a: any) => ({ label: a.name || a.institution || 'Account', value: a.id }))
@@ -55,10 +55,6 @@ function validateForm() {
 }
 
 async function handleCreateHit() {
-    if (showSuccess.value) {
-        return
-    }
-
     if (!noBudget.value && !props.budgetId && !selectedBudgetId.value) {
         alert('Please select a budget')
         return
@@ -69,7 +65,7 @@ async function handleCreateHit() {
             error.value = null
             const budgetIdToSubmit = noBudget.value ? null : (selectedBudgetId.value || props.budgetId || null)
             await store.addExpense(budgetIdToSubmit, date.value, amount.value, note.value, expenseAccountId.value)
-            showSuccess.value = true
+            showOverlay()
 
             closeTimer = setTimeout(() => {
                 emit('update')
@@ -87,11 +83,7 @@ async function handleCreateHit() {
 </script>
 
 <template>        
-    <div v-if="showSuccess" class="w-full h-100 flex items-center justify-center">
-        <BudgetsAnimatedCheckmark style="--checkmark-size: 18rem;" />
-    </div>
-
-    <div v-else class="w-full ml-3">
+    <div class="w-full ml-3">
 
         <h3 class="text-2xl font-semibold text-gray-500 pb-4 pt-4">Add Expense</h3>
 
@@ -110,7 +102,7 @@ async function handleCreateHit() {
                 <UInput
                     v-model="amount"
                     highlight
-                    color="primary""
+                    color="primary"
                     placeholder="0.00"
                     type="number"
                     step="0.01"
@@ -122,7 +114,7 @@ async function handleCreateHit() {
                 <UInput
                     v-model="date"
                     highlight
-                    color="primary""
+                    color="primary"
                     type="date"
                     size="xl"
                 />
@@ -132,7 +124,7 @@ async function handleCreateHit() {
                 <UInput
                     v-model="note"
                     highlight
-                    color="primary""
+                    color="primary"
                     placeholder="Leave a note..."
                     type="text"
                     size="xl"
@@ -145,7 +137,7 @@ async function handleCreateHit() {
                     :items="accountItems"
                     placeholder="Select an account..."
                     size="xl"
-                    color="primary""
+                    color="primary"
                     highlight
                 />
             </UFormField>
@@ -157,21 +149,21 @@ async function handleCreateHit() {
                         :items="props.budgets.map((b: any) => ({ label: b.name, value: b.id }))"
                         placeholder="Select a budget..."
                         size="xl"
-                        color="primary""
+                        color="primary"
                         highlight
                         :disabled="noBudget"
                     />
                 </UFormField>
-                <UCheckbox v-model="noBudget" color="primary"" label="No budget" />
+                <UCheckbox v-model="noBudget" color="primary" label="No budget" />
             </template>
         </div>
 
         <UButton
-            color="primary""
+            color="primary"
             variant="solid"
             @click="handleCreateHit"
             class="mt-6"
-            :disabled="loading || showSuccess"
+            :disabled="loading"
             :loading="loading"
         >
             Submit expense
