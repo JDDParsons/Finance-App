@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useFinanceStore } from '../../stores/finance'
-import { useSavingsStore } from '../../stores/savings'
+import { useFinanceStore } from '~/stores/finance'
+import { useSavingsStore } from '~/stores/savings'
 import { Line } from 'vue-chartjs'
 import {
   Chart as ChartJS,

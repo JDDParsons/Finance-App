@@ -1,5 +1,5 @@
 <script setup>
-import { sendMagicLink, validateCode, getSession} from '../composables/supabase'
+import { sendMagicLink, validateCode, getSession} from '~/composables/supabase'
 
 const email = ref('');
 const loading = ref(false);

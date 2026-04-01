@@ -6,7 +6,7 @@ import DoughnutChartA from '~/components/upload/DoughnutChartA.vue';
 import DoughnutChartB from '~/components/upload/DoughnutChartB.vue';
 import CategoryDropdown from '~/components/upload/CategoryDropdown.vue';
 
-import { getAllByMonth, getCategories, getStatementGroups } from '../../../../composables/supabase.js';
+import { getAllByMonth, getCategories, getStatementGroups } from '~/composables/supabase';
 
 // Utility function to attach category labels
 function attachCategoryLabel(

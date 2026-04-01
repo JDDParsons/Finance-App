@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { getIncomeByMonth, getBudgetHitsByMonth } from '../composables/supabase'
+import { getIncomeByMonth, getBudgetHitsByMonth } from '~/composables/supabase'
 import { useFinanceStore } from './finance'
 
 const MONTH_NAMES = [

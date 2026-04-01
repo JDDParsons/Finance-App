@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { useAccountsStore } from '../../stores/accounts'
+import { useAccountsStore } from '~/stores/accounts'
 
 // --- State ---
 const accountsStore = useAccountsStore()

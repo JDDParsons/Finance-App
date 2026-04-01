@@ -1,6 +1,6 @@
 <script setup>
 
-import { uploadFile } from '../../composables/supabase'
+import { uploadFile } from '~/composables/supabase'
 
 const toast = useToast();
 const fileInput = ref(null);

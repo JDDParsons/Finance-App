@@ -5,7 +5,7 @@ import {
   updateAccount,
   updateAccountBaseline,
   deleteAccount,
-} from '../composables/supabase'
+} from '~/composables/supabase'
 
 export const useAccountsStore = defineStore('accounts', () => {
   const accounts = ref<any[]>([])

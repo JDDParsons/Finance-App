@@ -1,5 +1,5 @@
-import { getSession } from '../composables/supabase'
-import { useHouseholdStore } from '../stores/household'
+import { getSession } from '~/composables/supabase'
+import { useHouseholdStore } from '~/stores/household'
 
 export default defineNuxtRouteMiddleware(async (to) => {
     // Skip auth middleware during prerendering to avoid 500 errors

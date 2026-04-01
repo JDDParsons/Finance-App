@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getBudgetHitsByBudgetId, deleteBudgetHit } from '../../composables/supabase'
-import { useFinanceStore } from '../../stores/finance'
+import { getBudgetHitsByBudgetId, deleteBudgetHit } from '~/composables/supabase'
+import { useFinanceStore } from '~/stores/finance'
 
 const props = defineProps<{
     budgetId: string

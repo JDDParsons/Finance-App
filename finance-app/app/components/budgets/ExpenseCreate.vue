@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useFinanceStore } from '../../stores/finance'
+import { useFinanceStore } from '~/stores/finance'
 
 const props = defineProps<{
     budgetId?: string,

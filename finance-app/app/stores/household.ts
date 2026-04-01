@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { resolveHouseholdId, setHouseholdId } from '../composables/supabase'
+import { resolveHouseholdId, setHouseholdId } from '~/composables/supabase'
 
 export const useHouseholdStore = defineStore('household', {
   state: () => ({

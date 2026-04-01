@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useFinanceStore } from '../../stores/finance'
+import { useFinanceStore } from '~/stores/finance'
 
 const store = useFinanceStore()
 const searchText = ref('')

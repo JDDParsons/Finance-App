@@ -5,7 +5,7 @@ import {
   insertIncome, deleteIncome,
   createBudgetHit, deleteBudgetHit, updateBudgetHit,
   createBudget
-} from '../composables/supabase'
+} from '~/composables/supabase'
 import { useAccountsStore } from './accounts'
 
 export const useFinanceStore = defineStore('finance', () => {

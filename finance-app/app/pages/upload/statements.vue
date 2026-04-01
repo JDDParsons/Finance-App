@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { getStatementGroups } from '../../composables/supabase'
+import { getStatementGroups } from '~/composables/supabase'
 import type { TableColumn } from '@nuxt/ui'
 
 const loading = ref(true)
