@@ -100,7 +100,8 @@ export const useFinanceStore = defineStore('finance', () => {
   const hasNext = computed(() => {
     const { year, month } = selectedMonth.value
     const cur = monthKey(year, month)
-    return availableMonths.value.some(m => monthKey(m.year, m.month) > cur)
+    const nowKey = monthKey(_now.getFullYear(), _now.getMonth() + 1)
+    return cur < nowKey || availableMonths.value.some(m => monthKey(m.year, m.month) > cur)
   })
 
   async function setMonth(year: number, month: number) {
@@ -122,7 +123,17 @@ export const useFinanceStore = defineStore('finance', () => {
     const cur = monthKey(year, month)
     const next = availableMonths.value
       .find(m => monthKey(m.year, m.month) > cur)
-    if (next) setMonth(next.year, next.month)
+    if (next) {
+      setMonth(next.year, next.month)
+    } else {
+      // No next month in availableMonths — advance one calendar month (capped at today)
+      const nowKey = monthKey(_now.getFullYear(), _now.getMonth() + 1)
+      if (cur < nowKey) {
+        const nextCalMonth = month === 12 ? 1 : month + 1
+        const nextCalYear = month === 12 ? year + 1 : year
+        setMonth(nextCalYear, nextCalMonth)
+      }
+    }
   }
 
   // ── income ────────────────────────────────────────────────────────────────
