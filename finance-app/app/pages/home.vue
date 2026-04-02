@@ -16,22 +16,6 @@ const baseTotalExpenses = computed(() =>
 
 const excludedExpenseIds = ref([])
 
-const excludedTop5Total = computed(() => {
-  const excludedSet = new Set(excludedExpenseIds.value)
-  return top5Expenses.value.reduce((sum, hit) => {
-    if (!excludedSet.has(hit.id)) return sum
-    return sum + (Number(hit.amount) || 0)
-  }, 0)
-})
-
-const totalExpenses = computed(() => Math.max(baseTotalExpenses.value - excludedTop5Total.value, 0))
-
-const totalIncome = computed(() =>
-  store.income.reduce((sum, i) => sum + (Number(i.amount) || 0), 0)
-)
-
-const remaining = computed(() => Math.max(totalIncome.value - totalExpenses.value, 0))
-
 const top5Expenses = computed(() => {
   return [...store.budgetHits]
     .sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0))
@@ -49,6 +33,81 @@ watch(top5Expenses, (hits) => {
   const validIds = new Set(hits.map(h => h.id))
   excludedExpenseIds.value = excludedExpenseIds.value.filter(id => validIds.has(id))
 })
+
+const excludedTop5Total = computed(() => {
+  const excludedSet = new Set(excludedExpenseIds.value)
+  return top5Expenses.value.reduce((sum, hit) => {
+    if (!excludedSet.has(hit.id)) return sum
+    return sum + (Number(hit.amount) || 0)
+  }, 0)
+})
+
+const totalExpenses = computed(() => Math.max(baseTotalExpenses.value - excludedTop5Total.value, 0))
+
+const totalIncome = computed(() =>
+  store.income.reduce((sum, i) => sum + (Number(i.amount) || 0), 0)
+)
+
+const remaining = computed(() => Math.max(totalIncome.value - totalExpenses.value, 0))
+
+// ── month-over-month ─────────────────────────────────────────────────────────
+const prevMonthTotalExpenses = computed(() =>
+  store.prevMonthBudgetHits.reduce((sum, h) => sum + (Number(h.amount) || 0), 0)
+)
+
+const expenseMoMChange = computed(() => {
+  if (prevMonthTotalExpenses.value === 0) return null
+  return ((totalExpenses.value - prevMonthTotalExpenses.value) / prevMonthTotalExpenses.value) * 100
+})
+
+// ── daily average & projection ───────────────────────────────────────────────
+const daysElapsed = computed(() => {
+  const { year, month } = store.selectedMonth
+  const now = new Date()
+  const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1)
+  if (isCurrentMonth) return now.getDate()
+  return new Date(year, month, 0).getDate()
+})
+
+const daysInMonth = computed(() => {
+  const { year, month } = store.selectedMonth
+  return new Date(year, month, 0).getDate()
+})
+
+const daysRemaining = computed(() => {
+  const { year, month } = store.selectedMonth
+  const now = new Date()
+  const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1)
+  if (!isCurrentMonth) return 0
+  return daysInMonth.value - now.getDate()
+})
+
+const dailyAverage = computed(() =>
+  daysElapsed.value > 0 ? totalExpenses.value / daysElapsed.value : 0
+)
+
+const projectedBalance = computed(() => {
+  if (daysRemaining.value <= 0) return remaining.value
+  const projectedTotalExpenses = dailyAverage.value * daysInMonth.value
+  return totalIncome.value - projectedTotalExpenses
+})
+
+// ── gauge needle ─────────────────────────────────────────────────────────────
+const needleAngle = computed(() => {
+  const ratio = Math.min(totalExpenses.value / Math.max(totalIncome.value, 1), 1)
+  return -90 + ratio * 180
+})
+
+const displayedNeedleAngle = ref(-90)
+
+watch(needleAngle, (newAngle) => {
+  displayedNeedleAngle.value = -90
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      displayedNeedleAngle.value = newAngle
+    })
+  })
+}, { immediate: true })
 
 function isExpenseExcluded(expenseId) {
   return excludedExpenseIds.value.includes(expenseId)
@@ -148,8 +207,15 @@ const chartOptions = {
                 <USkeleton class="w-full h-full" style="border-radius: 50% 50% 0 0 / 100% 100% 0 0;" />
             </div>
 
-            <div v-else class="w-full max-w-sm" style="height: 200px;">
+            <div v-else class="w-full max-w-sm relative" style="height: 200px;">
                 <Doughnut :data="chartData" :options="chartOptions" :plugins="[glowPlugin]" />
+                <!-- Gauge needle: zero-size pivot anchored at bottom-center -->
+                <div class="absolute pointer-events-none" style="bottom: 4px; left: 50%; width: 0; height: 0; z-index: 10;">
+                    <!-- needle bar rotates around the pivot point -->
+                    <div :style="`position: absolute; bottom: 0; left: -2px; width: 4px; height: 150px; background: ${chartColors.expenses}; border-radius: 3px 3px 0 0; opacity: 0.95; transform-origin: bottom center; transform: rotate(${displayedNeedleAngle}deg); transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);`"></div>
+                    <!-- pivot dot centered on the same point -->
+                    <div :style="`position: absolute; bottom: -6px; left: -6px; width: 12px; height: 12px; background: ${chartColors.expenses}; border-radius: 50%; opacity: 1;`"></div>
+                </div>
             </div>
 
             <div class="flex gap-8 text-center">
@@ -160,10 +226,30 @@ const chartOptions = {
                 <div>
                     <p class="text-sm text-gray-400">Expenses</p>
                     <p class="text-lg font-semibold text-warning">${{ totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</p>
+                    <p v-if="expenseMoMChange !== null" class="text-xs mt-0.5" :class="expenseMoMChange > 0 ? 'text-red-400' : 'text-green-400'">
+                        {{ expenseMoMChange > 0 ? '↑' : '↓' }} {{ Math.abs(expenseMoMChange).toFixed(1) }}% vs last mo.
+                    </p>
                 </div>
                 <div>
                     <p class="text-sm text-gray-400">Remaining</p>
                     <p class="text-lg font-semibold text-primary">${{ remaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</p>
+                </div>
+            </div>
+            <!-- Insights row -->
+            <div v-if="!store.loading" class="flex gap-6 text-center pt-1">
+                <div>
+                    <p class="text-xs text-gray-400">Daily Avg</p>
+                    <p class="text-sm font-semibold">~${{ dailyAverage.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</p>
+                </div>
+                <div v-if="daysRemaining > 0">
+                    <p class="text-xs text-gray-400">Projected (EOM)</p>
+                    <p class="text-sm font-semibold" :class="projectedBalance >= 0 ? 'text-primary' : 'text-red-400'">
+                        ${{ projectedBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                    </p>
+                </div>
+                <div v-else>
+                    <p class="text-xs text-gray-400">Days in Month</p>
+                    <p class="text-sm font-semibold">{{ daysInMonth }}</p>
                 </div>
             </div>
         </div>
