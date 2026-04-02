@@ -14,8 +14,13 @@ const totalAllocated = computed(() =>
   store.budgets.reduce((sum, b) => sum + (Number(b.currentPeriod?.amount) || 0), 0)
 )
 
+const unbudgetedTotal = computed(() =>
+  store.budgetHits.filter(h => !h.budget_id)
+    .reduce((sum, h) => sum + (Number(h.amount) || 0), 0)
+)
+
 const totalSpent = computed(() =>
-  store.budgets.reduce((sum, b) => sum + (Number(b.totalHitAmount) || 0), 0)
+  store.budgets.reduce((sum, b) => sum + (Number(b.totalHitAmount) || 0), 0) + unbudgetedTotal.value
 )
 
 const totalIncome = computed(() =>
@@ -28,6 +33,7 @@ const pctOfIncome = computed(() => {
 })
 
 const xMax = computed(() => Math.max(totalAllocated.value, totalSpent.value, 1))
+
 
 // Sort by allocated amount descending so the largest budget is always on the left
 const sortedBudgets = computed(() =>
@@ -56,7 +62,20 @@ function makeChartData(key) {
 }
 
 const allocatedData = computed(() => makeChartData('allocated'))
-const spentData = computed(() => makeChartData('spent'))
+
+const spentData = computed(() => {
+  const base = makeChartData('spent')
+  if (unbudgetedTotal.value > 0) {
+    base.datasets.push({
+      label: 'Unbudgeted',
+      data: [unbudgetedTotal.value],
+      backgroundColor: '#cbd5e1',
+      borderRadius: 3,
+      barThickness: 22,
+    })
+  }
+  return base
+})
 
 function makeOptions() {
   return {
@@ -98,7 +117,10 @@ const chartOptions = computed(() => makeOptions())
         </div>
       </div>
       <div>
-        <p class="text-xs text-muted text-center mb-1 font-bold">Spent {{ formatUSD(totalSpent) }}</p>
+        <p class="text-xs text-muted text-center mb-1 font-bold">
+          Spent {{ formatUSD(totalSpent) }}
+          <span v-if="unbudgetedTotal > 0" class="text-gray-400 font-light">(incl. {{ formatUSD(unbudgetedTotal) }} unbudgeted)</span>
+        </p>
         <div style="height: 26px;">
           <Bar :data="spentData" :options="chartOptions" />
         </div>
