@@ -98,16 +98,7 @@ const needleAngle = computed(() => {
   return -90 + ratio * 180
 })
 
-const displayedNeedleAngle = ref(-90)
 
-watch(needleAngle, (newAngle) => {
-  displayedNeedleAngle.value = -90
-  nextTick(() => {
-    requestAnimationFrame(() => {
-      displayedNeedleAngle.value = newAngle
-    })
-  })
-}, { immediate: true })
 
 function isExpenseExcluded(expenseId) {
   return excludedExpenseIds.value.includes(expenseId)
@@ -209,13 +200,7 @@ const chartOptions = {
 
             <div v-else class="w-full max-w-sm relative" style="height: 200px;">
                 <Doughnut :data="chartData" :options="chartOptions" :plugins="[glowPlugin]" />
-                <!-- Gauge needle: zero-size pivot anchored at bottom-center -->
-                <div class="absolute pointer-events-none" style="bottom: 4px; left: 50%; width: 0; height: 0; z-index: 10;">
-                    <!-- needle bar rotates around the pivot point -->
-                    <div :style="`position: absolute; bottom: 0; left: -2px; width: 4px; height: 150px; background: ${chartColors.expenses}; border-radius: 3px 3px 0 0; opacity: 0.95; transform-origin: bottom center; transform: rotate(${displayedNeedleAngle}deg); transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);`"></div>
-                    <!-- pivot dot centered on the same point -->
-                    <div :style="`position: absolute; bottom: -6px; left: -6px; width: 12px; height: 12px; background: ${chartColors.expenses}; border-radius: 50%; opacity: 1;`"></div>
-                </div>
+                <GaugeNeedle :angle="needleAngle" :color="chartColors.expenses" />
             </div>
 
             <div class="flex gap-8 text-center">
