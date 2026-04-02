@@ -240,9 +240,12 @@ const chartOptions = {
         </div>
 
         <USeparator class="my-8" />
-        
+
+        <!-- Cards row: Largest Expenses first, Budget Summary to right (desktop) / below (mobile) -->
+        <div class="flex flex-col lg:flex-row gap-6 pb-20 items-start">
+
             <!-- Largest Expenses -->
-            <div class="w-full mt-8 pb-20">
+            <div class="w-full">
                 <h2 class="text-2xl text-center font-bold pb-2">Largest Expenses</h2>
                 <ul v-if="store.loading" class="space-y-2">
                     <li
@@ -280,5 +283,12 @@ const chartOptions = {
                     <li v-if="top5Expenses.length === 0" class="text-sm text-muted text-center py-4">No expenses this month.</li>
                 </ul>
             </div>
+
+            <!-- Budget Summary -->
+            <div class="w-full lg:w-80 lg:shrink-0">
+                <BudgetSummaryCard />
+            </div>
+
+        </div><!-- end cards row -->
     </UContainer>
 </template>
