@@ -206,30 +206,30 @@ const chartOptions = {
             <div class="flex gap-8 text-center">
                 <div>
                     <p class="text-sm text-gray-400">Income</p>
-                    <p class="text-lg font-semibold">${{ totalIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</p>
+                    <p class="text-lg font-semibold">${{ totalIncome.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
                 </div>
                 <div>
                     <p class="text-sm text-gray-400">Expenses</p>
-                    <p class="text-lg font-semibold text-warning">${{ totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</p>
+                    <p class="text-lg font-semibold text-warning">${{ totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
                     <p v-if="expenseMoMChange !== null" class="text-xs mt-0.5" :class="expenseMoMChange > 0 ? 'text-red-400' : 'text-green-400'">
                         {{ expenseMoMChange > 0 ? '↑' : '↓' }} {{ Math.abs(expenseMoMChange).toFixed(1) }}% vs last mo.
                     </p>
                 </div>
                 <div>
                     <p class="text-sm text-gray-400">Remaining</p>
-                    <p class="text-lg font-semibold text-primary">${{ remaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</p>
+                    <p class="text-lg font-semibold text-primary">${{ remaining.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
                 </div>
             </div>
             <!-- Insights row -->
             <div v-if="!store.loading" class="flex gap-6 text-center pt-1">
                 <div>
                     <p class="text-xs text-gray-400">Daily Avg</p>
-                    <p class="text-sm font-semibold">~${{ dailyAverage.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</p>
+                    <p class="text-sm font-semibold">~${{ dailyAverage.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
                 </div>
                 <div v-if="daysRemaining > 0">
                     <p class="text-xs text-gray-400">Projected (EOM)</p>
                     <p class="text-sm font-semibold" :class="projectedBalance >= 0 ? 'text-primary' : 'text-red-400'">
-                        ${{ projectedBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                        ${{ projectedBalance.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}
                     </p>
                 </div>
                 <div v-else>

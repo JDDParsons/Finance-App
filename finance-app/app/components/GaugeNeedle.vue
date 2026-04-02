@@ -24,14 +24,14 @@ watch(() => props.angle, (newAngle) => {
 
 <template>
   <!-- Zero-size pivot anchored at bottom-center of parent -->
-  <div class="absolute pointer-events-none" style="bottom: 4px; left: 50%; width: 0; height: 0; z-index: 10;">
+  <div class="absolute pointer-events-none" style="bottom: 14px; left: 50%; width: 0; height: 0; z-index: 10;">
     <!-- Needle bar rotating around the pivot -->
     <div :style="`
       position: absolute;
       bottom: 0;
       left: -2px;
       width: 4px;
-      height: 150px;
+      height: 130px;
       background: ${color};
       border-radius: 3px 3px 0 0;
       opacity: 0.95;
