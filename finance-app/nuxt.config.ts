@@ -10,7 +10,7 @@ export default defineNuxtConfig({
     baseURL: '/Finance-App/',
     head: {
       link: [
-        { rel: 'apple-touch-icon', href: '/Finance-App/sheep.jpg' },
+        { rel: 'apple-touch-icon', href: '/Finance-App/coin.png' },
       ],
       meta: [
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
