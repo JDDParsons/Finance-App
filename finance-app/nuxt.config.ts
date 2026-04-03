@@ -22,19 +22,10 @@ export default defineNuxtConfig({
   pwa: {
     registerType: 'autoUpdate',
     workbox: {
-      navigateFallback: '/Finance-App/index.html',
-      navigateFallbackDenylist: [/^\/api\//],
+      navigateFallback: '/Finance-App/',
+      navigateFallbackAllowlist: [/^\/Finance-App/],
       globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg,woff2}'],
-      runtimeCaching: [
-        {
-          urlPattern: /^\/Finance-App\/.*/i,
-          handler: 'NetworkFirst',
-          options: {
-            cacheName: 'pasture-cache',
-            networkTimeoutSeconds: 10,
-          },
-        },
-      ],
+      cleanupOutdatedCaches: true,
     },
     manifest: {
       name: 'Pasture',
@@ -63,9 +54,6 @@ export default defineNuxtConfig({
           purpose: 'maskable',
         },
       ],
-    },
-    devOptions: {
-      enabled: true,
     },
   },
   runtimeConfig: {
