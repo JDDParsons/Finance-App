@@ -6,7 +6,8 @@ ChartJS.register(Title, Tooltip, Legend, ArcElement)
 
 const store = useFinanceStore()
 
-onMounted(() => {
+onMounted(async () => {
+  await store.ensureLoaded()
   resolveChartColors()
 })
 

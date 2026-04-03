@@ -5,6 +5,8 @@ import { useFinanceStore } from '~/stores/finance'
 const store = useFinanceStore()
 const router = useRouter()
 const searchText = ref('')
+
+onMounted(() => { store.ensureLoaded() })
 const displayBudgets = ref<any[]>([])
 const loading = computed(() => store.loading)
 const error = computed(() => store.error)
