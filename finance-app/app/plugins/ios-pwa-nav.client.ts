@@ -8,6 +8,7 @@
  *
  * This plugin intercepts every anchor click while in standalone mode and
  * re-routes internal links through vue-router so the app stays fullscreen.
+ * It skips links already handled by Vue Router (defaultPrevented).
  */
 export default defineNuxtPlugin(() => {
   // Only applies to iOS standalone PWA mode
@@ -17,6 +18,9 @@ export default defineNuxtPlugin(() => {
   const router = useRouter()
 
   document.addEventListener('click', (event) => {
+    // Skip if Vue Router (NuxtLink/RouterLink) already handled this click
+    if (event.defaultPrevented) return
+
     // Walk up the DOM tree to find the closest <a> element
     let target = event.target as HTMLElement | null
     while (target && target.nodeName !== 'A') {
@@ -32,7 +36,7 @@ export default defineNuxtPlugin(() => {
     if (anchor.hostname !== window.location.hostname) return
     if (!anchor.protocol.startsWith('http')) return
 
-    // This is an internal same-origin link — prevent Safari from opening it
+    // This is an internal same-origin link not handled by Vue Router — intercept it
     event.preventDefault()
     router.push(anchor.pathname + anchor.search + anchor.hash)
   })

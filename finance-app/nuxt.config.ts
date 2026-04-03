@@ -20,13 +20,7 @@ export default defineNuxtConfig({
     },
   },
   pwa: {
-    base: '/Finance-App/',
     registerType: 'autoUpdate',
-    workbox: {
-      navigateFallback: '/Finance-App/index.html',
-      globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg,woff2}'],
-      cleanupOutdatedCaches: true,
-    },
     manifest: {
       name: 'Pasture',
       short_name: 'Pasture',
