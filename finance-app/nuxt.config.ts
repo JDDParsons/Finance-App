@@ -19,37 +19,6 @@ export default defineNuxtConfig({
       ],
     },
   },
-  pwa: {
-    registerType: 'autoUpdate',
-    manifest: {
-      name: 'Pasture',
-      short_name: 'Pasture',
-      description: 'Pasture Finance App',
-      theme_color: '#ffffff',
-      background_color: '#ffffff',
-      display: 'standalone',
-      scope: '/Finance-App/',
-      start_url: '/Finance-App/',
-      icons: [
-        {
-          src: 'sheep.jpg',
-          sizes: '192x192',
-          type: 'image/jpeg',
-        },
-        {
-          src: 'sheep.jpg',
-          sizes: '512x512',
-          type: 'image/jpeg',
-        },
-        {
-          src: 'sheep.jpg',
-          sizes: '512x512',
-          type: 'image/jpeg',
-          purpose: 'maskable',
-        },
-      ],
-    },
-  },
   runtimeConfig: {
       public: {
       supabaseUrl: process.env.NUXT_PUBLIC_SUPABASE_URL || '',
