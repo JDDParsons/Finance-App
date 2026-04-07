@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue'
 import { useFinanceStore } from '~/stores/finance'
 
+useHead({ title: 'Budgets | R&J Finance' })
+
 const store = useFinanceStore()
 const router = useRouter()
 const searchText = ref('')

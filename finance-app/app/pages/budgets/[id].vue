@@ -11,6 +11,8 @@ await store.ensureLoaded()
 
 const budget = computed(() => store.budgets.find((b: any) => b.id === budgetId))
 
+useHead(computed(() => ({ title: budget.value ? `${budget.value.name} | R&J Finance` : 'Budget | R&J Finance' })))
+
 const isEditModalOpen = ref(false)
 
 function progressBarColour(amount: number, totalHitAmount: number): string {

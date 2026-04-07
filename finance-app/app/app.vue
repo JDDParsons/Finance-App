@@ -2,6 +2,9 @@
 import { useAccountsStore } from './stores/accounts'
 
 const accountsStore = useAccountsStore()
+const route = useRoute()
+
+const isAuthenticated = computed(() => route.path !== '/')
 
 onMounted(() => {
   accountsStore.ensureLoaded()
@@ -10,11 +13,11 @@ onMounted(() => {
 
 <template>
   <UApp class="overflow-x-hidden">
-    <SideNav class="hidden lg:flex" />
-    <div class="lg:pl-56">
+    <SideNav v-if="isAuthenticated" class="hidden lg:flex" />
+    <div :class="isAuthenticated ? 'lg:pl-56' : ''">
       <NuxtPage />
     </div>
-    <BottomNav class="lg:hidden" />
+    <BottomNav v-if="isAuthenticated" class="lg:hidden" />
     <SuccessOverlay />
   </UApp>
 </template>

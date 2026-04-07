@@ -1,6 +1,8 @@
 <script setup>
 import { sendMagicLink, validateCode, getSession} from '~/composables/supabase'
 
+useHead({ title: 'Login | R&J Finance' })
+
 const email = ref('');
 const loading = ref(false);
 const pin = ref('');
@@ -52,11 +54,6 @@ async function handleVerificationCode() {
 </script>
 <template>
     <div>
-        <UHeader title="Personal Finance App">
-          <template #right>
-            <UColorModeSwitch />
-          </template>
-        </UHeader>
         <UMain>
             <UContainer>
                 <div class="flex flex-col items-center justify-center pt-25 space-y-8">

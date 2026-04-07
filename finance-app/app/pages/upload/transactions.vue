@@ -2,6 +2,8 @@
 import { ref, onMounted, h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import CategoryDropdown from '~/components/upload/CategoryDropdown.vue'
+
+useHead({ title: 'Transactions | R&J Finance' })
 import { getAllSorted, getCategories } from '~/composables/supabase'
 
 

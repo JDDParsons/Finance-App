@@ -1,6 +1,8 @@
 <script setup lang="ts">
 
 import { h, ref, computed, watch, onMounted } from 'vue';
+
+useHead({ title: 'Monthly Report | R&J Finance' })
 import type { TableColumn } from '@nuxt/ui'
 import DoughnutChartA from '~/components/upload/DoughnutChartA.vue';
 import DoughnutChartB from '~/components/upload/DoughnutChartB.vue';

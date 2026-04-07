@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue'
 import { useFinanceStore } from '~/stores/finance'
 
+useHead({ title: 'Cash Flow | R&J Finance' })
+
 const store = useFinanceStore()
 const { show: showOverlay } = useSuccessOverlay()
 

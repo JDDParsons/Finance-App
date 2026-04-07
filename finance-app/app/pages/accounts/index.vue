@@ -2,6 +2,8 @@
 import { storeToRefs } from 'pinia'
 import { useAccountsStore } from '~/stores/accounts'
 
+useHead({ title: 'Accounts | R&J Finance' })
+
 // --- State ---
 const accountsStore = useAccountsStore()
 const { accounts, loading, error } = storeToRefs(accountsStore)

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { getStatementGroups } from '~/composables/supabase'
+
+useHead({ title: 'Statements | R&J Finance' })
 import type { TableColumn } from '@nuxt/ui'
 
 const loading = ref(true)

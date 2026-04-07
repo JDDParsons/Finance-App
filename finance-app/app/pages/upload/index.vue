@@ -2,6 +2,8 @@
 
 import { uploadFile, signOut } from '~/composables/supabase'
 
+useHead({ title: 'Upload | R&J Finance' })
+
 const toast = useToast();
 const fileInput = ref(null);
 const fileUploaded = ref(false);
