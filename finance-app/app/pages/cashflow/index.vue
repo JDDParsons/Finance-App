@@ -26,7 +26,7 @@ const expenseNoteSuggestions = computed((): string[] => {
 })
 
 // Tab state — 'income' | 'expenses'
-const activeTab = ref('income')
+const activeTab = ref('expenses')
 
 const isSlideoverOpen = ref(false)
 const slideoverLoading = ref(false)
@@ -134,8 +134,8 @@ async function saveExpense() {
         v-model="activeTab"
         color="primary"
         :items="[
-          { label: 'Income', slot: 'income', icon: 'heroicons-solid:arrow-trending-up', value: 'income' },
-          { label: 'Expenses', slot: 'expenses', icon: 'heroicons-solid:arrow-trending-down', value: 'expenses' }
+          { label: 'Expenses', slot: 'expenses', icon: 'heroicons-solid:arrow-trending-down', value: 'expenses' },
+          { label: 'Income', slot: 'income', icon: 'heroicons-solid:arrow-trending-up', value: 'income' }
         ]"
       >
         <template #income>

@@ -41,10 +41,7 @@ function handleEditDone() {
     store.fetchAll()
 }
 
-const refreshKey = ref(0)
-
 function handleExpenseUpdate() {
-    refreshKey.value++
     store.fetchAll()
 }
 </script>
@@ -82,7 +79,7 @@ function handleExpenseUpdate() {
 
         <template v-else>
             <!-- Top: Budget summary card -->
-            <UCard class="mb-6 shadow overflow-hidden" :style="budget.color ? { backgroundColor: `${budget.color}22`, borderColor: `${budget.color}55`, borderTop: `3px solid ${budget.color}` } : {}">
+            <UCard class="mb-2 shadow overflow-hidden" :style="budget.color ? { backgroundColor: `${budget.color}22`, borderColor: `${budget.color}55`, borderTop: `3px solid ${budget.color}` } : {}">
                 <div class="grid grid-cols-3 gap-4 text-center mb-4">
                     <div>
                         <p class="text-xs text-gray-500 mb-1">Allocated</p>
@@ -109,17 +106,6 @@ function handleExpenseUpdate() {
 
             <!-- Form + List stacked -->
             <div class="flex flex-col gap-6">
-
-                <!-- Create expense -->
-                <BudgetsExpenseCreate
-                    :key="refreshKey"
-                    :budget-id="budgetId"
-                    :budget-name="budget.name"
-                    @update="handleExpenseUpdate"
-                    @cancel="() => {}"
-                />
-
-                <USeparator />
 
                 <!-- Expenses list -->
                 <BudgetsExpensesList

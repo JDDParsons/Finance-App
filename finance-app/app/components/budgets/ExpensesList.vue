@@ -100,7 +100,7 @@ const tableColumns = [
     <template v-else>
         <!-- Mobile: cards -->
         <div class="lg:hidden">
-            <UScrollArea class="max-h-104 pb-2">
+            <UScrollArea class="max-h-134 pb-2">
                 <div class="space-y-4 p-1">
                     <ExpenseCard
                         v-for="hit in props.budgetHits"
