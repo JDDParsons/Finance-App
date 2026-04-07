@@ -11,13 +11,17 @@ const selectedBudgetId = ref(props.budgetId ?? '')
 const noBudget = ref(false)
 const store = useFinanceStore()
 
-// Two-step flow: 'choose-budget' → 'form'
+// Multi-step flow: 'choose-budget' → 'form' | 'income-form'
 // Skip budget selection if a budgetId was already provided via prop
-const step = ref<'choose-budget' | 'form'>(props.budgetId ? 'form' : 'choose-budget')
+const step = ref<'choose-budget' | 'form' | 'income-form'>(props.budgetId ? 'form' : 'choose-budget')
 
 const chosenBudgetName = ref<string | null>(props.budgetName ?? null)
 
-function handleBudgetSelect(selection: { budgetId: string | null; budgetName: string | null; noBudget: boolean }) {
+function handleBudgetSelect(selection: { budgetId: string | null; budgetName: string | null; noBudget: boolean; type: 'expense' | 'income' }) {
+    if (selection.type === 'income') {
+        step.value = 'income-form'
+        return
+    }
     selectedBudgetId.value = selection.budgetId ?? ''
     noBudget.value = selection.noBudget
     chosenBudgetName.value = selection.budgetName
@@ -51,6 +55,32 @@ const note = ref('')
 const loading = ref(false)
 const error = ref<string | null>(null)
 const expenseAccountId = ref<string | null>(store.defaultExpenseAccount?.id ?? null)
+
+// Income form fields
+const incomeAmount = ref('')
+const incomeDate = ref(new Date().toISOString().split('T')[0])
+const incomeNote = ref('')
+const incomeAccountId = ref<string | null>(store.defaultIncomeAccount?.id ?? null)
+
+async function handleCreateIncome() {
+    if (!incomeAmount.value) { alert('Please enter an amount'); return }
+    if (!incomeDate.value) { alert('Please select a date'); return }
+    try {
+        loading.value = true
+        error.value = null
+        await store.addIncome(parseFloat(incomeAmount.value), incomeDate.value, incomeNote.value, incomeAccountId.value)
+        showOverlay()
+        closeTimer = setTimeout(() => {
+            emit('update')
+            emit('cancel')
+        }, CLOSE_AFTER_SUCCESS_MS)
+    } catch (err: any) {
+        error.value = err?.message || 'Error recording income'
+        alert(error.value)
+    } finally {
+        loading.value = false
+    }
+}
 const { show: showOverlay } = useSuccessOverlay()
 
 const accountItems = computed(() =>
@@ -140,7 +170,91 @@ async function handleCreateHit() {
             </div>
         </template>
 
-        <!-- Step 2: Expense form -->
+        <!-- Step 2b: Income form -->
+        <template v-else-if="step === 'income-form'">
+            <div class="ml-3">
+                <!-- Back button -->
+                <div class="flex items-center gap-2 mb-5">
+                    <button
+                        type="button"
+                        class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
+                        @click="goBack"
+                        aria-label="Change type"
+                    >
+                        <div class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 bg-green-50 dark:bg-green-900/30 border border-green-400">
+                            <UIcon name="heroicons:banknotes-solid" class="size-3 text-green-500" />
+                        </div>
+                        <span class="text-sm text-gray-600 dark:text-gray-300">Paycheck</span>
+                        <UIcon name="heroicons:pencil-square" class="size-3.5 text-gray-400 ml-0.5" />
+                    </button>
+                </div>
+
+                <div v-if="error" class="mb-4">
+                    <UAlert title="Error" :description="error" color="error" variant="soft" />
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-x-6 gap-y-6">
+                    <UFormField label="Amount" required>
+                        <UInput
+                            v-model="incomeAmount"
+                            highlight
+                            color="primary"
+                            placeholder="0.00"
+                            type="number"
+                            step="0.01"
+                            size="xl"
+                        />
+                    </UFormField>
+
+                    <UFormField label="Date" required>
+                        <UInput
+                            v-model="incomeDate"
+                            highlight
+                            color="primary"
+                            type="date"
+                            size="xl"
+                        />
+                    </UFormField>
+
+                    <UFormField label="Note">
+                        <UInput
+                            v-model="incomeNote"
+                            highlight
+                            color="primary"
+                            placeholder="Leave a note..."
+                            type="text"
+                            size="xl"
+                        />
+                    </UFormField>
+
+                    <UFormField label="Account">
+                        <USelect
+                            v-model="incomeAccountId"
+                            :items="accountItems"
+                            placeholder="Select an account..."
+                            size="xl"
+                            color="primary"
+                            highlight
+                        />
+                    </UFormField>
+                </div>
+
+                <div class="flex items-center gap-3 mt-6">
+                    <UButton
+                        color="primary"
+                        variant="solid"
+                        @click="handleCreateIncome"
+                        :disabled="loading"
+                        :loading="loading"
+                    >
+                        Submit income
+                    </UButton>
+                    <UButton color="neutral" variant="ghost" @click="handleCancel">Cancel</UButton>
+                </div>
+            </div>
+        </template>
+
+        <!-- Step 2a: Expense form -->
         <template v-else>
             <div class="ml-3">
                 <!-- Selected budget indicator + back button -->

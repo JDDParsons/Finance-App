@@ -290,6 +290,5 @@ async function saveExpense() {
         </div>
       </template>
     </USlideover>
-    <GreenAddButton @click="openSlideover" />
   </UContainer>
 </template>

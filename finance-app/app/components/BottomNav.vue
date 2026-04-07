@@ -49,7 +49,7 @@
     <template #content>
       <UCard>
         <template #header>
-          <h2 class="text-2xl font-bold">Add Expense</h2>
+          <h2 class="text-2xl font-bold">Add</h2>
         </template>
         <BudgetsExpenseCreate
           :budgets="store.budgets"
