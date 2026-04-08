@@ -1,5 +1,6 @@
 <script setup>
 import { signOut } from '~/composables/supabase'
+import { useBudgetIcon } from '~/composables/useBudgetIcon'
 
 useHead({ title: 'Home | R&J Finance' })
 import { Doughnut } from 'vue-chartjs'
@@ -7,6 +8,7 @@ import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement } from 'chart.js'
 ChartJS.register(Title, Tooltip, Legend, ArcElement)
 
 const store = useFinanceStore()
+const { budgetIcon } = useBudgetIcon()
 
 onMounted(async () => {
   await store.ensureLoaded()
@@ -28,6 +30,8 @@ const top5Expenses = computed(() => {
       return {
         ...h,
         budgetName: budget?.name ?? 'Uncategorized',
+        budgetColor: budget?.color ?? null,
+        budgetIconName: budget ? budgetIcon(budget.name) : null,
       }
     })
 })
@@ -120,26 +124,97 @@ const monthLabel = computed(() => {
   return new Date(year, month - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' })
 })
 
-const chartColors = ref({ expenses: '#ef4444', remaining: '#22c55e' })
+const chartColors = ref({ remaining: '#22c55e' })
+const NO_BUDGET_COLOR = '#F3F4F6'   // light grey
+
+const FALLBACK_PALETTE = [
+  '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6',
+  '#EC4899', '#14B8A6', '#F97316', '#84CC16', '#06B6D4', '#10B981',
+]
+
+// Stripe pattern for the "No budget" arc
+const noBudgetPattern = ref(null)
+
+function makeStripePattern() {
+  const size = 8
+  const offscreen = document.createElement('canvas')
+  offscreen.width = size
+  offscreen.height = size
+  const ctx2 = offscreen.getContext('2d')
+  // Fill background
+  ctx2.fillStyle = NO_BUDGET_COLOR
+  ctx2.fillRect(0, 0, size, size)
+  // Draw X pattern (two diagonal lines)
+  ctx2.strokeStyle = '#D1D5DB'
+  ctx2.lineWidth = 0.6
+  ctx2.beginPath()
+  ctx2.moveTo(0, 0)
+  ctx2.lineTo(size, size)
+  ctx2.moveTo(size, 0)
+  ctx2.lineTo(0, size)
+  ctx2.stroke()
+  // Create a temporary canvas to get a rendering context for createPattern
+  const host = document.createElement('canvas')
+  const hostCtx = host.getContext('2d')
+  return hostCtx.createPattern(offscreen, 'repeat')
+}
 
 function resolveChartColors() {
   const style = getComputedStyle(document.documentElement)
-  const error = style.getPropertyValue('--ui-warning').trim()
   const primary = style.getPropertyValue('--ui-primary').trim()
-  if (error) chartColors.value.expenses = error
   if (primary) chartColors.value.remaining = primary
+  noBudgetPattern.value = makeStripePattern()
 }
 
-const chartData = computed(() => ({
-  labels: ['Expenses', 'Remaining'],
-  datasets: [
-    {
-      backgroundColor: [chartColors.value.expenses, chartColors.value.remaining],
+const chartData = computed(() => {
+  const excludedSet = new Set(excludedExpenseIds.value)
+
+  // Compute per-budget totals (excluding any toggled-off top-5 hits)
+  const budgetTotals = new Map()
+  for (const h of store.budgetHits) {
+    if (excludedSet.has(h.id)) continue
+    const key = h.budget_id ?? '__none__'
+    budgetTotals.set(key, (budgetTotals.get(key) ?? 0) + (Number(h.amount) || 0))
+  }
+
+  // Sort largest → smallest so the chart mirrors the stacked bar logic
+  const sorted = [...budgetTotals.entries()].sort((a, b) => b[1] - a[1])
+
+  let fallbackIdx = 0
+  const labels = []
+  const data = []
+  const backgroundColors = []
+  const borderColors = []
+
+  for (const [budgetId, total] of sorted) {
+    const budget = budgetId !== '__none__' ? store.budgets.find(b => b.id === budgetId) : null
+    labels.push(budget?.name ?? 'No budget')
+    data.push(total)
+    if (budgetId === '__none__') {
+      backgroundColors.push(noBudgetPattern.value ?? NO_BUDGET_COLOR)
+      borderColors.push('#D1D5DB')
+    } else {
+      backgroundColors.push(budget?.color ?? FALLBACK_PALETTE[fallbackIdx++ % FALLBACK_PALETTE.length])
+      borderColors.push('transparent')
+    }
+  }
+
+  // Append the Remaining slice
+  labels.push('Remaining')
+  data.push(remaining.value)
+  backgroundColors.push(chartColors.value.remaining)
+  borderColors.push('transparent')
+
+  return {
+    labels,
+    datasets: [{
+      backgroundColor: backgroundColors,
+      borderColor: borderColors,
       borderWidth: 2,
-      data: [totalExpenses.value, remaining.value],
-    },
-  ],
-}))
+      data,
+    }],
+  }
+})
 
 const glowPlugin = {
   id: 'arcGlow',
@@ -195,7 +270,7 @@ const chartOptions = {
 
 
         <div class="flex flex-col items-center justify-center pt-2 space-y-2">
-            <h2 class="text-2xl font-bold">Balance</h2>
+            <h2 class="text-2xl font-bold">Spendometer</h2>
 
             <div v-if="store.loading" class="w-full max-w-sm" style="height: 200px;">
                 <USkeleton class="w-full h-full" style="border-radius: 50% 50% 0 0 / 100% 100% 0 0;" />
@@ -270,16 +345,27 @@ const chartOptions = {
                     <li
                         v-for="(hit, i) in top5Expenses"
                         :key="hit.id"
-                      class="flex items-center justify-between rounded-lg px-4 py-3 bg-elevated cursor-pointer transition-opacity"
+                      class="flex items-center justify-between rounded-lg px-4 py-3 bg-elevated cursor-pointer transition-opacity border-t-2"
                       :class="{ 'opacity-50': isExpenseExcluded(hit.id) }"
+                      :style="{ borderTopColor: hit.budgetColor ?? '#D1D5DB' }"
                       @click="toggleExpenseFromTotal(hit.id)"
                     >
                         <div class="flex items-center gap-3">
                             <span class="text-sm text-muted w-4">{{ i + 1 }}</span>
-                            <div>
-                                <p class="font-medium text-sm">{{ hit.budgetName }}</p>
-                                <p class="text-xs text-muted">{{ hit.note || '—' }}</p>
+                            <!-- Budget icon: colored circle or grey X pattern for uncategorized -->
+                            <div
+                              v-if="hit.budgetColor"
+                              class="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                              :style="{ backgroundColor: hit.budgetColor + '33' }"
+                            >
+                              <UIcon :name="hit.budgetIconName" class="w-4 h-4" :style="{ color: hit.budgetColor }" />
                             </div>
+                            <div
+                              v-else
+                              class="w-7 h-7 rounded-full shrink-0"
+                              style="background-color: #F3F4F6; background-image: repeating-linear-gradient(45deg, #D1D5DB 0, #D1D5DB 0.6px, transparent 0, transparent 50%), repeating-linear-gradient(-45deg, #D1D5DB 0, #D1D5DB 0.6px, transparent 0, transparent 50%); background-size: 8px 8px;"
+                            />
+                            <p class="text-xs text-muted">{{ hit.note || '—' }}</p>
                         </div>
                         <p class="font-semibold text-warning text-sm">${{ Number(hit.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</p>
                     </li>
