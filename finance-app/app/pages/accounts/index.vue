@@ -1,8 +1,24 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { useAccountsStore } from '~/stores/accounts'
+import { getSupabase } from '~/composables/supabase/client'
+import { signOut } from '~/composables/supabase'
 
-useHead({ title: 'Accounts | R&J Finance' })
+useHead({ title: 'Profile | R&J Finance' })
+
+// --- Profile image ---
+const { app: { baseURL } } = useRuntimeConfig()
+const profileImageSrc = computed(() => `${baseURL}AU1A4287.jpg`)
+
+// --- User ---
+const userName = ref('')
+const userEmail = ref('')
+onMounted(async () => {
+  const supabase = getSupabase()
+  const { data: { user } } = await supabase.auth.getUser()
+  userName.value = user?.user_metadata?.full_name || user?.user_metadata?.name || ''
+  userEmail.value = user?.email || ''
+})
 
 // --- State ---
 const accountsStore = useAccountsStore()
@@ -215,9 +231,25 @@ function institutionBgColor(institution: string | null | undefined) {
 
 <template>
   <UContainer>
-    <!-- Header -->
-    <div class="relative flex items-center justify-center pt-2 mb-4">
-      <h2 class="text-3xl font-bold">Accounts</h2>
+    <!-- Profile Header -->
+    <div class="relative flex flex-col items-center pt-8 pb-6 mb-2">
+      <!-- Top-right actions -->
+      <div class="absolute top-0 right-0 flex items-center gap-2">
+        <UColorModeSwitch />
+        <UButton color="neutral" variant="ghost" size="sm" icon="heroicons-solid:arrow-right-on-rectangle" aria-label="Sign out" @click="signOut()" />
+      </div>
+      <!-- Profile image -->
+      <img :src="profileImageSrc" alt="Profile" class="w-58 h-58 rounded-full object-cover mb-3 shadow" />
+      <!-- User name / email -->
+      <p class="text-xl font-semibold text-gray-900 dark:text-white">
+        {{ userName || userEmail || 'User' }}
+      </p>
+      <p v-if="userName && userEmail" class="text-sm text-gray-400 mt-0.5">{{ userEmail }}</p>
+    </div>
+
+    <!-- Accounts subheading + menu -->
+    <div class="relative flex items-center justify-center mb-4">
+      <h2 class="text-2xl font-bold">Accounts</h2>
       <div class="absolute right-0">
         <UDropdownMenu :items="accountMenuItems" :content="{ align: 'end' }">
           <UButton

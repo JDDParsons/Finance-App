@@ -24,7 +24,7 @@ const navigation = [
   { label: 'Budgets', icon: 'pepicons-pop:dollar-circle-filled', to: '/budgets' },
   { label: 'Cashflow', icon: 'heroicons-solid:arrows-right-left', to: '/cashflow' },
   { label: 'Savings', icon: 'streamline-flex:decent-work-and-economic-growth-solid', to: '/savings' },
-  { label: 'Accounts', icon: 'heroicons-solid:credit-card', to: '/accounts' },
+  { label: 'Profile', icon: 'heroicons-solid:user-circle', to: '/accounts' },
   { label: 'Upload', icon: 'heroicons-solid:arrow-up-tray', to: '/upload' },
 ]
 </script>
