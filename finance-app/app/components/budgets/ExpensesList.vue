@@ -170,11 +170,6 @@ const tableColumns = [
                     @cancel="handleEditHitClose"
                     @delete="handleEditHitClose"
                 />
-                <template #footer>
-                    <UButton color="neutral" variant="ghost" @click="handleEditHitClose" class="mr-2 mt-1">
-                        Close
-                    </UButton>
-                </template>
             </UCard>
         </template>
     </UModal>

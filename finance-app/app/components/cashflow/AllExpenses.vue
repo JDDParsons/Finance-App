@@ -7,6 +7,10 @@ const budgetMap = computed(() =>
   new Map<string, string>(store.budgets.map((b: any) => [b.id, b.name]))
 )
 
+const budgetColorMap = computed(() =>
+  new Map<string, string | null>(store.budgets.map((b: any) => [b.id, b.color ?? null]))
+)
+
 const accountMap = computed(() =>
   new Map<string, string>(store.accounts.map((a: any) => [a.id, a.name || a.institution || 'Account']))
 )
@@ -157,6 +161,7 @@ async function handleDelete(id: string) {
               :date="hit.date"
               :note="hit.note"
               :budget-name="budgetMap.get(hit.budget_id)"
+              :budget-color="hit.budget_id ? budgetColorMap.get(hit.budget_id) ?? null : null"
               :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
               :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
               @delete="handleDelete"
@@ -177,6 +182,7 @@ async function handleDelete(id: string) {
               :date="hit.date"
               :note="hit.note"
               :budget-name="budgetMap.get(hit.budget_id)"
+              :budget-color="hit.budget_id ? budgetColorMap.get(hit.budget_id) ?? null : null"
               :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
               :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
               @delete="handleDelete"
@@ -196,6 +202,7 @@ async function handleDelete(id: string) {
             :date="hit.date"
             :note="hit.note"
             :budget-name="budgetMap.get(hit.budget_id)"
+            :budget-color="hit.budget_id ? budgetColorMap.get(hit.budget_id) ?? null : null"
             :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
             :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
             @delete="handleDelete"
@@ -223,11 +230,6 @@ async function handleDelete(id: string) {
           @cancel="handleEditClose"
           @delete="handleEditClose"
         />
-        <template #footer>
-          <UButton color="neutral" variant="ghost" @click="handleEditClose" class="mr-2 mt-1">
-            Close
-          </UButton>
-        </template>
       </UCard>
     </template>
   </UModal>

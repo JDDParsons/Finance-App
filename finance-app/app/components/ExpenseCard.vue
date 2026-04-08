@@ -5,6 +5,7 @@ const props = defineProps<{
   date: string | null
   note?: string | null
   budgetName?: string | null
+  budgetColor?: string | null
   accountName?: string | null
   accountInstitution?: string | null
 }>()
@@ -59,7 +60,13 @@ function institutionBgColor(institution: string | null | undefined, accountName:
       <div class="flex flex-col gap-1 flex-1">
         <div class="flex items-center gap-2">
           <span class="text-xl font-semibold text-info">{{ formatCurrency(amount) }}</span>
-          <UBadge v-if="budgetName !== undefined" :color="budgetName ? 'primary' : 'warning'" variant="subtle" class="ml-auto">
+          <UBadge
+            v-if="budgetName !== undefined"
+            variant="subtle"
+            :color="budgetColor ? undefined : (budgetName ? 'primary' : 'warning')"
+            :style="budgetColor ? { backgroundColor: budgetColor + '22', color: budgetColor, borderColor: budgetColor + '55' } : {}"
+            class="ml-auto"
+          >
             {{ budgetName || 'No budget' }}
           </UBadge>
         </div>

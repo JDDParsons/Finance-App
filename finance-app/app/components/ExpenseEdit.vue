@@ -17,20 +17,29 @@ const emit = defineEmits<{
 }>()
 
 const store = useFinanceStore()
+const { budgetIcon } = useBudgetIcon()
 
 const amount = ref(props.expenseAmount ?? 0)
 const date = ref(props.expenseDate ? props.expenseDate.slice(0, 10) : new Date().toLocaleDateString('en-CA'))
 const note = ref(props.expenseNote ?? '')
 const noBudget = ref(!props.expenseBudgetId)
 const selectedBudgetId = ref(props.expenseBudgetId ?? '')
+const choosingBudget = ref(false)
 
 const loading = ref(false)
 const deleting = ref(false)
 const error = ref<string | null>(null)
 
-const budgetOptions = computed(() =>
-    store.budgets.map((b: any) => ({ label: b.name, value: b.id }))
-)
+const chosenBudget = computed(() => {
+    if (noBudget.value) return null
+    return store.budgets.find((b: any) => b.id === selectedBudgetId.value) ?? null
+})
+
+function handleBudgetSelect(selection: { budgetId: string | null; budgetName: string | null; noBudget: boolean; type: 'expense' | 'income' }) {
+    selectedBudgetId.value = selection.budgetId ?? ''
+    noBudget.value = selection.noBudget
+    choosingBudget.value = false
+}
 
 const immutableAccountId = computed<string | null>(() => {
     if (props.expenseAccountId !== undefined) return props.expenseAccountId
@@ -89,81 +98,111 @@ async function handleDelete() {
 </script>
 
 <template>
-    <div v-if="error" class="mb-4">
-        <UAlert
-            title="Error"
-            :description="error"
-            color="error"
-            variant="soft"
+    <!-- Choose budget page -->
+    <template v-if="choosingBudget">
+        <BudgetsChooseBudget
+            :budgets="store.budgets"
+            :expenses-only="true"
+            @select="handleBudgetSelect"
         />
-    </div>
+        <div class="mt-4">
+            <UButton color="neutral" variant="ghost" @click="choosingBudget = false">Cancel</UButton>
+        </div>
+    </template>
 
-    <div class="space-y-6">
-        <UFormField label="Amount" required>
-            <UInput
-                v-model="amount"
-                highlight
-                color="info"
-                placeholder="0.00"
-                type="number"
-                step="0.01"
-                size="xl"
+    <!-- Edit form page -->
+    <template v-else>
+        <div v-if="error" class="mb-4">
+            <UAlert
+                title="Error"
+                :description="error"
+                color="error"
+                variant="soft"
             />
-        </UFormField>
+        </div>
 
-        <UFormField label="Date" required>
-            <UInput
-                v-model="date"
-                highlight
-                color="info"
-                type="date"
-                size="xl"
-            />
-        </UFormField>
+        <div class="space-y-6">
+            <!-- Budget pill -->
+            <button
+                type="button"
+                class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
+                @click="choosingBudget = true"
+                aria-label="Change budget"
+            >
+                <div
+                    v-if="chosenBudget"
+                    class="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                    :style="chosenBudget.color ? { backgroundColor: chosenBudget.color + '33', borderColor: chosenBudget.color, border: '1.5px solid' } : {}"
+                    :class="!chosenBudget.color ? 'bg-gray-100 dark:bg-gray-800 border border-gray-300' : ''"
+                >
+                    <UIcon
+                        :name="budgetIcon(chosenBudget.name)"
+                        class="size-3"
+                        :style="chosenBudget.color ? { color: chosenBudget.color } : {}"
+                        :class="!chosenBudget.color ? 'text-gray-500' : ''"
+                    />
+                </div>
+                <div v-else class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 bg-gray-100 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-600">
+                    <UIcon name="heroicons:x-mark" class="size-3 text-gray-400" />
+                </div>
+                <span class="text-sm text-gray-600 dark:text-gray-300">{{ chosenBudget?.name ?? 'No budget' }}</span>
+                <UIcon name="heroicons:pencil-square" class="size-3.5 text-gray-400 ml-0.5" />
+            </button>
 
-        <UFormField label="Note">
-            <UInput
-                v-model="note"
-                highlight
-                color="info"
-                placeholder="Leave a note..."
-                type="text"
-                size="xl"
-            />
-        </UFormField>
+            <UFormField label="Amount" required>
+                <UInput
+                    v-model="amount"
+                    highlight
+                    color="info"
+                    placeholder="0.00"
+                    type="number"
+                    step="0.01"
+                    size="xl"
+                />
+            </UFormField>
 
-        <UFormField label="Budget">
-            <USelect
-                v-model="selectedBudgetId"
-                :items="budgetOptions"
-                placeholder="No budget"
-                size="xl"
-                color="info"
-                highlight
-                :disabled="noBudget"
-            />
-        </UFormField>
+            <UFormField label="Date" required>
+                <UInput
+                    v-model="date"
+                    highlight
+                    color="info"
+                    type="date"
+                    size="xl"
+                />
+            </UFormField>
 
-        <UCheckbox v-model="noBudget" color="info" label="No budget" />
+            <UFormField label="Note">
+                <UInput
+                    v-model="note"
+                    highlight
+                    color="info"
+                    placeholder="Leave a note..."
+                    type="text"
+                    size="xl"
+                />
+            </UFormField>
 
-        <UFormField label="Account">
-            <UInput
-                :model-value="immutableAccountLabel"
-                size="xl"
-                color="info"
-                highlight
-                readonly
-            />
-        </UFormField>
+            <UFormField label="Account">
+                <UInput
+                    :model-value="immutableAccountLabel"
+                    size="xl"
+                    color="info"
+                    highlight
+                    readonly
+                />
+            </UFormField>
 
-        <UButton
-            color="secondary"
-            @click="handleUpdate"
-            class="flex-1"
-            :loading="loading"
-            :disabled="loading || deleting"
-        >
-            Update Expense
-        </UButton>
-    </div>
+            <div class="flex items-center gap-3">
+                <UButton
+                    color="secondary"
+                    @click="handleUpdate"
+                    :loading="loading"
+                    :disabled="loading || deleting"
+                >
+                    Update Expense
+                </UButton>
+                <UButton color="neutral" variant="ghost" @click="emit('cancel')" :disabled="loading || deleting">Cancel</UButton>
+            </div>
+        </div>
+    </template>
 </template>
