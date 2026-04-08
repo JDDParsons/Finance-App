@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
+import { useBudgetIcon } from '~/composables/useBudgetIcon'
 
 const store = useFinanceStore()
+const { budgetIcon } = useBudgetIcon()
 
 const budgetMap = computed(() =>
   new Map<string, string>(store.budgets.map((b: any) => [b.id, b.name]))
@@ -9,6 +11,10 @@ const budgetMap = computed(() =>
 
 const budgetColorMap = computed(() =>
   new Map<string, string | null>(store.budgets.map((b: any) => [b.id, b.color ?? null]))
+)
+
+const budgetIconMap = computed(() =>
+  new Map<string, string>(store.budgets.map((b: any) => [b.id, budgetIcon(b.name)]))
 )
 
 const accountMap = computed(() =>
@@ -162,6 +168,7 @@ async function handleDelete(id: string) {
               :note="hit.note"
               :budget-name="budgetMap.get(hit.budget_id)"
               :budget-color="hit.budget_id ? budgetColorMap.get(hit.budget_id) ?? null : null"
+              :budget-icon="hit.budget_id ? budgetIconMap.get(hit.budget_id) ?? null : null"
               :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
               :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
               @delete="handleDelete"
@@ -183,6 +190,7 @@ async function handleDelete(id: string) {
               :note="hit.note"
               :budget-name="budgetMap.get(hit.budget_id)"
               :budget-color="hit.budget_id ? budgetColorMap.get(hit.budget_id) ?? null : null"
+              :budget-icon="hit.budget_id ? budgetIconMap.get(hit.budget_id) ?? null : null"
               :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
               :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
               @delete="handleDelete"
@@ -203,6 +211,7 @@ async function handleDelete(id: string) {
             :note="hit.note"
             :budget-name="budgetMap.get(hit.budget_id)"
             :budget-color="hit.budget_id ? budgetColorMap.get(hit.budget_id) ?? null : null"
+            :budget-icon="hit.budget_id ? budgetIconMap.get(hit.budget_id) ?? null : null"
             :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
             :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
             @delete="handleDelete"

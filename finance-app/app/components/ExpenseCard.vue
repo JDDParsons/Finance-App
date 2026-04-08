@@ -6,6 +6,7 @@ const props = defineProps<{
   note?: string | null
   budgetName?: string | null
   budgetColor?: string | null
+  budgetIcon?: string | null
   accountName?: string | null
   accountInstitution?: string | null
 }>()
@@ -60,15 +61,21 @@ function institutionBgColor(institution: string | null | undefined, accountName:
       <div class="flex flex-col gap-1 flex-1">
         <div class="flex items-center gap-2">
           <span class="text-xl font-semibold text-info">{{ formatCurrency(amount) }}</span>
-          <UBadge
-            v-if="budgetName !== undefined"
-            variant="subtle"
-            :color="budgetColor ? undefined : (budgetName ? 'primary' : 'warning')"
-            :style="budgetColor ? { backgroundColor: budgetColor + '22', color: budgetColor, borderColor: budgetColor + '55' } : {}"
-            class="ml-auto"
-          >
-            {{ budgetName || 'No budget' }}
-          </UBadge>
+          <!-- Budget icon: colored circle or grey X pattern for uncategorized -->
+          <template v-if="budgetName !== undefined">
+            <div
+              v-if="budgetColor && budgetIcon"
+              class="ml-auto w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+              :style="{ backgroundColor: budgetColor + '33' }"
+            >
+              <UIcon :name="budgetIcon" class="w-4 h-4" :style="{ color: budgetColor }" />
+            </div>
+            <div
+              v-else
+              class="ml-auto w-7 h-7 rounded-full shrink-0"
+              style="background-color: #F3F4F6; background-image: repeating-linear-gradient(45deg, #D1D5DB 0, #D1D5DB 0.6px, transparent 0, transparent 50%), repeating-linear-gradient(-45deg, #D1D5DB 0, #D1D5DB 0.6px, transparent 0, transparent 50%); background-size: 8px 8px;"
+            />
+          </template>
         </div>
         <span class="text-sm text-gray-500">{{ formatDate(date) }}</span>
         <span v-if="note" class="text-sm text-gray-600 dark:text-gray-300">{{ note }}</span>
