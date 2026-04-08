@@ -10,6 +10,11 @@ useHead({ title: 'Profile | R&J Finance' })
 const { app: { baseURL } } = useRuntimeConfig()
 const profileImageSrc = computed(() => `${baseURL}AU1A4287.jpg`)
 
+// --- Sign out ---
+function handleSignOut() {
+  if (window.confirm('Are you sure you want to sign out?')) signOut()
+}
+
 // --- User ---
 const userName = ref('')
 const userEmail = ref('')
@@ -231,13 +236,17 @@ function institutionBgColor(institution: string | null | undefined) {
 
 <template>
   <UContainer>
-    <!-- Profile Header -->
-    <div class="relative flex flex-col items-center pt-8 pb-6 mb-2">
-      <!-- Top-right actions -->
-      <div class="absolute top-0 right-0 flex items-center gap-2">
+    <!-- Header -->
+    <div class="relative flex items-center justify-center pt-2 mb-2">
+      <h2 class="text-3xl font-bold">Profile</h2>
+      <div class="absolute right-0 flex items-center gap-2">
         <UColorModeSwitch />
-        <UButton color="neutral" variant="ghost" size="sm" icon="heroicons-solid:arrow-right-on-rectangle" aria-label="Sign out" @click="signOut()" />
+        <UButton color="neutral" variant="ghost" size="sm" icon="heroicons-solid:arrow-right-on-rectangle" aria-label="Sign out" @click="handleSignOut" />
       </div>
+    </div>
+
+    <!-- Profile Header -->
+    <div class="flex flex-col items-center pt-8 pb-6 mb-2">
       <!-- Profile image -->
       <img :src="profileImageSrc" alt="Profile" class="w-58 h-58 rounded-full object-cover mb-3 ring-4 ring-white dark:ring-gray-800 shadow-lg" />
       <!-- User name / email -->
