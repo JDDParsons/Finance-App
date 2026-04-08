@@ -14,7 +14,7 @@ const budgetColorMap = computed(() =>
 )
 
 const budgetIconMap = computed(() =>
-  new Map<string, string>(store.budgets.map((b: any) => [b.id, budgetIcon(b.name)]))
+  new Map<string, string>(store.budgets.map((b: any) => [b.id, b.icon ?? budgetIcon(b.name)]))
 )
 
 const accountMap = computed(() =>

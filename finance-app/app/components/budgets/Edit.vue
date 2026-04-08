@@ -7,6 +7,7 @@ const props = defineProps<{
     budgetName?: string
     budgetAmount?: number
     budgetColor?: string
+    budgetIcon?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -20,6 +21,7 @@ const store = useFinanceStore()
 const name = ref(props.budgetName ?? '')
 const amount = ref(props.budgetAmount ?? 0)
 const color = ref(props.budgetColor ?? '#6366f1')
+const icon = ref<string | null>(props.budgetIcon ?? null)
 
 const loading = ref(false)
 const deleting = ref(false)
@@ -42,7 +44,7 @@ async function handleUpdateBudget() {
         try {
             loading.value = true
             error.value = null
-            await updateBudget(props.budgetId || '', name.value, amount.value.toString(), color.value, store.selectedMonth.year, store.selectedMonth.month)
+            await updateBudget(props.budgetId || '', name.value, amount.value.toString(), color.value, icon.value ?? undefined, store.selectedMonth.year, store.selectedMonth.month)
             emit('update')
         } catch (err: any) {
             error.value = err?.message || 'Error updating budget'
@@ -109,6 +111,10 @@ async function handleDeleteBudget() {
 
             <UFormField label="Colour">
                 <BudgetsColorPicker v-model="color" />
+            </UFormField>
+
+            <UFormField label="Icon">
+                <BudgetsChooseIcon v-model="icon" :color="color" />
             </UFormField>
             <UButton
                 color="secondary"

@@ -179,8 +179,8 @@ export const useFinanceStore = defineStore('finance', () => {
 
   // ── budgets ───────────────────────────────────────────────────────────────
 
-  async function addBudget(name: string, amount: string, color?: string) {
-    await createBudget(name, amount, color)
+  async function addBudget(name: string, amount: string, color?: string, icon?: string | null) {
+    await createBudget(name, amount, color, icon)
     await refreshBudgets()
   }
 

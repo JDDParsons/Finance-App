@@ -48,7 +48,7 @@ function choosePaycheck() {
                         :class="!budget.color ? 'bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600' : ''"
                     >
                         <UIcon
-                            :name="budgetIcon(budget.name)"
+                            :name="budget.icon ?? budgetIcon(budget.name)"
                             class="size-5"
                             :style="budget.color ? { color: budget.color } : {}"
                             :class="!budget.color ? 'text-gray-500 dark:text-gray-400' : ''"
@@ -93,7 +93,7 @@ function choosePaycheck() {
                             :class="!budget.color ? 'bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600' : ''"
                         >
                             <UIcon
-                                :name="budgetIcon(budget.name)"
+                                :name="budget.icon ?? budgetIcon(budget.name)"
                                 class="size-5"
                                 :style="budget.color ? { color: budget.color } : {}"
                                 :class="!budget.color ? 'text-gray-500 dark:text-gray-400' : ''"

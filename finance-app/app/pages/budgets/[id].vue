@@ -130,6 +130,7 @@ function handleExpenseUpdate() {
                         :budget-name="budget?.name"
                         :budget-amount="budget?.currentPeriod?.amount"
                         :budget-color="budget?.color"
+                        :budget-icon="budget?.icon ?? null"
                         @update="handleEditDone"
                         @cancel="isEditModalOpen = false"
                         @delete="router.push('/budgets')"

@@ -7,6 +7,7 @@ const props = defineProps<{
     budgetAmount?: number
     budgetHits?: any[]
     activeTab?: number
+    budgetIcon?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -103,6 +104,7 @@ function handleExpenseCreated() {
                         :budget-id="budgetId"
                         :budget-name="budgetName"
                         :budget-amount="budgetAmount"
+                        :budget-icon="budgetIcon ?? null"
                         @update="handleEditUpdate"
                         @cancel="handleEditCancel"
                         @delete="handleEditDelete"

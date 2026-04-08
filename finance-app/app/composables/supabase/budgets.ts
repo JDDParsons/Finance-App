@@ -1,6 +1,6 @@
 import { getSupabase, resolveHouseholdId, getCachedHouseholdId } from './client'
 
-export async function createBudget(name: string, amount: string, color?: string) {
+export async function createBudget(name: string, amount: string, color?: string, icon?: string | null) {
   const supabase = getSupabase()
   const { data: auth } = await supabase.auth.getSession()
   const householdId = await resolveHouseholdId()
@@ -11,7 +11,8 @@ export async function createBudget(name: string, amount: string, color?: string)
       amount: parseFloat(amount),
       user_id: auth.session?.user?.id,
       household_id: householdId,
-      ...(color ? { color } : {})
+      ...(color ? { color } : {}),
+      ...(icon ? { icon } : {})
     })
     .select()
     .single()
@@ -171,14 +172,15 @@ export async function getBudgetById(id: string) {
   return budget
 }
 
-export async function updateBudget(id: string, name: string, amount: string, color?: string, year?: number, month?: number) {
+export async function updateBudget(id: string, name: string, amount: string, color?: string, icon?: string | null, year?: number, month?: number) {
   const supabase = getSupabase()
   const { data, error } = await supabase
     .from('Budgets')
     .update({
       name,
       amount: parseFloat(amount),
-      ...(color !== undefined ? { color } : {})
+      ...(color !== undefined ? { color } : {}),
+      ...(icon !== undefined ? { icon } : {})
     })
     .eq('id', id)
     .select()

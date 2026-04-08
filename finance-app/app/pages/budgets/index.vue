@@ -40,6 +40,7 @@ const isSlideoverOpen = ref(false)
 const budgetName = ref('')
 const amount = ref('')
 const budgetColor = ref('#6366f1')
+const budgetIconChoice = ref<string | null>(null)
 const createLoading = ref(false)
 
 
@@ -59,7 +60,7 @@ async function handleCreateBudget() {
     if (validateBudgetForm()) {
         try {
             createLoading.value = true
-            await store.addBudget(budgetName.value, amount.value, budgetColor.value)
+            await store.addBudget(budgetName.value, amount.value, budgetColor.value, budgetIconChoice.value)
             budgetName.value = ''
             amount.value = ''
             isSlideoverOpen.value = false
@@ -76,6 +77,7 @@ function closeSlideover() {
     budgetName.value = ''
     amount.value = ''
     budgetColor.value = '#6366f1'
+    budgetIconChoice.value = null
 }
 
 function goToBudget(budgetId: string) {
@@ -246,7 +248,7 @@ function cardStyle(color: string | null | undefined) {
                 <div class="flex-1" @click="goToBudget(budget.id)">
                     <div class="flex justify-between items-center gap-2 ">
                         <div class="flex items-center gap-2">
-                            <UIcon :name="budgetIcon(budget.name)" class="w-5 h-5 shrink-0 text-muted" />
+                            <UIcon :name="budget.icon ?? budgetIcon(budget.name)" class="w-5 h-5 shrink-0 text-muted" />
                             <h3 class="text-md font-semibold text-black dark:text-white">
                                 {{ budget.name }}
                             </h3>
@@ -300,6 +302,10 @@ function cardStyle(color: string | null | undefined) {
 
                             <UFormField label="Colour">
                                 <BudgetsColorPicker v-model="budgetColor" />
+                            </UFormField>
+
+                            <UFormField label="Icon">
+                                <BudgetsChooseIcon v-model="budgetIconChoice" :color="budgetColor" />
                             </UFormField>
                         </div>
                     </div>

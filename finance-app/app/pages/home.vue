@@ -31,7 +31,7 @@ const top5Expenses = computed(() => {
         ...h,
         budgetName: budget?.name ?? 'Uncategorized',
         budgetColor: budget?.color ?? null,
-        budgetIconName: budget ? budgetIcon(budget.name) : null,
+        budgetIconName: budget ? (budget.icon ?? budgetIcon(budget.name)) : null,
       }
     })
 })
