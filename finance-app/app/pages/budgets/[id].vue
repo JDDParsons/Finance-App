@@ -14,6 +14,7 @@ const budget = computed(() => store.budgets.find((b: any) => b.id === budgetId))
 useHead(computed(() => ({ title: budget.value ? `${budget.value.name} | R&J Finance` : 'Budget | R&J Finance' })))
 
 const isEditModalOpen = ref(false)
+const editRef = ref<any>(null)
 
 function progressBarColour(amount: number, totalHitAmount: number): string {
     const percentage = Math.min((totalHitAmount / amount) * 100, 100)
@@ -123,9 +124,20 @@ function handleExpenseUpdate() {
             <template #content>
                 <UCard>
                     <template #header>
-                        <h2 class="text-2xl font-bold">Edit Budget</h2>
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-2xl font-bold">Edit Budget</h2>
+                            <UButton
+                                icon="heroicons-solid:trash"
+                                color="error"
+                                variant="ghost"
+                                size="sm"
+                                aria-label="Delete budget"
+                                @click="editRef?.handleDeleteBudget()"
+                            />
+                        </div>
                     </template>
                     <BudgetsEdit
+                        ref="editRef"
                         :budget-id="budgetId"
                         :budget-name="budget?.name"
                         :budget-amount="budget?.currentPeriod?.amount"
@@ -135,11 +147,6 @@ function handleExpenseUpdate() {
                         @cancel="isEditModalOpen = false"
                         @delete="router.push('/budgets')"
                     />
-                    <template #footer>
-                        <UButton color="neutral" variant="ghost" @click="isEditModalOpen = false">
-                            Close
-                        </UButton>
-                    </template>
                 </UCard>
             </template>
         </UModal>

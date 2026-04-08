@@ -73,6 +73,7 @@ async function handleDeleteBudget() {
     }
 }
 
+defineExpose({ handleDeleteBudget })
 </script>
 
 <template>
@@ -116,25 +117,26 @@ async function handleDeleteBudget() {
             <UFormField label="Icon">
                 <BudgetsChooseIcon v-model="icon" :color="color" />
             </UFormField>
-            <UButton
-                color="secondary"
-                @click="handleUpdateBudget"
-                class="flex-1"
-                :loading="loading"
-                :disabled="loading || deleting"
-            >
-                Update Budget
-            </UButton>
+
+            <div class="flex gap-3">
+                <UButton
+                    color="secondary"
+                    @click="handleUpdateBudget"
+                    class="flex-1"
+                    :loading="loading"
+                    :disabled="loading || deleting"
+                >
+                    Update Budget
+                </UButton>
+                <UButton
+                    color="neutral"
+                    variant="outline"
+                    @click="emit('cancel')"
+                    class="flex-1"
+                    :disabled="loading || deleting"
+                >
+                    Cancel
+                </UButton>
+            </div>
         </div>
-        <UButton
-            color="error"
-            variant="outline"
-            size="sm"
-            @click="handleDeleteBudget"
-            class="w-25 mt-5 mb-5"
-            :loading="deleting"
-            :disabled="loading || deleting"
-        >
-            Delete Budget
-        </UButton>
 </template>
