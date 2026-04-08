@@ -16,10 +16,6 @@ const presets = [
     '#eab308', // yellow
     '#22c55e', // green
     '#14b8a6', // teal
-    '#06b6d4', // cyan
-    '#3b82f6', // blue
-    '#64748b', // slate
-    '#78716c', // stone
 ]
 
 function select(color: string) {
