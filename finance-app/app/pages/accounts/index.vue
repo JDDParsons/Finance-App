@@ -239,7 +239,7 @@ function institutionBgColor(institution: string | null | undefined) {
         <UButton color="neutral" variant="ghost" size="sm" icon="heroicons-solid:arrow-right-on-rectangle" aria-label="Sign out" @click="signOut()" />
       </div>
       <!-- Profile image -->
-      <img :src="profileImageSrc" alt="Profile" class="w-58 h-58 rounded-full object-cover mb-3 shadow" />
+      <img :src="profileImageSrc" alt="Profile" class="w-58 h-58 rounded-full object-cover mb-3 ring-4 ring-white dark:ring-gray-800 shadow-lg" />
       <!-- User name / email -->
       <p class="text-xl font-semibold text-gray-900 dark:text-white">
         {{ userName || userEmail || 'User' }}
