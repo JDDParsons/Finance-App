@@ -116,6 +116,7 @@ const chartOptions = computed(() => makeOptions())
           <Bar :data="allocatedData" :options="chartOptions" />
         </div>
       </div>
+      <!--
       <div>
         <p class="text-xs text-muted text-center mb-1 font-bold">
           Spent {{ formatUSD(totalSpent) }}
@@ -125,6 +126,7 @@ const chartOptions = computed(() => makeOptions())
           <Bar :data="spentData" :options="chartOptions" />
         </div>
       </div>
+      -->
     </template>
   </div>
 </template>

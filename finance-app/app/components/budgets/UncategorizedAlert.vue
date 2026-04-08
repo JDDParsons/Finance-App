@@ -26,7 +26,7 @@ function formatUSD(val: number) {
 <template>
     <UAlert
         v-if="count > 0"
-        color="warning"
+        color="neutral"
         variant="soft"
         icon="heroicons-solid:exclamation-triangle"
         :title="`${count} uncategorized expense${count === 1 ? '' : 's'} — ${formatUSD(total)}`"
