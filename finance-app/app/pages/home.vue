@@ -316,19 +316,17 @@ const chartOptions = {
             </div>
         </div>
 
-        <USeparator class="my-8" />
-
         <!-- Cards row: Largest Expenses first, Budget Summary to right (desktop) / below (mobile) -->
-        <div class="flex flex-col lg:flex-row gap-6 pb-20 items-start">
+        <div class="flex flex-col lg:flex-row gap-6 pt-5 pb-20 items-start">
 
             <!-- Largest Expenses -->
             <div class="w-full">
                 <h2 class="text-2xl text-center font-bold pb-2">Largest Expenses</h2>
-                <ul v-if="store.loading" class="space-y-2">
+                <ul v-if="store.loading" class="rounded-lg overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
                     <li
                         v-for="n in 5"
                         :key="n"
-                        class="flex items-center justify-between rounded-lg px-4 py-3 bg-elevated"
+                        class="flex items-center justify-between px-4 py-2 bg-elevated"
                     >
                         <div class="flex items-center gap-3">
                             <USkeleton class="w-4 h-4 rounded" />
@@ -340,13 +338,13 @@ const chartOptions = {
                         <USkeleton class="h-4 w-16 rounded" />
                     </li>
                 </ul>
-                <ul v-else class="space-y-2">
+                <ul v-else class="rounded-lg overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
                     <li
                         v-for="(hit, i) in top5Expenses"
                         :key="hit.id"
-                      class="flex items-center justify-between rounded-lg px-4 py-3 bg-elevated cursor-pointer transition-opacity border-t-2"
+                      class="flex items-center justify-between px-3 py-2 bg-elevated cursor-pointer transition-opacity border-l-4"
                       :class="{ 'opacity-50': isExpenseExcluded(hit.id) }"
-                      :style="{ borderTopColor: hit.budgetColor ?? '#D1D5DB' }"
+                      :style="{ borderLeftColor: hit.budgetColor ?? '#D1D5DB' }"
                       @click="toggleExpenseFromTotal(hit.id)"
                     >
                         <div class="flex items-center gap-3">
