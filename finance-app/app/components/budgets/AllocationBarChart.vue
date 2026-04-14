@@ -9,6 +9,7 @@ const FALLBACK_COLORS = [
 ]
 
 const store = useFinanceStore()
+const router = useRouter()
 
 const totalAllocated = computed(() =>
   store.budgets.reduce((sum, b) => sum + (Number(b.currentPeriod?.amount) || 0), 0)
@@ -89,11 +90,7 @@ function makeOptions() {
     },
     plugins: {
       legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (ctx) => ` ${ctx.dataset.label}: ${formatUSD(ctx.parsed.x)}`,
-        },
-      },
+      tooltip: { enabled: false },
     },
   }
 }
@@ -102,7 +99,7 @@ const chartOptions = computed(() => makeOptions())
 </script>
 
 <template>
-  <div class="w-full space-y-3">
+  <div class="w-full space-y-3 cursor-pointer" @click="router.push('/budgets/summary')">
     <USkeleton v-if="store.loading" class="w-full rounded" style="height: 72px;" />
     <template v-else>
       <div>

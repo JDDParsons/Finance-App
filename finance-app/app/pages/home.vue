@@ -272,7 +272,7 @@ const chartOptions = {
         <div class="flex flex-col items-center justify-center pt-2 space-y-2">
 
             <div v-if="store.loading" class="w-full max-w-sm" style="height: 200px;">
-                <USkeleton class="w-full h-full" style="border-radius: 50% 50% 0 0 / 100% 100% 0 0;" />
+                <USkeleton class="w-full h-full opacity-40" style="border-radius: 50% 50% 0 0 / 100% 100% 0 0;" />
             </div>
 
             <div v-else class="w-full max-w-sm relative" style="height: 200px;">
@@ -316,12 +316,9 @@ const chartOptions = {
             </div>
         </div>
 
-        <!-- Cards row: Largest Expenses first, Budget Summary to right (desktop) / below (mobile) -->
-        <div class="flex flex-col lg:flex-row gap-6 pt-5 pb-20 items-start">
-
-            <!-- Largest Expenses -->
-            <div class="w-full">
-                <h2 class="text-2xl text-center font-bold pb-2">Largest Expenses</h2>
+        <!-- Largest Expenses -->
+        <div class="pt-5 pb-20">
+            <h2 class="text-2xl text-center font-bold pb-2">Largest Expenses</h2>
                 <ul v-if="store.loading" class="rounded-lg overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
                     <li
                         v-for="n in 5"
@@ -329,13 +326,13 @@ const chartOptions = {
                         class="flex items-center justify-between px-4 py-2 bg-elevated"
                     >
                         <div class="flex items-center gap-3">
-                            <USkeleton class="w-4 h-4 rounded" />
+                            <USkeleton class="w-4 h-4 rounded opacity-40" />
                             <div class="space-y-1.5">
-                                <USkeleton class="h-3.5 w-28 rounded" />
-                                <USkeleton class="h-3 w-20 rounded" />
+                                <USkeleton class="h-3.5 w-28 rounded opacity-40" />
+                                <USkeleton class="h-3 w-20 rounded opacity-40" />
                             </div>
                         </div>
-                        <USkeleton class="h-4 w-16 rounded" />
+                        <USkeleton class="h-4 w-16 rounded opacity-40" />
                     </li>
                 </ul>
                 <ul v-else class="rounded-lg overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
@@ -368,13 +365,6 @@ const chartOptions = {
                     </li>
                     <li v-if="top5Expenses.length === 0" class="text-sm text-muted text-center py-4">No expenses this month.</li>
                 </ul>
-            </div>
-
-            <!-- Budget Summary -->
-            <div class="w-full lg:w-80 lg:shrink-0">
-                <BudgetSummaryCard />
-            </div>
-
-        </div><!-- end cards row -->
+        </div><!-- end largest expenses -->
     </UContainer>
 </template>

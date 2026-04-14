@@ -216,7 +216,7 @@ function cardStyle(color: string | null | undefined) {
         <BudgetsUncategorizedAlert class="my-2" />
 
         <!-- Budget Allocation Chart -->
-        <BudgetsAllocationChart class="mt-4 mb-2" />
+        <BudgetsAllocationBarChart class="mt-4 mb-2" />
 
 
 
