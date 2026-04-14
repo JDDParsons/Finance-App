@@ -270,7 +270,6 @@ const chartOptions = {
 
 
         <div class="flex flex-col items-center justify-center pt-2 space-y-2">
-            <h2 class="text-2xl font-bold">Spendometer</h2>
 
             <div v-if="store.loading" class="w-full max-w-sm" style="height: 200px;">
                 <USkeleton class="w-full h-full" style="border-radius: 50% 50% 0 0 / 100% 100% 0 0;" />
