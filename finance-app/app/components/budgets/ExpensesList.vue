@@ -48,14 +48,26 @@ async function handleDeleteHit(id: string) {
     if (!confirm('Are you sure you want to delete this budget hit?')) return
     try {
         await deleteBudgetHit(id)
-        emit('update') // Notify parent to refresh the budget hits list
+        emit('update')
         const numberOfHits = props.budgetHits?.length || 0
         if (numberOfHits === 0) {
-            emit('cancel') // Close the modal after deletion
+            emit('cancel')
         }
     } catch (err: any) {
         alert(err?.message || 'Failed to delete budget hit')
         console.error('Error deleting budget hit:', err)
+    }
+}
+
+async function handleModalDeleteHit() {
+    if (!selectedHit.value) return
+    if (!confirm('Are you sure you want to delete this expense? This action cannot be undone.')) return
+    try {
+        await deleteBudgetHit(selectedHit.value.id)
+        handleEditHitClose()
+    } catch (err: any) {
+        alert(err?.message || 'Failed to delete expense')
+        console.error('Error deleting expense:', err)
     }
 }
 
@@ -167,7 +179,7 @@ const tableColumns = [
                             color="error"
                             variant="ghost"
                             size="sm"
-                            @click="() => handleDeleteHit(selectedHit.id).then(() => handleEditHitClose())"
+                            @click="handleModalDeleteHit"
                         />
                     </div>
                 </template>

@@ -136,6 +136,17 @@ async function handleDelete(id: string) {
     alert(err?.message || 'Failed to delete expense')
   }
 }
+
+async function handleModalDelete() {
+  if (!selectedExpense.value) return
+  if (!confirm('Are you sure you want to delete this expense? This action cannot be undone.')) return
+  try {
+    await store.removeExpense(selectedExpense.value.id)
+    handleEditClose()
+  } catch (err: any) {
+    alert(err?.message || 'Failed to delete expense')
+  }
+}
 </script>
 
 <template>
@@ -239,7 +250,7 @@ async function handleDelete(id: string) {
               color="error"
               variant="ghost"
               size="sm"
-              @click="async () => { if (confirm('Are you sure you want to delete this expense? This action cannot be undone.')) { await store.removeExpense(selectedExpense.id); handleEditClose() } }"
+              @click="handleModalDelete"
             />
           </div>
         </template>

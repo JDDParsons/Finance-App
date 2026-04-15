@@ -47,12 +47,15 @@ const immutableAccountId = computed<string | null>(() => {
     return hit?.account_id ?? null
 })
 
-const immutableAccountLabel = computed(() => {
-    if (!immutableAccountId.value) return 'No account'
-    const account = store.accounts.find((a: any) => a.id === immutableAccountId.value)
-    if (!account) return 'Account'
-    return account.name || account.institution || 'Account'
-})
+const selectedAccountId = ref<string>(immutableAccountId.value ?? '__none__')
+
+const accountOptions = computed(() => [
+    { label: 'No account', value: '__none__' },
+    ...store.accounts.map((a: any) => ({
+        label: a.name || a.institution || 'Account',
+        value: a.id,
+    }))
+])
 
 function validateForm() {
     if (!date.value) {
@@ -72,7 +75,7 @@ async function handleUpdate() {
         loading.value = true
         error.value = null
         const budgetIdToSubmit = noBudget.value ? null : (selectedBudgetId.value || null)
-        await store.updateExpense(props.expenseId, budgetIdToSubmit, date.value, amount.value.toString(), note.value, immutableAccountId.value)
+        await store.updateExpense(props.expenseId, budgetIdToSubmit, date.value, amount.value.toString(), note.value, selectedAccountId.value === '__none__' ? null : selectedAccountId.value)
         emit('update')
     } catch (err: any) {
         error.value = err?.message || 'Error updating expense'
@@ -183,12 +186,12 @@ async function handleDelete() {
             </UFormField>
 
             <UFormField label="Account">
-                <UInput
-                    :model-value="immutableAccountLabel"
+                <USelect
+                    v-model="selectedAccountId"
+                    :items="accountOptions"
                     size="xl"
                     color="info"
-                    highlight
-                    readonly
+                    style="min-width: 200px;"
                 />
             </UFormField>
 
