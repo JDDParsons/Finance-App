@@ -138,48 +138,6 @@ function sortBudgetsByProgress() {
     }
 }
 
-function progressBarColour(amount: number, totalHitAmount: number): string {
-    const percentage = Math.min((totalHitAmount / amount) * 100, 100)
-    const hue = Math.round(120 - (percentage * 1.2))
-    return `hsl(${hue}, 80%, 45%)`
-}
-
-// Use the budget's own colour if set; lighten it slightly with opacity for the fill.
-// Fall back to the green→red hue shift when no colour is assigned.
-function barColour(budgetColor: string | null | undefined, amount: number, totalHitAmount: number): string {
-    if (budgetColor) return budgetColor + 'cc'
-    return progressBarColour(amount, totalHitAmount)
-}
-
-function progressBarStyle(amount: number, totalHitAmount: number) {
-    const percentage = Math.min((totalHitAmount / amount) * 100, 100)
-    const hue = Math.round(120 - (percentage * 1.2))
-    return {
-        color: `hsl(${hue}, 80%, 45%)`,
-        backgroundColor: `hsla(${hue}, 80%, 45%, 0.15)`
-    }
-}
-
-function formatCurrency(value: number | null) {
-    if (value === null || value === undefined) return '-'
-    return new Intl.NumberFormat('en-US', { 
-        style: 'currency', 
-        currency: 'USD',  
-        minimumFractionDigits: 0, 
-        maximumFractionDigits: 0  
-    }).format(value)
-}
-
-const { budgetIcon } = useBudgetIcon()
-
-function cardStyle(color: string | null | undefined) {
-    if (!color) return {}
-    return {
-        backgroundColor: `${color}5`,
-        borderColor: `${color}55`,
-        borderTop: `3px solid ${color}`,
-    }
-}
 </script>
 
 <template>
@@ -234,38 +192,13 @@ function cardStyle(color: string | null | undefined) {
             <p class="text-gray-400">No budgets yet. Use the menu to create one.</p>
         </div>
 
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-24">
-            <UCard
+        <div v-else class="grid grid-cols-3 gap-3 pb-24 sm:grid-cols-3 lg:grid-cols-4">
+            <BudgetsBudgetCard
                 v-for="budget in displayBudgets"
                 :key="budget.id"
-                class="flex flex-col cursor-pointer shadow overflow-hidden"
-                :style="cardStyle(budget.color)"
-            >
-            <div class="flex items-center w-full"> 
-                <div class="flex-1" @click="goToBudget(budget.id)">
-                    <div class="flex justify-between items-center gap-2 ">
-                        <div class="flex items-center gap-2">
-                            <UIcon :name="budget.icon ?? budgetIcon(budget.name)" class="w-5 h-5 shrink-0 text-muted" />
-                            <h3 class="text-md font-semibold text-black dark:text-white">
-                                {{ budget.name }}
-                            </h3>
-                        </div>
-                        <UBadge size="lg" :style="progressBarStyle(budget?.currentPeriod?.amount, budget?.totalHitAmount)">
-                            {{ formatCurrency(budget.totalRemainingAmount) }}
-                        </UBadge>
-                    </div>
-                        
-                    <div class="rounded-full ring-1 ring-black/20 dark:ring-white/20">
-                        <BudgetsProgressBar
-                            :value="budget.totalHitAmount"
-                            :max="budget.totalHitAmount > budget?.currentPeriod?.amount ? budget.totalHitAmount : budget?.currentPeriod?.amount"
-                            :colour="barColour(budget.color, budget?.currentPeriod?.amount, budget?.totalHitAmount)"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            </UCard>
+                :budget="budget"
+                @select="goToBudget"
+            />
         </div>
 
         <USlideover 
