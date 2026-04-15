@@ -232,9 +232,9 @@ const glowPlugin = {
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  cutout: '85%',
-  circumference: 180,
-  rotation: -90,
+  cutout: '75%',
+  circumference: 200,
+  rotation: -100,
   radius:'90%',
   plugins: {
     legend: {
@@ -264,19 +264,19 @@ const chartOptions = {
 
         
         <!-- Header -->
-        <div class="relative flex items-center justify-center pt-2 mb-2">
-            <h2 class="text-3xl font-bold">Monthly Summary</h2>
+        <div class="relative flex items-center justify-center mb-2">
+            <h2 class="text-3xl font-bold">Summary</h2>
         </div>
 
 
-        <div class="flex flex-col items-center justify-center pt-2 space-y-2">
+        <div class="flex flex-col items-center justify-center space-y-2">
 
             <div v-if="store.loading" class="w-full max-w-sm" style="height: 200px;">
                 <USkeleton class="w-full h-full opacity-40" style="border-radius: 50% 50% 0 0 / 100% 100% 0 0;" />
             </div>
 
             <div v-else class="w-full max-w-sm relative" style="height: 200px;">
-                <Doughnut :data="chartData" :options="chartOptions" :plugins="[glowPlugin]" />
+                <Doughnut :data="chartData" :options="chartOptions" />
                 <GaugeNeedle :angle="needleAngle" :color="chartColors.expenses" />
             </div>
 

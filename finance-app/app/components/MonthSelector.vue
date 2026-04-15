@@ -34,11 +34,23 @@ function selectMonth(year: number, month: number) {
   open.value = false
 }
 
-const label = computed(() => {
+const monthLabel = computed(() => {
   const { year, month } = store.selectedMonth
   const now = new Date()
   const yearSuffix = year !== now.getFullYear() ? ` ${year}` : ''
   return MONTHS_FULL[month - 1] + yearSuffix
+})
+
+const relativeHeading = computed(() => {
+  const { year, month } = store.selectedMonth
+  const now = new Date()
+  const currentMonthIndex = now.getFullYear() * 12 + now.getMonth()
+  const selectedMonthIndex = year * 12 + (month - 1)
+  const monthDiff = currentMonthIndex - selectedMonthIndex
+
+  if (monthDiff <= 0) return 'This month'
+  if (monthDiff === 1) return 'Previous month'
+  return `${monthDiff} months ago`
 })
 </script>
 
@@ -49,11 +61,17 @@ const label = computed(() => {
         color="neutral"
         variant="ghost"
         size="sm"
-        trailing-icon="heroicons-solid:chevron-down"
         :loading="store.loading"
-        class="drop-shadow font-semibold text-md"
+        class="drop-shadow px-3 py-2"
       >
-        {{ label }}
+        <div class="flex flex-col items-center leading-tight">
+          <span class="text-xl font-semibold text-highlighted">
+            {{ relativeHeading }}
+          </span>
+          <span class="text-lg text-muted">
+            {{ monthLabel }}
+          </span>
+        </div>
       </UButton>
 
       <template #content>
