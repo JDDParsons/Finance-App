@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
+import AmountNumberPad from '~/components/AmountNumberPad.vue'
+import AccountTagPicker from '~/components/AccountTagPicker.vue'
+import DateTagPicker from '~/components/DateTagPicker.vue'
 
 const props = defineProps<{
     budgetId?: string,
@@ -52,6 +55,7 @@ const localDate = new Date().toLocaleDateString('en-CA'); // 'en-CA' outputs YYY
 const date = ref(localDate);
 const amount = ref('')
 const note = ref('')
+const appliedNoteSuggestion = ref<string | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 const expenseAccountId = ref<string | null>(store.defaultExpenseAccount?.id ?? null)
@@ -83,10 +87,6 @@ async function handleCreateIncome() {
 }
 const { show: showOverlay } = useSuccessOverlay()
 
-const accountItems = computed(() =>
-    store.accounts.map((a: any) => ({ label: a.name || a.institution || 'Account', value: a.id }))
-)
-
 const activeBudgetId = computed(() => {
     if (noBudget.value) return null
     return props.budgetId || selectedBudgetId.value || null
@@ -94,18 +94,32 @@ const activeBudgetId = computed(() => {
 
 const noteSuggestions = computed((): string[] => {
     if (!activeBudgetId.value) return []
+    const query = note.value.trim().toLowerCase()
+    if (!query) return []
+    if (appliedNoteSuggestion.value === note.value) return []
     const seen = new Set<string>()
     const results: string[] = []
     const allHits = [...(store.budgetHits as any[]), ...(store.prevMonthBudgetHits as any[])]
     for (const h of allHits) {
         const n = h.note?.trim()
-        if (h.budget_id === activeBudgetId.value && n && !seen.has(n)) {
+        if (h.budget_id === activeBudgetId.value && n && n.toLowerCase().includes(query) && !seen.has(n)) {
             seen.add(n)
             results.push(n)
         }
     }
     return results.slice(0, 8)
 })
+
+watch(note, (newValue) => {
+    if (appliedNoteSuggestion.value && newValue !== appliedNoteSuggestion.value) {
+        appliedNoteSuggestion.value = null
+    }
+})
+
+function applyNoteSuggestion(suggestion: string) {
+    note.value = suggestion
+    appliedNoteSuggestion.value = suggestion
+}
 
 let closeTimer: ReturnType<typeof setTimeout> | null = null
 const CLOSE_AFTER_SUCCESS_MS = 1500
@@ -173,8 +187,7 @@ async function handleCreateHit() {
         <!-- Step 2b: Income form -->
         <template v-else-if="step === 'income-form'">
             <div class="ml-3">
-                <!-- Back button -->
-                <div class="flex items-center gap-2 mb-5">
+                <div class="mb-5 flex flex-wrap items-center gap-2">
                     <button
                         type="button"
                         class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
@@ -187,56 +200,33 @@ async function handleCreateHit() {
                         <span class="text-sm text-gray-600 dark:text-gray-300">Paycheck</span>
                         <UIcon name="heroicons:pencil-square" class="size-3.5 text-gray-400 ml-0.5" />
                     </button>
+
+                    <DateTagPicker v-model="incomeDate" />
+                    <AccountTagPicker v-model="incomeAccountId" :accounts="store.accounts" />
                 </div>
 
                 <div v-if="error" class="mb-4">
                     <UAlert title="Error" :description="error" color="error" variant="soft" />
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-4 gap-x-6 gap-y-6">
-                    <UFormField label="Amount" required>
-                        <UInput
-                            v-model="incomeAmount"
-                            highlight
-                            color="primary"
-                            placeholder="0.00"
-                            type="number"
-                            step="0.01"
-                            size="xl"
-                        />
-                    </UFormField>
+                <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <div>
+                        <AmountNumberPad v-model="incomeAmount" />
+                    </div>
 
-                    <UFormField label="Date" required>
-                        <UInput
-                            v-model="incomeDate"
-                            highlight
-                            color="primary"
-                            type="date"
-                            size="xl"
-                        />
-                    </UFormField>
+                    <div class="space-y-6">
+                        <UFormField label="Note">
+                            <UInput
+                                v-model="incomeNote"
+                                highlight
+                                color="primary"
+                                placeholder="Leave a note..."
+                                type="text"
+                                size="xl"
+                            />
+                        </UFormField>
 
-                    <UFormField label="Note">
-                        <UInput
-                            v-model="incomeNote"
-                            highlight
-                            color="primary"
-                            placeholder="Leave a note..."
-                            type="text"
-                            size="xl"
-                        />
-                    </UFormField>
-
-                    <UFormField label="Account">
-                        <USelect
-                            v-model="incomeAccountId"
-                            :items="accountItems"
-                            placeholder="Select an account..."
-                            size="xl"
-                            color="primary"
-                            highlight
-                        />
-                    </UFormField>
+                    </div>
                 </div>
 
                 <div class="flex items-center gap-3 mt-6">
@@ -257,33 +247,36 @@ async function handleCreateHit() {
         <!-- Step 2a: Expense form -->
         <template v-else>
             <div class="ml-3">
-                <!-- Selected budget indicator + back button -->
-                <div v-if="!props.budgetId" class="flex items-center gap-2 mb-5">
-                    <button
-                        type="button"
-                        class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
-                        @click="goBack"
-                        aria-label="Change budget"
-                    >
-                        <div
-                            v-if="chosenBudget"
-                            class="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                            :style="chosenBudget.color ? { backgroundColor: chosenBudget.color + '33', borderColor: chosenBudget.color, border: '1.5px solid' } : {}"
-                            :class="!chosenBudget.color ? 'bg-gray-100 dark:bg-gray-800 border border-gray-300' : ''"
+                <div class="mb-5 flex flex-wrap items-center gap-2">
+                    <div v-if="!props.budgetId" class="flex items-center gap-2">
+                        <button
+                            type="button"
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
+                            @click="goBack"
+                            aria-label="Change budget"
                         >
-                            <UIcon
-                                :name="budgetIcon(chosenBudget.name)"
-                                class="size-3"
-                                :style="chosenBudget.color ? { color: chosenBudget.color } : {}"
-                                :class="!chosenBudget.color ? 'text-gray-500' : ''"
-                            />
-                        </div>
-                        <div v-else class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 bg-gray-100 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-600">
-                            <UIcon name="heroicons:x-mark" class="size-3 text-gray-400" />
-                        </div>
-                        <span class="text-sm text-gray-600 dark:text-gray-300">{{ chosenBudget?.name ?? 'No budget' }}</span>
-                        <UIcon name="heroicons:pencil-square" class="size-3.5 text-gray-400 ml-0.5" />
-                    </button>
+                            <div
+                                v-if="chosenBudget"
+                                class="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                                :style="chosenBudget.color ? { backgroundColor: chosenBudget.color + '33', borderColor: chosenBudget.color, border: '1.5px solid' } : {}"
+                                :class="!chosenBudget.color ? 'bg-gray-100 dark:bg-gray-800 border border-gray-300' : ''"
+                            >
+                                <UIcon
+                                    :name="budgetIcon(chosenBudget.name)"
+                                    class="size-4"
+                                    :style="chosenBudget.color ? { color: chosenBudget.color } : {}"
+                                    :class="!chosenBudget.color ? 'text-gray-500' : ''"
+                                />
+                            </div>
+                            <div v-else class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 bg-gray-100 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-600">
+                                <UIcon name="heroicons:x-mark" class="size-3 text-gray-400" />
+                            </div>
+                            <span class="text-sm text-gray-600 dark:text-gray-300">{{ chosenBudget?.name ?? 'No budget' }}</span>
+                        </button>
+                    </div>
+
+                    <DateTagPicker v-model="date" />
+                    <AccountTagPicker v-model="expenseAccountId" :accounts="store.accounts" />
                 </div>
 
                 <div v-if="error" class="mb-4">
@@ -295,64 +288,34 @@ async function handleCreateHit() {
                     />
                 </div>
 
-                <!-- Mobile: stacked; Desktop: 4-column grid -->
-                <div class="grid grid-cols-1 lg:grid-cols-4 gap-x-6 gap-y-6">
-                    <UFormField label="Amount" required>
-                        <UInput
-                            v-model="amount"
-                            highlight
-                            color="primary"
-                            placeholder="0.00"
-                            type="number"
-                            step="0.01"
-                            size="xl"
-                        />
-                    </UFormField>
-                    
-                    <UFormField label="Date" required>
-                        <UInput
-                            v-model="date"
-                            highlight
-                            color="primary"
-                            type="date"
-                            size="xl"
-                        />
-                    </UFormField>
-                    
-                    <UFormField label="Note">
-                        <UInput
-                            v-model="note"
-                            highlight
-                            color="primary"
-                            placeholder="Leave a note..."
-                            type="text"
-                            size="xl"
-                        />
-                    </UFormField>
+                <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <div>
+                        <AmountNumberPad v-model="amount" />
+                    </div>
 
-                    <UFormField label="Account">
-                        <USelect
-                            v-model="expenseAccountId"
-                            :items="accountItems"
-                            placeholder="Select an account..."
-                            size="xl"
-                            color="primary"
-                            highlight
-                        />
-                    </UFormField>
+                    <div class="space-y-3">
+                        <UFormField label="Note">
+                            <UInput
+                                v-model="note"
+                                highlight
+                                color="primary"
+                                placeholder="Leave a note..."
+                                type="text"
+                                size="xl"
+                            />
+                        </UFormField>
 
-                    <!-- Note suggestions -->
-                    <div v-if="noteSuggestions.length" class="lg:col-span-4 flex flex-wrap gap-2">
-                        <p class="w-full text-xs text-gray-400 mb-1">Previous notes:</p>
-                        <button
-                            v-for="suggestion in noteSuggestions"
-                            :key="suggestion"
-                            type="button"
-                            class="px-3 py-1 text-sm rounded-full border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:border-primary-400 dark:hover:border-primary-500 transition-colors cursor-pointer"
-                            @click="note = suggestion"
-                        >
-                            {{ suggestion }}
-                        </button>
+                        <div v-if="noteSuggestions.length" class="flex flex-wrap gap-2 pt-1">
+                            <button
+                                v-for="suggestion in noteSuggestions"
+                                :key="suggestion"
+                                type="button"
+                                class="px-3 py-1 text-sm rounded-full border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-300 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-300 dark:hover:bg-green-900/50 transition-colors cursor-pointer"
+                                @click="applyNoteSuggestion(suggestion)"
+                            >
+                                {{ suggestion }}
+                            </button>
+                        </div>
                     </div>
                 </div>
 

@@ -48,9 +48,6 @@
   <UModal v-model:open="isModalOpen">
     <template #content>
       <UCard>
-        <template #header>
-          <h2 class="text-2xl font-bold">Add</h2>
-        </template>
         <BudgetsExpenseCreate
           :budgets="store.budgets"
           @update="handleExpenseCreated"
