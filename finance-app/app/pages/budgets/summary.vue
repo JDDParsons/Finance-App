@@ -24,6 +24,7 @@ onMounted(() => { store.ensureLoaded() })
     </div>
 
     <div class="pb-24 space-y-4">
+      <BudgetsUncategorizedAlert />
       <BudgetsAllocationPieChart />
       <BudgetsSummary />
     </div>

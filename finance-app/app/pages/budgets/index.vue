@@ -212,9 +212,6 @@ function cardStyle(color: string | null | undefined) {
                 </UDropdownMenu>
             </div>
         </div>
-        <!-- Uncategorized expenses alert -->
-        <BudgetsUncategorizedAlert class="my-2" />
-
         <!-- Budget Allocation Chart -->
         <BudgetsAllocationBarChart class="mt-4 mb-2" />
 
