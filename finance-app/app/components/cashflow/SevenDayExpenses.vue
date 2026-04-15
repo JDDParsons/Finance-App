@@ -67,7 +67,7 @@ const chartData = computed(() => {
       total: data.reduce((s, v) => s + v, 0),
       backgroundColor: color + 'CC',
       hoverBackgroundColor: color,
-      borderRadius: 4,
+      borderRadius: 0,
       borderSkipped: false,
     }
   })
