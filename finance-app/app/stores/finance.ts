@@ -4,7 +4,8 @@ import {
   getAvailableBudgetMonths,
   insertIncome, deleteIncome,
   createBudgetHit, deleteBudgetHit, updateBudgetHit,
-  createBudget
+  createBudget,
+  getUserProfiles
 } from '~/composables/supabase'
 import { useAccountsStore } from './accounts'
 
@@ -23,6 +24,7 @@ export const useFinanceStore = defineStore('finance', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
   const initialized = ref(false)
+  const userProfiles = ref<Map<string, { firstName: string | null; avatarLink: string | null }>>(new Map())
 
   const defaultExpenseAccount = computed(() =>
     accounts.value.find((a: any) => a.is_default_for_expenses) ?? null
@@ -74,6 +76,12 @@ export const useFinanceStore = defineStore('finance', () => {
       income.value = inc
       budgets.value = enrichBudgets(rawBudgets, hits)
       initialized.value = true
+      // Load user profiles for all unique user_ids in this month's hits
+      const uniqueUserIds = [...new Set((hits as any[]).map((h: any) => h.user_id).filter(Boolean))] as string[]
+      const profiles = await getUserProfiles(uniqueUserIds)
+      const profileMap = new Map<string, { firstName: string | null; avatarLink: string | null }>()
+      for (const p of profiles) profileMap.set(p.id, { firstName: p.first_name, avatarLink: p.avatar_link })
+      userProfiles.value = profileMap
     } catch (err: any) {
       error.value = err?.message || 'Failed to load data'
     } finally {
@@ -194,6 +202,7 @@ export const useFinanceStore = defineStore('finance', () => {
     prevMonthBudgetHits,
     income,
     accounts,
+    userProfiles,
     defaultExpenseAccount,
     defaultIncomeAccount,
     loading,

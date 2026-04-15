@@ -192,16 +192,25 @@ async function handleDelete() {
                 />
             </UFormField>
 
-            <div class="flex items-center gap-3">
+            <div class="flex gap-3">
                 <UButton
                     color="secondary"
+                    class="flex-1 justify-center"
                     @click="handleUpdate"
                     :loading="loading"
                     :disabled="loading || deleting"
                 >
                     Update Expense
                 </UButton>
-                <UButton color="neutral" variant="ghost" @click="emit('cancel')" :disabled="loading || deleting">Cancel</UButton>
+                <UButton
+                    color="neutral"
+                    variant="ghost"
+                    class="flex-1 justify-center"
+                    @click="emit('cancel')"
+                    :disabled="loading || deleting"
+                >
+                    Cancel
+                </UButton>
             </div>
         </div>
     </template>

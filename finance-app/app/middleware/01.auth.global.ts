@@ -1,5 +1,5 @@
 import { getSession } from '~/composables/supabase'
-import { useHouseholdStore } from '~/stores/household'
+import { useProfileStore } from '~/stores/profile'
 
 export default defineNuxtRouteMiddleware(async (to) => {
     // Skip auth middleware during prerendering to avoid 500 errors
@@ -17,14 +17,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
             if (to.path === '/') {
                 return navigateTo('/home');
             }
-            // Ensure household_id is resolved and cached for all authenticated routes
-            const householdStore = useHouseholdStore()
-            if (!householdStore.isReady) {
+            // Ensure profile (and household_id) is resolved and cached for all authenticated routes
+            const profileStore = useProfileStore()
+            if (!profileStore.isReady) {
                 try {
-                    await householdStore.init()
+                    await profileStore.init()
                 } catch {
-                    // User is authenticated but has no household — redirect to root
-                    console.warn('No household found for user, redirecting to login.')
+                    console.warn('No profile found for user, redirecting to login.')
                     return navigateTo('/')
                 }
             }

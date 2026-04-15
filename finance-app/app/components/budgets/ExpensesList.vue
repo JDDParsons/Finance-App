@@ -111,6 +111,8 @@ const tableColumns = [
                         :note="hit.note"
                         :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
                         :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
+                        :user-first-name="hit.user_id ? store.userProfiles.get(hit.user_id)?.firstName ?? null : null"
+                        :user-avatar-link="hit.user_id ? store.userProfiles.get(hit.user_id)?.avatarLink ?? null : null"
                         class="ml-2 mr-2"
                         @delete="handleDeleteHit"
                         @edit="handleEditHit"
@@ -158,7 +160,16 @@ const tableColumns = [
         <template #content>
             <UCard>
                 <template #header>
-                    <h2 class="text-2xl font-bold">Edit Expense</h2>
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold">Edit Expense</h2>
+                        <UButton
+                            icon="heroicons-solid:trash"
+                            color="error"
+                            variant="ghost"
+                            size="sm"
+                            @click="() => handleDeleteHit(selectedHit.id).then(() => handleEditHitClose())"
+                        />
+                    </div>
                 </template>
                 <ExpenseEdit
                     :expense-id="selectedHit.id"

@@ -9,10 +9,11 @@ const props = defineProps<{
   budgetIcon?: string | null
   accountName?: string | null
   accountInstitution?: string | null
+  userFirstName?: string | null
+  userAvatarLink?: string | null
 }>()
 
 const emit = defineEmits<{
-  delete: [id: string]
   edit: [id: string]
 }>()
 
@@ -53,33 +54,45 @@ function institutionBgColor(institution: string | null | undefined, accountName:
   if (name.includes('questrade')) return 'bg-primary-100 dark:bg-primary-900'
   return 'bg-primary-100 dark:bg-primary-900'
 }
+
+const borderColor = computed(() => props.budgetColor || '#E5E7EB')
 </script>
 
 <template>
-  <UCard class="cursor-pointer shadow" @click="emit('edit', id)">
-    <div class="flex items-start justify-between gap-4">
-      <div class="flex flex-col gap-1 flex-1">
-        <div class="flex items-center gap-2">
-          <span class="text-xl font-semibold text-info">{{ formatCurrency(amount) }}</span>
-          <!-- Budget icon: colored circle or grey X pattern for uncategorized -->
-          <template v-if="budgetName !== undefined">
-            <div
-              v-if="budgetColor && budgetIcon"
-              class="ml-auto w-7 h-7 rounded-full flex items-center justify-center shrink-0"
-              :style="{ backgroundColor: budgetColor + '33' }"
-            >
-              <UIcon :name="budgetIcon" class="w-4 h-4" :style="{ color: budgetColor }" />
-            </div>
-            <div
-              v-else
-              class="ml-auto w-7 h-7 rounded-full shrink-0"
-              style="background-color: #F3F4F6; background-image: repeating-linear-gradient(45deg, #D1D5DB 0, #D1D5DB 0.6px, transparent 0, transparent 50%), repeating-linear-gradient(-45deg, #D1D5DB 0, #D1D5DB 0.6px, transparent 0, transparent 50%); background-size: 8px 8px;"
-            />
-          </template>
-        </div>
-        <span class="text-sm text-gray-500">{{ formatDate(date) }}</span>
-        <span v-if="note" class="text-sm text-gray-600 dark:text-gray-300">{{ note }}</span>
-        <div v-if="accountName" class="flex items-center gap-2">
+  <UCard
+    class="cursor-pointer shadow"
+    :style="{ borderLeft: `4px solid ${borderColor}` }"
+    @click="emit('edit', id)"
+  >
+    <div class="flex flex-col gap-1.5">
+      <!-- Top row: amount | date | budget icon -->
+      <div class="flex items-center gap-2">
+        <span class="text-xl font-semibold text-info">{{ formatCurrency(amount) }}</span>
+        <span class="text-sm text-gray-400 flex-1">{{ formatDate(date) }}</span>
+        <!-- Budget icon: colored circle or grey X pattern for uncategorized -->
+        <template v-if="budgetName !== undefined">
+          <div
+            v-if="budgetColor && budgetIcon"
+            class="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+            :style="{ backgroundColor: budgetColor + '33' }"
+          >
+            <UIcon :name="budgetIcon" class="w-4 h-4" :style="{ color: budgetColor }" />
+          </div>
+          <div
+            v-else
+            class="w-7 h-7 rounded-full shrink-0"
+            style="background-color: #F3F4F6; background-image: repeating-linear-gradient(45deg, #D1D5DB 0, #D1D5DB 0.6px, transparent 0, transparent 50%), repeating-linear-gradient(-45deg, #D1D5DB 0, #D1D5DB 0.6px, transparent 0, transparent 50%); background-size: 8px 8px;"
+          />
+        </template>
+      </div>
+
+      <!-- Note -->
+      <span v-if="note" class="text-sm text-gray-600 dark:text-gray-300">{{ note }}</span>
+
+      <!-- Bottom row: account + user info -->
+      <div v-if="accountName !== null && accountName !== undefined || userFirstName" class="flex items-center gap-2 flex-wrap">
+        <!-- Account -->
+        <div v-if="accountName" class="flex items-center gap-1.5">
           <div :class="['shrink-0 w-5 h-5 rounded-full flex items-center justify-center', institutionBgColor(accountInstitution, accountName)]">
             <img v-if="normalizedInstitution(accountInstitution, accountName).includes('bmo')" src="@/assets/images/BMO.png" alt="BMO" class="w-3 h-3" />
             <img v-else-if="normalizedInstitution(accountInstitution, accountName).includes('questrade')" src="@/assets/images/Questrade.png" alt="Questrade" class="w-3 h-3" />
@@ -88,14 +101,26 @@ function institutionBgColor(institution: string | null | undefined, accountName:
           </div>
           <span class="text-xs text-gray-400">{{ accountName }}</span>
         </div>
+
+        <!-- User info -->
+        <div v-if="userFirstName" class="flex items-center gap-1.5 ml-auto">
+          <img
+            v-if="userAvatarLink"
+            :src="userAvatarLink"
+            :alt="userFirstName"
+            class="w-4 h-4 rounded-full object-cover shrink-0"
+          />
+          <div
+            v-else
+            class="w-4 h-4 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center shrink-0"
+          >
+            <span class="text-[8px] font-bold text-primary-600 dark:text-primary-300 leading-none select-none">
+              {{ userFirstName.charAt(0).toUpperCase() }}
+            </span>
+          </div>
+          <span class="text-xs text-gray-400">{{ userFirstName }}</span>
+        </div>
       </div>
-      <UButton
-        icon="heroicons-solid:trash"
-        color="error"
-        variant="ghost"
-        size="sm"
-        @click.stop="emit('delete', id)"
-      />
     </div>
   </UCard>
 </template>

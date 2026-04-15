@@ -148,6 +148,24 @@ export async function getBudgetHitsByMonth(year: number, month: number) {
   return data || []
 }
 
+export async function getUserProfiles(userIds: string[]): Promise<Array<{ id: string; first_name: string | null; avatar_link: string | null }>> {
+  if (!userIds.length) return []
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('Profile')
+    .select('user_id, first_name, avatar_link')
+    .in('user_id', userIds)
+  if (error) {
+    console.warn('Could not load user profiles:', error.message)
+    return []
+  }
+  return (data ?? []).map((p: any) => ({
+    id: p.user_id,
+    first_name: p.first_name ?? null,
+    avatar_link: p.avatar_link ?? null,
+  }))
+}
+
 export async function getIncomeByMonth(year: number, month: number) {
   const supabase = getSupabase()
   const householdId = await resolveHouseholdId()

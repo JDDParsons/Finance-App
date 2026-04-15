@@ -171,6 +171,8 @@ async function handleDelete(id: string) {
               :budget-icon="hit.budget_id ? budgetIconMap.get(hit.budget_id) ?? null : null"
               :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
               :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
+              :user-first-name="hit.user_id ? store.userProfiles.get(hit.user_id)?.firstName ?? null : null"
+              :user-avatar-link="hit.user_id ? store.userProfiles.get(hit.user_id)?.avatarLink ?? null : null"
               @delete="handleDelete"
               @edit="handleEdit"
             />
@@ -193,6 +195,8 @@ async function handleDelete(id: string) {
               :budget-icon="hit.budget_id ? budgetIconMap.get(hit.budget_id) ?? null : null"
               :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
               :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
+              :user-first-name="hit.user_id ? store.userProfiles.get(hit.user_id)?.firstName ?? null : null"
+              :user-avatar-link="hit.user_id ? store.userProfiles.get(hit.user_id)?.avatarLink ?? null : null"
               @delete="handleDelete"
               @edit="handleEdit"
             />
@@ -214,6 +218,8 @@ async function handleDelete(id: string) {
             :budget-icon="hit.budget_id ? budgetIconMap.get(hit.budget_id) ?? null : null"
             :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
             :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
+            :user-first-name="hit.user_id ? store.userProfiles.get(hit.user_id)?.firstName ?? null : null"
+            :user-avatar-link="hit.user_id ? store.userProfiles.get(hit.user_id)?.avatarLink ?? null : null"
             @delete="handleDelete"
             @edit="handleEdit"
           />
@@ -226,7 +232,16 @@ async function handleDelete(id: string) {
     <template #content>
       <UCard>
         <template #header>
-          <h2 class="text-2xl font-bold">Edit Expense</h2>
+          <div class="flex items-center justify-between">
+            <h2 class="text-2xl font-bold">Edit Expense</h2>
+            <UButton
+              icon="heroicons-solid:trash"
+              color="error"
+              variant="ghost"
+              size="sm"
+              @click="async () => { if (confirm('Are you sure you want to delete this expense? This action cannot be undone.')) { await store.removeExpense(selectedExpense.id); handleEditClose() } }"
+            />
+          </div>
         </template>
         <ExpenseEdit
           :expense-id="selectedExpense.id"

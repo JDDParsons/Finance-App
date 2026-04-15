@@ -26,11 +26,11 @@ export async function resolveHouseholdId(): Promise<string> {
   const userId = auth.session?.user?.id
   if (!userId) throw new Error('Not authenticated')
   const { data, error } = await supabase
-    .from('Household_Member')
+    .from('Profile')
     .select('household_id')
     .eq('user_id', userId)
     .single()
-  if (error || !data?.household_id) throw new Error('No household found for user')
+  if (error || !data?.household_id) throw new Error('No profile/household found for user')
   _householdId = data.household_id as string
   return _householdId
 }

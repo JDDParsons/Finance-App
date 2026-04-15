@@ -1,28 +1,28 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { useAccountsStore } from '~/stores/accounts'
-import { getSupabase } from '~/composables/supabase/client'
+import { useProfileStore } from '~/stores/profile'
 import { signOut } from '~/composables/supabase'
 
 useHead({ title: 'Profile | R&J Finance' })
-
-// --- Profile image ---
-const { app: { baseURL } } = useRuntimeConfig()
-const profileImageSrc = computed(() => `${baseURL}AU1A4287.jpg`)
 
 // --- Sign out ---
 function handleSignOut() {
   if (window.confirm('Are you sure you want to sign out?')) signOut()
 }
 
-// --- User ---
-const userName = ref('')
-const userEmail = ref('')
-onMounted(async () => {
-  const supabase = getSupabase()
-  const { data: { user } } = await supabase.auth.getUser()
-  userName.value = user?.user_metadata?.full_name || user?.user_metadata?.name || ''
-  userEmail.value = user?.email || ''
+// --- Profile ---
+const profileStore = useProfileStore()
+const { profile } = storeToRefs(profileStore)
+
+const displayName = computed(() => {
+  if (!profile.value) return 'User'
+  const parts = [profile.value.first_name, profile.value.last_name].filter(Boolean)
+  return parts.length ? parts.join(' ') : profile.value.email || 'User'
+})
+
+const profileInitial = computed(() => {
+  return profile.value?.first_name?.charAt(0)?.toUpperCase() || '?'
 })
 
 // --- State ---
@@ -247,13 +247,24 @@ function institutionBgColor(institution: string | null | undefined) {
 
     <!-- Profile Header -->
     <div class="flex flex-col items-center pt-8 pb-6 mb-2">
-      <!-- Profile image -->
-      <img :src="profileImageSrc" alt="Profile" class="w-58 h-58 rounded-full object-cover mb-3 ring-4 ring-white dark:ring-gray-800 shadow-lg" />
-      <!-- User name / email -->
+      <!-- Profile image or initial -->
+      <div class="w-58 h-58 rounded-full mb-3 ring-4 ring-white dark:ring-gray-800 shadow-lg overflow-hidden flex items-center justify-center bg-primary-100 dark:bg-primary-900">
+        <img
+          v-if="profile?.avatar_link"
+          :src="profile.avatar_link"
+          alt="Profile"
+          class="w-full h-full object-cover"
+        />
+        <span v-else class="text-9xl font-bold text-primary-600 dark:text-primary-300 select-none">
+          {{ profileInitial }}
+        </span>
+      </div>
+      <!-- Name -->
       <p class="text-xl font-semibold text-gray-900 dark:text-white">
-        {{ userName || userEmail || 'User' }}
+        {{ displayName }}
       </p>
-      <p v-if="userName && userEmail" class="text-sm text-gray-400 mt-0.5">{{ userEmail }}</p>
+      <!-- Email -->
+      <p v-if="profile?.email" class="text-sm text-gray-400 mt-0.5">{{ profile.email }}</p>
     </div>
 
     <!-- Accounts subheading + menu -->
