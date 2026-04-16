@@ -1,6 +1,6 @@
 import bmoLogo from '@/assets/images/BMO.png'
 import questradeLogo from '@/assets/images/Questrade.png'
-import scotiabankLogo from '@/assets/images/Scotiabank.JPG'
+import scotiabankLogo from '@/assets/images/Scotiabank.png'
 
 export function useInstitutionBranding() {
   function normalizedInstitution(institution: string | null | undefined, fallbackName?: string | null) {
