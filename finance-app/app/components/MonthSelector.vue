@@ -55,7 +55,7 @@ const relativeHeading = computed(() => {
 </script>
 
 <template>
-  <div class="flex items-center justify-center py-2">
+  <div class="flex items-center justify-center">
     <UPopover v-model:open="open">
       <UButton
         color="neutral"

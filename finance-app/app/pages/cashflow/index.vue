@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useFinanceStore } from '~/stores/finance'
+import { useSignOut } from '~/composables/useSignOut'
 
 useHead({ title: 'Cash Flow | R&J Finance' })
 
 const store = useFinanceStore()
 const { show: showOverlay } = useSuccessOverlay()
+const { handleSignOut } = useSignOut()
 
 onMounted(() => { store.ensureLoaded() })
 
@@ -119,13 +121,18 @@ async function saveExpense() {
 
 <template>
   <UContainer>
+
+      <!-- Header -->
+      <div class="relative flex items-center justify-center pt-2 mt-2 mb-2">
+      <h2 class="text-3xl font-bold">Cashflow</h2>
+      <div class="absolute right-0 flex items-center gap-2">
+          <UColorModeSwitch />
+          <UButton color="neutral" variant="ghost" size="sm" icon="heroicons-solid:arrow-right-on-rectangle" aria-label="Sign out" @click="handleSignOut" />
+      </div>
+      </div>
+
     <!-- Month Selector -->
     <MonthSelector />
-    
-    <!-- Header -->
-    <div class="flex items-center justify-center pt-2 mb-2">
-        <h2 class="text-3xl font-bold">Cashflow</h2>
-    </div>
 
 
     <!-- Tabs -->

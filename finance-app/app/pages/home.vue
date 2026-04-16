@@ -1,6 +1,6 @@
 <script setup>
-import { signOut } from '~/composables/supabase'
 import { useBudgetIcon } from '~/composables/useBudgetIcon'
+import { useSignOut } from '~/composables/useSignOut'
 
 useHead({ title: 'Home | R&J Finance' })
 import { Doughnut } from 'vue-chartjs'
@@ -9,6 +9,7 @@ ChartJS.register(Title, Tooltip, Legend, ArcElement)
 
 const store = useFinanceStore()
 const { budgetIcon } = useBudgetIcon()
+const { handleSignOut } = useSignOut()
 
 onMounted(async () => {
   await store.ensureLoaded()
@@ -258,16 +259,17 @@ const chartOptions = {
 
 <template>
     <UContainer>
-
-        <!---->
-        <MonthSelector />
-
         
         <!-- Header -->
-        <div class="relative flex items-center justify-center mb-2">
-            <h2 class="text-3xl font-bold">Summary</h2>
+        <div class="relative flex items-center justify-center pt-2 mt-2 mb-2">
+        <h2 class="text-3xl font-bold">Summary</h2>
+        <div class="absolute right-0 flex items-center gap-2">
+            <UColorModeSwitch />
+            <UButton color="neutral" variant="ghost" size="sm" icon="heroicons-solid:arrow-right-on-rectangle" aria-label="Sign out" @click="handleSignOut" />
+        </div>
         </div>
 
+        <MonthSelector />
 
         <div class="flex flex-col items-center justify-center space-y-2">
 

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useFinanceStore } from '~/stores/finance'
+import { useSignOut } from '~/composables/useSignOut'
 
 useHead({ title: 'Budgets | R&J Finance' })
 
 const store = useFinanceStore()
 const router = useRouter()
+const { handleSignOut } = useSignOut()
 const searchText = ref('')
 
 onMounted(() => { store.ensureLoaded() })
@@ -143,12 +145,19 @@ function sortBudgetsByProgress() {
 <template>
     <UContainer>
 
+        <!-- Header -->
+        <div class="relative flex items-center justify-center pt-2 mt-2 mb-2">
+        <h2 class="text-3xl font-bold">Budgets</h2>
+        <div class="absolute right-0 flex items-center gap-2">
+            <UColorModeSwitch />
+            <UButton color="neutral" variant="ghost" size="sm" icon="heroicons-solid:arrow-right-on-rectangle" aria-label="Sign out" @click="handleSignOut" />
+        </div>
+        </div>
+
         <!-- Month Selector -->
         <MonthSelector />
 
-        <!-- Header -->
         <div class="relative flex items-center justify-center pt-2 mb-2">
-            <h2 class="text-3xl font-bold">Budgets</h2>
             <div class="absolute right-0 flex items-center gap-1">
                 <UDropdownMenu :items="sortDropdownItems" :content="{ align: 'end' }">
                     <UButton

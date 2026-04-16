@@ -2,14 +2,11 @@
 import { storeToRefs } from 'pinia'
 import { useAccountsStore } from '~/stores/accounts'
 import { useProfileStore } from '~/stores/profile'
-import { signOut } from '~/composables/supabase'
+import { useSignOut } from '~/composables/useSignOut'
 
 useHead({ title: 'Profile | R&J Finance' })
 
-// --- Sign out ---
-function handleSignOut() {
-  if (window.confirm('Are you sure you want to sign out?')) signOut()
-}
+const { handleSignOut } = useSignOut()
 
 // --- Profile ---
 const profileStore = useProfileStore()
@@ -237,7 +234,7 @@ function institutionBgColor(institution: string | null | undefined) {
 <template>
   <UContainer>
     <!-- Header -->
-    <div class="relative flex items-center justify-center pt-2 mb-2">
+    <div class="relative flex items-center justify-center pt-2 mt-2 mb-2">
       <h2 class="text-3xl font-bold">Profile</h2>
       <div class="absolute right-0 flex items-center gap-2">
         <UColorModeSwitch />
