@@ -45,7 +45,7 @@
   </nav>
 
   <!-- Add Expense Modal -->
-  <UModal v-model:open="isModalOpen">
+  <UModal v-if="isModalOpen" v-model:open="isModalOpen">
     <template #content>
       <UCard>
         <BudgetsExpenseCreate
