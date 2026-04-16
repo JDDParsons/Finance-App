@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import bmoLogo from '@/assets/images/BMO.png'
-import questradeLogo from '@/assets/images/Questrade.png'
-import scotiabankLogo from '@/assets/images/Scotiabank.JPG'
+import { useInstitutionBranding } from '~/composables/useInstitutionBranding'
 
 interface AccountLike {
   id: string
@@ -26,34 +24,19 @@ const selectedAccount = computed(() =>
   props.accounts.find(account => account.id === props.modelValue) ?? null
 )
 
-function normalizedInstitution(account: AccountLike | null) {
-  return (account?.institution || account?.name || '').toLowerCase()
-}
+const { institutionLogo, institutionIcon, institutionBgClass } = useInstitutionBranding()
 
 function accountLogo(account: AccountLike | null) {
-  const name = normalizedInstitution(account)
-  if (name === 'bmo') return { src: bmoLogo, alt: 'BMO' }
-  if (name.includes('questrade')) return { src: questradeLogo, alt: 'Questrade' }
-  if (name === 'scotiabank') return { src: scotiabankLogo, alt: 'Scotiabank' }
-  return null
+  return institutionLogo(account?.institution, account?.name)
 }
 
 function accountIcon(account: AccountLike | null) {
   if (account?.is_credit_card) return 'heroicons-solid:credit-card'
-
-  const name = normalizedInstitution(account)
-  if (name.includes('bmo')) return 'heroicons-solid:building-library'
-  if (name.includes('scotia') || name.includes('bank')) return 'heroicons-solid:building-library'
-  if (name.includes('quest') || name.includes('invest')) return 'heroicons-solid:chart-bar'
-  if (name.includes('visa') || name.includes('mastercard') || name.includes('card')) return 'heroicons-solid:credit-card'
-  return 'heroicons-solid:banknotes'
+  return institutionIcon(account?.institution, account?.name)
 }
 
 function accountBgClass(account: AccountLike | null) {
-  const name = normalizedInstitution(account)
-  if (name === 'bmo') return 'bg-secondary-100 dark:bg-secondary-900'
-  if (name === 'scotiabank') return 'bg-error-100 dark:bg-error-900'
-  return 'bg-primary-100 dark:bg-primary-900'
+  return institutionBgClass(account?.institution, account?.name)
 }
 
 function selectAccount(accountId: string) {
