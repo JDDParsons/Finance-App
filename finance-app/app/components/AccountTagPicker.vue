@@ -19,6 +19,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: string | null]
 }>()
+const open = ref(false)
 
 const selectedAccount = computed(() =>
   props.accounts.find(account => account.id === props.modelValue) ?? null
@@ -41,11 +42,12 @@ function accountBgClass(account: AccountLike | null) {
 
 function selectAccount(accountId: string) {
   emit('update:modelValue', accountId)
+  open.value = false
 }
 </script>
 
 <template>
-  <UPopover>
+  <UPopover v-model:open="open">
     <button
       type="button"
       class="inline-flex cursor-pointer items-center justify-center rounded-full border border-gray-200 px-2 py-1 text-sm text-gray-600 transition-colors hover:border-gray-300 dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-600"

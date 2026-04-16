@@ -35,36 +35,27 @@ function handleInput(event: Event) {
 function openPicker() {
   const input = inputRef.value
   if (!input) return
-
-  if (typeof input.showPicker === 'function') {
-    input.showPicker()
-    return
-  }
-
-  input.focus()
-  input.click()
+  if (typeof input.showPicker === 'function') input.showPicker()
 }
 </script>
 
 <template>
-  <div class="relative inline-flex">
-    <button
-      type="button"
-      class="inline-flex cursor-pointer items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-sm text-gray-600 transition-colors hover:border-gray-300 dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-600"
-      aria-label="Choose date"
-      @click="openPicker"
-    >
+  <label
+    class="relative inline-flex cursor-pointer items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-sm text-gray-600 transition-colors hover:border-gray-300 dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-600"
+    aria-label="Choose date"
+    @click="openPicker"
+  >
       <UIcon name="heroicons-solid:calendar-days" class="size-6 text-gray-400" />
       <span class="whitespace-nowrap">{{ displayLabel }}</span>
-    </button>
 
     <input
       ref="inputRef"
       :value="props.modelValue"
       type="date"
-      class="pointer-events-none absolute h-px w-px opacity-0"
+      class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
       aria-label="Choose date"
       @input="handleInput"
+      @change="handleInput"
     />
-  </div>
+  </label>
 </template>

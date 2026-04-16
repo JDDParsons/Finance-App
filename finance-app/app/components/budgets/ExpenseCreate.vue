@@ -2,6 +2,7 @@
 import { useFinanceStore } from '~/stores/finance'
 import AmountNumberPad from '~/components/AmountNumberPad.vue'
 import AccountTagPicker from '~/components/AccountTagPicker.vue'
+import BudgetTagPicker from '~/components/BudgetTagPicker.vue'
 import DateTagPicker from '~/components/DateTagPicker.vue'
 
 const props = defineProps<{
@@ -35,12 +36,10 @@ function goBack() {
     step.value = 'choose-budget'
 }
 
-const { budgetIcon } = useBudgetIcon()
-
-const chosenBudget = computed(() => {
-    if (noBudget.value) return null
-    return store.budgets.find((b: any) => b.id === selectedBudgetId.value) ?? null
-})
+function handleBudgetPillChange(budgetId: string | null) {
+    selectedBudgetId.value = budgetId ?? ''
+    noBudget.value = budgetId === null
+}
 
 const emit = defineEmits<{
     update: [],
@@ -249,30 +248,11 @@ async function handleCreateHit() {
             <div class="ml-3">
                 <div class="mb-5 flex flex-wrap items-center gap-2">
                     <div v-if="!props.budgetId" class="flex items-center gap-2">
-                        <button
-                            type="button"
-                            class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
-                            @click="goBack"
-                            aria-label="Change budget"
-                        >
-                            <div
-                                v-if="chosenBudget"
-                                class="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
-                                :style="chosenBudget.color ? { backgroundColor: chosenBudget.color + '33', borderColor: chosenBudget.color, border: '1.5px solid' } : {}"
-                                :class="!chosenBudget.color ? 'bg-gray-100 dark:bg-gray-800 border border-gray-300' : ''"
-                            >
-                                <UIcon
-                                    :name="budgetIcon(chosenBudget.name)"
-                                    class="size-4"
-                                    :style="chosenBudget.color ? { color: chosenBudget.color } : {}"
-                                    :class="!chosenBudget.color ? 'text-gray-500' : ''"
-                                />
-                            </div>
-                            <div v-else class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 bg-gray-100 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-600">
-                                <UIcon name="heroicons:x-mark" class="size-3 text-gray-400" />
-                            </div>
-                            <span class="text-sm text-gray-600 dark:text-gray-300">{{ chosenBudget?.name ?? 'No budget' }}</span>
-                        </button>
+                        <BudgetTagPicker
+                            :model-value="noBudget ? null : selectedBudgetId"
+                            :budgets="props.budgets ?? store.budgets"
+                            @update:model-value="handleBudgetPillChange"
+                        />
                     </div>
 
                     <DateTagPicker v-model="date" />
