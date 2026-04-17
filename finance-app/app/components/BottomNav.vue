@@ -47,13 +47,13 @@
   <!-- Add Expense Modal -->
   <UModal v-if="isModalOpen" v-model:open="isModalOpen">
     <template #content>
-      <UCard>
+      <div class="bg-white dark:bg-gray-950">
         <BudgetsExpenseCreate
           :budgets="store.budgets"
           @update="handleExpenseCreated"
           @cancel="isModalOpen = false"
         />
-      </UCard>
+      </div>
     </template>
   </UModal>
 </template>

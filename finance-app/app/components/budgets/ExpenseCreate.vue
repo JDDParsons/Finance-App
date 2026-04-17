@@ -55,6 +55,7 @@ const date = ref(localDate);
 const amount = ref('')
 const note = ref('')
 const appliedNoteSuggestion = ref<string | null>(null)
+const noteSuggestionsOpen = ref(false)
 const loading = ref(false)
 const error = ref<string | null>(null)
 const expenseAccountId = ref<string | null>(store.defaultExpenseAccount?.id ?? null)
@@ -113,11 +114,28 @@ watch(note, (newValue) => {
     if (appliedNoteSuggestion.value && newValue !== appliedNoteSuggestion.value) {
         appliedNoteSuggestion.value = null
     }
+
+    if (!newValue.trim()) {
+        noteSuggestionsOpen.value = false
+    }
 })
+
+watch(noteSuggestions, (suggestions) => {
+    if (!suggestions.length) {
+        noteSuggestionsOpen.value = false
+    }
+})
+
+function handleNoteFocus() {
+    if (noteSuggestions.value.length) {
+        noteSuggestionsOpen.value = true
+    }
+}
 
 function applyNoteSuggestion(suggestion: string) {
     note.value = suggestion
     appliedNoteSuggestion.value = suggestion
+    noteSuggestionsOpen.value = false
 }
 
 let closeTimer: ReturnType<typeof setTimeout> | null = null
@@ -245,20 +263,7 @@ async function handleCreateHit() {
 
         <!-- Step 2a: Expense form -->
         <template v-else>
-            <div class="ml-3">
-                <div class="mb-5 flex flex-wrap items-center gap-2">
-                    <div v-if="!props.budgetId" class="flex items-center gap-2">
-                        <BudgetTagPicker
-                            :model-value="noBudget ? null : selectedBudgetId"
-                            :budgets="props.budgets ?? store.budgets"
-                            @update:model-value="handleBudgetPillChange"
-                        />
-                    </div>
-
-                    <DateTagPicker v-model="date" />
-                    <AccountTagPicker v-model="expenseAccountId" :accounts="store.accounts" />
-                </div>
-
+            <div>
                 <div v-if="error" class="mb-4">
                     <UAlert
                         title="Error"
@@ -268,48 +273,75 @@ async function handleCreateHit() {
                     />
                 </div>
 
-                <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    <div>
-                        <AmountNumberPad v-model="amount" />
-                    </div>
-
-                    <div class="space-y-3">
-                        <UFormField label="Note">
+                <div class="overflow-hidden">
+                    <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-800">
+                        <UPopover v-model:open="noteSuggestionsOpen">
                             <UInput
                                 v-model="note"
-                                highlight
-                                color="primary"
-                                placeholder="Leave a note..."
+                                variant="ghost"
+                                color="neutral"
+                                placeholder="Enter a note...."
                                 type="text"
                                 size="xl"
+                                class="w-full"
+                                :ui="{ base: 'px-0 text-lg', trailing: 'hidden', leading: 'hidden' }"
+                                @focus="handleNoteFocus"
+                                @click="handleNoteFocus"
                             />
-                        </UFormField>
 
-                        <div v-if="noteSuggestions.length" class="flex flex-wrap gap-2 pt-1">
-                            <button
-                                v-for="suggestion in noteSuggestions"
-                                :key="suggestion"
-                                type="button"
-                                class="px-3 py-1 text-sm rounded-full border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-300 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-300 dark:hover:bg-green-900/50 transition-colors cursor-pointer"
-                                @click="applyNoteSuggestion(suggestion)"
-                            >
-                                {{ suggestion }}
-                            </button>
-                        </div>
+                            <template #content>
+                                <div class="max-w-sm p-2">
+                                    <div class="flex flex-wrap gap-2">
+                                        <button
+                                            v-for="suggestion in noteSuggestions"
+                                            :key="suggestion"
+                                            type="button"
+                                            class="rounded-full border border-green-200 bg-green-50 px-3 py-1 text-sm text-green-700 transition-colors cursor-pointer hover:border-green-300 hover:bg-green-100 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-300 dark:hover:bg-green-900/50"
+                                            @click="applyNoteSuggestion(suggestion)"
+                                        >
+                                            {{ suggestion }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </UPopover>
                     </div>
-                </div>
 
-                <div class="flex items-center gap-3 mt-6">
-                    <UButton
-                        color="primary"
-                        variant="solid"
-                        @click="handleCreateHit"
-                        :disabled="loading"
-                        :loading="loading"
-                    >
-                        Submit expense
-                    </UButton>
-                    <UButton color="neutral" variant="ghost" @click="handleCancel">Cancel</UButton>
+                    <AmountNumberPad v-model="amount" variant="wireframe">
+                        <template #controls>
+                            <div class="flex flex-wrap items-center justify-center gap-3">
+                                <BudgetTagPicker
+                                    v-if="!props.budgetId"
+                                    :model-value="noBudget ? null : selectedBudgetId"
+                                    :budgets="props.budgets ?? store.budgets"
+                                    @update:model-value="handleBudgetPillChange"
+                                />
+                                <DateTagPicker v-model="date" />
+                                <AccountTagPicker v-model="expenseAccountId" :accounts="store.accounts" />
+                            </div>
+                        </template>
+                    </AmountNumberPad>
+
+                    <div class="mt-2 grid grid-cols-2 border-t border-gray-200 dark:border-gray-800">
+                        <UButton
+                            color="primary"
+                            variant="solid"
+                            class="h-18 rounded-none justify-center text-base font-medium text-black hover:bg-green-600 dark:text-black"
+                            @click="handleCreateHit"
+                            :disabled="loading"
+                            :loading="loading"
+                        >
+                            Submit expense
+                        </UButton>
+                        <UButton
+                            color="neutral"
+                            variant="ghost"
+                            class="h-18 rounded-none justify-center border-l border-gray-200 text-base font-medium dark:border-gray-800"
+                            @click="handleCancel"
+                        >
+                            Cancel
+                        </UButton>
+                    </div>
                 </div>
             </div>
         </template>
