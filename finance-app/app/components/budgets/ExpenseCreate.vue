@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
+import { useBudgetIcon } from '~/composables/useBudgetIcon'
 import AmountNumberPad from '~/components/AmountNumberPad.vue'
 import AccountTagPicker from '~/components/AccountTagPicker.vue'
-import BudgetTagPicker from '~/components/BudgetTagPicker.vue'
 import DateTagPicker from '~/components/DateTagPicker.vue'
 
 const props = defineProps<{
@@ -14,6 +14,7 @@ const props = defineProps<{
 const selectedBudgetId = ref(props.budgetId ?? '')
 const noBudget = ref(false)
 const store = useFinanceStore()
+const { budgetIcon } = useBudgetIcon()
 
 // Multi-step flow: 'choose-budget' → 'form' | 'income-form'
 // Skip budget selection if a budgetId was already provided via prop
@@ -34,11 +35,6 @@ function handleBudgetSelect(selection: { budgetId: string | null; budgetName: st
 
 function goBack() {
     step.value = 'choose-budget'
-}
-
-function handleBudgetPillChange(budgetId: string | null) {
-    selectedBudgetId.value = budgetId ?? ''
-    noBudget.value = budgetId === null
 }
 
 const emit = defineEmits<{
@@ -90,6 +86,11 @@ const { show: showOverlay } = useSuccessOverlay()
 const activeBudgetId = computed(() => {
     if (noBudget.value) return null
     return props.budgetId || selectedBudgetId.value || null
+})
+
+const expensePillBudget = computed(() => {
+    if (!activeBudgetId.value) return null
+    return (props.budgets ?? store.budgets).find((budget: any) => budget.id === activeBudgetId.value) ?? null
 })
 
 const noteSuggestions = computed((): string[] => {
@@ -192,71 +193,82 @@ async function handleCreateHit() {
 
         <!-- Step 1: Choose budget -->
         <template v-if="step === 'choose-budget'">
-            <BudgetsChooseBudget
-                :budgets="props.budgets ?? store.budgets"
-                @select="handleBudgetSelect"
-            />
-            <div class="mt-4">
-                <UButton color="neutral" variant="ghost" @click="handleCancel">Cancel</UButton>
+            <div class="p-4">
+                <div class="mb-5">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Add a transaction</h2>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Choose a budget to add an expense to it</p>
+                </div>
+                <BudgetsChooseBudget
+                    :budgets="props.budgets ?? store.budgets"
+                    @select="handleBudgetSelect"
+                />
+                <div class="mt-4 flex justify-end">
+                    <UButton color="neutral" variant="ghost" @click="handleCancel">Cancel</UButton>
+                </div>
             </div>
         </template>
 
         <!-- Step 2b: Income form -->
         <template v-else-if="step === 'income-form'">
-            <div class="ml-3">
-                <div class="mb-5 flex flex-wrap items-center gap-2">
-                    <button
-                        type="button"
-                        class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
-                        @click="goBack"
-                        aria-label="Change type"
-                    >
-                        <div class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 bg-green-50 dark:bg-green-900/30 border border-green-400">
-                            <UIcon name="heroicons:banknotes-solid" class="size-3 text-green-500" />
-                        </div>
-                        <span class="text-sm text-gray-600 dark:text-gray-300">Paycheck</span>
-                        <UIcon name="heroicons:pencil-square" class="size-3.5 text-gray-400 ml-0.5" />
-                    </button>
-
-                    <DateTagPicker v-model="incomeDate" />
-                    <AccountTagPicker v-model="incomeAccountId" :accounts="store.accounts" />
-                </div>
-
+            <div>
                 <div v-if="error" class="mb-4">
                     <UAlert title="Error" :description="error" color="error" variant="soft" />
                 </div>
 
-                <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    <div>
-                        <AmountNumberPad v-model="incomeAmount" />
+                <div class="overflow-hidden">
+                    <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-800">
+                        <UInput
+                            v-model="incomeNote"
+                            variant="ghost"
+                            color="neutral"
+                            placeholder="Enter a note...."
+                            type="text"
+                            size="xl"
+                            class="w-full"
+                            :ui="{ base: 'px-0 text-lg', trailing: 'hidden', leading: 'hidden' }"
+                        />
                     </div>
 
-                    <div class="space-y-6">
-                        <UFormField label="Note">
-                            <UInput
-                                v-model="incomeNote"
-                                highlight
-                                color="primary"
-                                placeholder="Leave a note..."
-                                type="text"
-                                size="xl"
-                            />
-                        </UFormField>
+                    <AmountNumberPad v-model="incomeAmount" variant="wireframe">
+                        <template #controls>
+                            <div class="flex flex-wrap items-center justify-center gap-3">
+                                <button
+                                    type="button"
+                                    class="inline-flex cursor-pointer items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-sm text-gray-600 transition-colors hover:border-gray-300 dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-600"
+                                    @click="goBack"
+                                    aria-label="Change type"
+                                >
+                                    <div class="flex size-7 shrink-0 items-center justify-center rounded-full border border-green-400 bg-green-50 dark:border-green-500 dark:bg-green-900/30">
+                                        <UIcon name="heroicons:banknotes-solid" class="size-4 text-green-500" />
+                                    </div>
+                                    <span>Paycheck</span>
+                                </button>
+                                <DateTagPicker v-model="incomeDate" />
+                                <AccountTagPicker v-model="incomeAccountId" :accounts="store.accounts" />
+                            </div>
+                        </template>
+                    </AmountNumberPad>
 
+                    <div class="mt-4 grid grid-cols-2 border-t border-gray-200 dark:border-gray-800">
+                        <UButton
+                            color="primary"
+                            variant="solid"
+                            class="h-18 rounded-none justify-center text-base font-medium text-black hover:bg-green-600 dark:text-black"
+                            @click="handleCreateIncome"
+                            :disabled="loading"
+                            :loading="loading"
+                        >
+                            Submit income
+                        </UButton>
+                        <UButton
+                            color="neutral"
+                            variant="ghost"
+                            class="h-18 rounded-none justify-center border-l border-gray-200 text-base font-medium dark:border-gray-800"
+                            @click="handleCancel"
+                        >
+                            Cancel
+                        </UButton>
                     </div>
-                </div>
-
-                <div class="flex items-center gap-3 mt-6">
-                    <UButton
-                        color="primary"
-                        variant="solid"
-                        @click="handleCreateIncome"
-                        :disabled="loading"
-                        :loading="loading"
-                    >
-                        Submit income
-                    </UButton>
-                    <UButton color="neutral" variant="ghost" @click="handleCancel">Cancel</UButton>
                 </div>
             </div>
         </template>
@@ -310,19 +322,41 @@ async function handleCreateHit() {
                     <AmountNumberPad v-model="amount" variant="wireframe">
                         <template #controls>
                             <div class="flex flex-wrap items-center justify-center gap-3">
-                                <BudgetTagPicker
+                                <button
                                     v-if="!props.budgetId"
-                                    :model-value="noBudget ? null : selectedBudgetId"
-                                    :budgets="props.budgets ?? store.budgets"
-                                    @update:model-value="handleBudgetPillChange"
-                                />
+                                    type="button"
+                                    class="inline-flex cursor-pointer items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-sm text-gray-600 transition-colors hover:border-gray-300 dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-600"
+                                    @click="goBack"
+                                    :aria-label="expensePillBudget ? `Change budget from ${expensePillBudget.name}` : 'Choose budget'"
+                                >
+                                    <div
+                                        v-if="expensePillBudget"
+                                        class="flex size-7 shrink-0 items-center justify-center rounded-full"
+                                        :style="expensePillBudget.color ? { backgroundColor: `${expensePillBudget.color}33`, borderColor: expensePillBudget.color, border: '1.5px solid' } : {}"
+                                        :class="!expensePillBudget.color ? 'border border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-gray-800' : ''"
+                                    >
+                                        <UIcon
+                                            :name="expensePillBudget.icon ?? budgetIcon(expensePillBudget.name)"
+                                            class="size-4"
+                                            :style="expensePillBudget.color ? { color: expensePillBudget.color } : {}"
+                                            :class="!expensePillBudget.color ? 'text-gray-500 dark:text-gray-400' : ''"
+                                        />
+                                    </div>
+                                    <div
+                                        v-else
+                                        class="flex size-7 shrink-0 items-center justify-center rounded-full border border-dashed border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-gray-800"
+                                    >
+                                        <UIcon name="heroicons:x-mark" class="size-4 text-gray-400" />
+                                    </div>
+                                    <span class="max-w-32 truncate">{{ expensePillBudget?.name ?? chosenBudgetName ?? 'No budget' }}</span>
+                                </button>
                                 <DateTagPicker v-model="date" />
                                 <AccountTagPicker v-model="expenseAccountId" :accounts="store.accounts" />
                             </div>
                         </template>
                     </AmountNumberPad>
 
-                    <div class="mt-2 grid grid-cols-2 border-t border-gray-200 dark:border-gray-800">
+                    <div class="mt-4 grid grid-cols-2 border-t border-gray-200 dark:border-gray-800">
                         <UButton
                             color="primary"
                             variant="solid"
