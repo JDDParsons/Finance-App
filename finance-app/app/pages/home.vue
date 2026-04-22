@@ -1,6 +1,7 @@
 <script setup>
 import { useBudgetIcon } from '~/composables/useBudgetIcon'
 import { useSignOut } from '~/composables/useSignOut'
+import MonthlyExpensesChart from '~/components/home/MonthlyExpensesChart.vue'
 
 useHead({ title: 'Home | R&J Finance' })
 import { Doughnut } from 'vue-chartjs'
@@ -10,6 +11,7 @@ ChartJS.register(Title, Tooltip, Legend, ArcElement)
 const store = useFinanceStore()
 const { budgetIcon } = useBudgetIcon()
 const { handleSignOut } = useSignOut()
+const UNCATEGORIZED_ICON = 'heroicons:question-mark-circle-solid'
 
 onMounted(async () => {
   await store.ensureLoaded()
@@ -22,35 +24,35 @@ const baseTotalExpenses = computed(() =>
 
 const excludedExpenseIds = ref([])
 
-const top5Expenses = computed(() => {
+const top10Expenses = computed(() => {
   return [...store.budgetHits]
     .sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0))
-    .slice(0, 5)
+    .slice(0, 10)
     .map(h => {
       const budget = store.budgets.find(b => b.id === h.budget_id)
       return {
         ...h,
         budgetName: budget?.name ?? 'Uncategorized',
         budgetColor: budget?.color ?? null,
-        budgetIconName: budget ? (budget.icon ?? budgetIcon(budget.name)) : null,
+        budgetIconName: budget ? (budget.icon ?? budgetIcon(budget.name)) : UNCATEGORIZED_ICON,
       }
     })
 })
 
-watch(top5Expenses, (hits) => {
+ watch(top10Expenses, (hits) => {
   const validIds = new Set(hits.map(h => h.id))
   excludedExpenseIds.value = excludedExpenseIds.value.filter(id => validIds.has(id))
 })
 
-const excludedTop5Total = computed(() => {
+const excludedTop10Total = computed(() => {
   const excludedSet = new Set(excludedExpenseIds.value)
-  return top5Expenses.value.reduce((sum, hit) => {
+  return top10Expenses.value.reduce((sum, hit) => {
     if (!excludedSet.has(hit.id)) return sum
     return sum + (Number(hit.amount) || 0)
   }, 0)
 })
 
-const totalExpenses = computed(() => Math.max(baseTotalExpenses.value - excludedTop5Total.value, 0))
+const totalExpenses = computed(() => Math.max(baseTotalExpenses.value - excludedTop10Total.value, 0))
 
 const totalIncome = computed(() =>
   store.income.reduce((sum, i) => sum + (Number(i.amount) || 0), 0)
@@ -137,22 +139,24 @@ const FALLBACK_PALETTE = [
 const noBudgetPattern = ref(null)
 
 function makeStripePattern() {
-  const size = 8
+  const tileSize = 6
+  const resolution = 2
   const offscreen = document.createElement('canvas')
-  offscreen.width = size
-  offscreen.height = size
+  offscreen.width = tileSize * resolution
+  offscreen.height = tileSize * resolution
   const ctx2 = offscreen.getContext('2d')
+  ctx2.scale(resolution, resolution)
   // Fill background
   ctx2.fillStyle = NO_BUDGET_COLOR
-  ctx2.fillRect(0, 0, size, size)
+  ctx2.fillRect(0, 0, tileSize, tileSize)
   // Draw X pattern (two diagonal lines)
   ctx2.strokeStyle = '#D1D5DB'
-  ctx2.lineWidth = 0.6
+  ctx2.lineWidth = 0.45
   ctx2.beginPath()
   ctx2.moveTo(0, 0)
-  ctx2.lineTo(size, size)
-  ctx2.moveTo(size, 0)
-  ctx2.lineTo(0, size)
+  ctx2.lineTo(tileSize, tileSize)
+  ctx2.moveTo(tileSize, 0)
+  ctx2.lineTo(0, tileSize)
   ctx2.stroke()
   // Create a temporary canvas to get a rendering context for createPattern
   const host = document.createElement('canvas')
@@ -186,6 +190,7 @@ const chartData = computed(() => {
   const data = []
   const backgroundColors = []
   const borderColors = []
+  const borderWidths = []
 
   for (const [budgetId, total] of sorted) {
     const budget = budgetId !== '__none__' ? store.budgets.find(b => b.id === budgetId) : null
@@ -193,10 +198,12 @@ const chartData = computed(() => {
     data.push(total)
     if (budgetId === '__none__') {
       backgroundColors.push(noBudgetPattern.value ?? NO_BUDGET_COLOR)
-      borderColors.push('#D1D5DB')
+      borderColors.push('transparent')
+      borderWidths.push(0)
     } else {
       backgroundColors.push(budget?.color ?? FALLBACK_PALETTE[fallbackIdx++ % FALLBACK_PALETTE.length])
       borderColors.push('transparent')
+      borderWidths.push(2)
     }
   }
 
@@ -205,13 +212,14 @@ const chartData = computed(() => {
   data.push(remaining.value)
   backgroundColors.push(chartColors.value.remaining)
   borderColors.push('transparent')
+  borderWidths.push(2)
 
   return {
     labels,
     datasets: [{
       backgroundColor: backgroundColors,
       borderColor: borderColors,
-      borderWidth: 2,
+      borderWidth: borderWidths,
       data,
     }],
   }
@@ -318,55 +326,61 @@ const chartOptions = {
             </div>
         </div>
 
-        <!-- Largest Expenses -->
-        <div class="pt-5 pb-20">
-            <h2 class="text-2xl text-center font-bold pb-2">Largest Expenses</h2>
-                <ul v-if="store.loading" class="rounded-lg overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
-                    <li
-                        v-for="n in 5"
-                        :key="n"
-                        class="flex items-center justify-between px-4 py-2 bg-elevated"
-                    >
-                        <div class="flex items-center gap-3">
-                            <USkeleton class="w-4 h-4 rounded opacity-40" />
-                            <div class="space-y-1.5">
-                                <USkeleton class="h-3.5 w-28 rounded opacity-40" />
-                                <USkeleton class="h-3 w-20 rounded opacity-40" />
+        <div class="pt-5 pb-20 grid gap-6 lg:grid-cols-3">
+            <!-- Largest Expenses -->
+            <div class="lg:col-span-1">
+                <h2 class="text-2xl text-center font-bold pb-2">Largest Expenses</h2>
+                    <ul v-if="store.loading" class="rounded-lg overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
+                        <li
+                            v-for="n in 10"
+                            :key="n"
+                            class="flex items-center justify-between px-2.5 py-1.5 bg-elevated min-h-9"
+                        >
+                            <div class="flex items-center gap-2">
+                                <USkeleton class="w-3.5 h-3.5 rounded opacity-40" />
+                                <div class="space-y-1">
+                                    <USkeleton class="h-3 w-24 rounded opacity-40" />
+                                    <USkeleton class="h-2.5 w-16 rounded opacity-40" />
+                                </div>
                             </div>
-                        </div>
-                        <USkeleton class="h-4 w-16 rounded opacity-40" />
-                    </li>
-                </ul>
-                <ul v-else class="rounded-lg overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
-                    <li
-                        v-for="(hit, i) in top5Expenses"
-                        :key="hit.id"
-                      class="flex items-center justify-between px-3 py-2 bg-elevated cursor-pointer transition-opacity border-l-4"
-                      :class="{ 'opacity-50': isExpenseExcluded(hit.id) }"
-                      :style="{ borderLeftColor: hit.budgetColor ?? '#D1D5DB' }"
-                      @click="toggleExpenseFromTotal(hit.id)"
-                    >
-                        <div class="flex items-center gap-3">
-                            <span class="text-sm text-muted w-4">{{ i + 1 }}</span>
-                            <!-- Budget icon: colored circle or grey X pattern for uncategorized -->
-                            <div
-                              v-if="hit.budgetColor"
-                              class="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
-                              :style="{ backgroundColor: hit.budgetColor + '33' }"
-                            >
-                              <UIcon :name="hit.budgetIconName" class="w-4 h-4" :style="{ color: hit.budgetColor }" />
+                            <USkeleton class="h-3.5 w-14 rounded opacity-40" />
+                        </li>
+                    </ul>
+                    <ul v-else class="rounded-lg overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
+                        <li
+                            v-for="(hit, i) in top10Expenses"
+                            :key="hit.id"
+                          class="flex items-center justify-between px-2.5 py-1.5 bg-elevated cursor-pointer transition-opacity border-l-4 min-h-9"
+                          :class="{ 'opacity-50': isExpenseExcluded(hit.id) }"
+                          :style="{ borderLeftColor: hit.budgetColor ?? '#D1D5DB' }"
+                          @click="toggleExpenseFromTotal(hit.id)"
+                        >
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="text-xs text-muted w-3 shrink-0">{{ i + 1 }}</span>
+                                <!-- Budget icon: colored circle or grey X pattern for uncategorized -->
+                                <div
+                                  class="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+                                  :style="hit.budgetColor
+                                    ? { backgroundColor: hit.budgetColor + '33' }
+                                    : { backgroundColor: '#F3F4F6', backgroundImage: 'repeating-linear-gradient(45deg, #D1D5DB 0, #D1D5DB 0.45px, transparent 0, transparent 50%), repeating-linear-gradient(-45deg, #D1D5DB 0, #D1D5DB 0.45px, transparent 0, transparent 50%)', backgroundSize: '6px 6px' }"
+                                >
+                                  <UIcon
+                                    :name="hit.budgetIconName"
+                                    class="w-3.5 h-3.5"
+                                    :style="{ color: hit.budgetColor ?? '#9CA3AF' }"
+                                  />
+                                </div>
+                                <p class="text-[11px] text-muted truncate">{{ hit.note || '—' }}</p>
                             </div>
-                            <div
-                              v-else
-                              class="w-7 h-7 rounded-full shrink-0"
-                              style="background-color: #F3F4F6; background-image: repeating-linear-gradient(45deg, #D1D5DB 0, #D1D5DB 0.6px, transparent 0, transparent 50%), repeating-linear-gradient(-45deg, #D1D5DB 0, #D1D5DB 0.6px, transparent 0, transparent 50%); background-size: 8px 8px;"
-                            />
-                            <p class="text-xs text-muted">{{ hit.note || '—' }}</p>
-                        </div>
-                        <p class="font-semibold text-warning text-sm">${{ Number(hit.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</p>
-                    </li>
-                    <li v-if="top5Expenses.length === 0" class="text-sm text-muted text-center py-4">No expenses this month.</li>
-                </ul>
-        </div><!-- end largest expenses -->
+                            <p class="font-semibold text-warning text-xs shrink-0">${{ Number(hit.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</p>
+                        </li>
+                        <li v-if="top10Expenses.length === 0" class="text-sm text-muted text-center py-4">No expenses this month.</li>
+                    </ul>
+            </div><!-- end largest expenses -->
+
+            <div class="lg:col-span-2 min-w-0">
+                <MonthlyExpensesChart />
+            </div>
+        </div>
     </UContainer>
 </template>
