@@ -1,10 +1,8 @@
 <script setup lang="ts">
 const props = withDefaults(defineProps<{
   modelValue?: string
-  variant?: 'default' | 'wireframe'
 }>(), {
-  modelValue: '',
-  variant: 'default'
+  modelValue: ''
 })
 
 const emit = defineEmits<{
@@ -12,6 +10,8 @@ const emit = defineEmits<{
 }>()
 
 const rawValue = computed(() => props.modelValue ?? '')
+const flashedKey = ref<string | null>(null)
+let flashTimeout: ReturnType<typeof setTimeout> | null = null
 
 const displayAmount = computed(() => {
   const numericValue = Number(rawValue.value)
@@ -44,7 +44,21 @@ function clearValue() {
   emit('update:modelValue', '')
 }
 
+function flashKey(key: string) {
+  flashedKey.value = key
+
+  if (flashTimeout) {
+    clearTimeout(flashTimeout)
+  }
+
+  flashTimeout = setTimeout(() => {
+    flashedKey.value = null
+  }, 140)
+}
+
 function pressKey(key: string) {
+  flashKey(key)
+
   if (key === 'clear') {
     clearValue()
     return
@@ -69,52 +83,46 @@ const keypadRows = [
   ['.', '0', 'clear']
 ]
 
-const isWireframe = computed(() => props.variant === 'wireframe')
+onBeforeUnmount(() => {
+  if (flashTimeout) {
+    clearTimeout(flashTimeout)
+  }
+})
 </script>
 
 <template>
-  <div
-    :class="isWireframe
-      ? 'flex flex-col'
-      : 'rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950/40'"
-  >
-    <div
-      :class="isWireframe
-        ? 'px-4 py-8 text-center'
-        : 'mb-4 rounded-2xl bg-gray-50 px-4 py-5 text-center dark:bg-gray-900'"
-    >
-      <p
-        v-if="!isWireframe"
-        class="text-xs font-medium uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400"
-      >
-        Amount
-      </p>
-      <p :class="isWireframe
-        ? 'text-7xl font-light tracking-tight text-gray-900 dark:text-white sm:text-8xl'
-        : 'mt-2 text-4xl font-bold tracking-tight text-gray-900 dark:text-white'"
-      >
-        {{ displayAmount }}
-      </p>
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="flex flex-1 min-h-0 flex-col justify-end">
+      <div class="px-4 py-24 text-center">
+        <p class="text-7xl font-light tracking-tight text-gray-900 dark:text-white sm:text-8xl">
+          {{ displayAmount }}
+        </p>
+      </div>
+
+      <div class="px-4 pb-4">
+        <slot name="controls" />
+      </div>
+
+      <div v-if="$slots.actions" class="px-1 pb-1">
+        <slot name="actions" />
+      </div>
     </div>
 
-    <div v-if="isWireframe" class="px-4 pb-4">
-      <slot name="controls" />
-    </div>
-
-    <div :class="isWireframe ? 'grid grid-cols-3 gap-3 border-t border-gray-200 px-3 pt-3 dark:border-gray-800' : 'grid grid-cols-3 gap-3'">
+    <div class="mt-auto grid grid-cols-3 gap-1 border-t border-gray-200 px-3 pt-1 pb-1 dark:border-gray-800">
       <template v-for="row in keypadRows" :key="row.join('-')">
         <button
           v-for="key in row"
           :key="key"
           type="button"
-          class="flex items-center justify-center border transition-colors active:scale-[0.98] cursor-pointer"
-          :class="key === 'clear'
-            ? (isWireframe
-              ? 'h-16 rounded-2xl border-red-200 bg-red-50 text-2xl font-semibold text-red-500 hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-950/70'
-              : 'h-14 rounded-2xl border-red-200 bg-red-50 text-xl font-semibold text-red-500 hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-950/70')
-            : (isWireframe
-              ? 'h-16 rounded-2xl border-gray-200 bg-gray-50 text-2xl font-semibold text-gray-900 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800'
-              : 'h-14 rounded-2xl border-gray-200 bg-gray-50 text-xl font-semibold text-gray-900 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800')"
+          class="flex items-center justify-center border transition-colors duration-150 active:scale-[0.98] cursor-pointer"
+          :class="[
+            flashedKey === key
+              ? 'border-green-300 bg-green-100 text-gray-900 dark:border-green-600 dark:bg-green-800/50 dark:text-white'
+              : '',
+            key === 'clear'
+              ? 'h-18 rounded-2xl border-red-200 bg-red-50 text-2xl font-semibold text-red-500 hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-950/70'
+              : 'h-18 rounded-2xl border-gray-200 bg-gray-50 text-2xl font-semibold text-gray-900 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800'
+          ]"
           @click="pressKey(key)"
         >
           {{ key === 'clear' ? 'Clear' : key }}

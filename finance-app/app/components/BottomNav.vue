@@ -18,7 +18,7 @@
         <button
           class="fab flex items-center justify-center w-14 h-14 rounded-full bg-primary-500 hover:bg-primary-600 transition-transform shadow-lg shadow-black/40 -mt-6"
           :class="{ 'fab--pressing': isPressing }"
-          @click="openModal"
+          @click="openCreateRoute"
           @mousedown="isPressing = true"
           @mouseup="isPressing = false"
           @mouseleave="isPressing = false"
@@ -43,26 +43,9 @@
       </NuxtLink>
     </div>
   </nav>
-
-  <!-- Add Expense Modal -->
-  <UModal v-if="isModalOpen" v-model:open="isModalOpen">
-    <template #content>
-      <div class="bg-white dark:bg-gray-950">
-        <BudgetsExpenseCreate
-          :budgets="store.budgets"
-          @update="handleExpenseCreated"
-          @cancel="isModalOpen = false"
-        />
-      </div>
-    </template>
-  </UModal>
 </template>
 
 <script setup lang="ts">
-import { useFinanceStore } from '~/stores/finance'
-
-const store = useFinanceStore()
-
 const leftNav = [
   { label: 'Home', icon: 'fa-solid-home', to: '/home' },
   { label: 'Budgets', icon: 'pepicons-pop:dollar-circle-filled', to: '/budgets' },
@@ -74,15 +57,9 @@ const rightNav = [
 ]
 
 const isPressing = ref(false)
-const isModalOpen = ref(false)
 
-function openModal() {
-  isModalOpen.value = true
-}
-
-function handleExpenseCreated() {
-  isModalOpen.value = false
-  store.fetchAll()
+function openCreateRoute() {
+  navigateTo('/cashflow/create')
 }
 </script>
 
