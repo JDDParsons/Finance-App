@@ -9,12 +9,10 @@
 body {
   overflow-x: hidden;
   font-family: 'Plus Jakarta Sans', sans-serif;
+  touch-action: manipulation;
 }
 
 html {
   scrollbar-gutter: stable;
-}
-
-html {
-  scrollbar-gutter: stable;
+  touch-action: manipulation;
 }
