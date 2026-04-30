@@ -53,7 +53,7 @@ const leftNav = [
 
 const rightNav = [
   { label: 'Cashflow', icon: 'heroicons-solid:arrows-right-left', to: '/cashflow' },
-  { label: 'Profile', icon: 'heroicons-solid:user-circle', to: '/accounts' },
+  { label: 'Savings', icon: 'streamline-flex:decent-work-and-economic-growth-solid', to: '/savings' },
 ]
 
 const isPressing = ref(false)

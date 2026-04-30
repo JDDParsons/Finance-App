@@ -78,8 +78,6 @@ onMounted(async () => {
 
 <template>
   <div class="min-h-screen bg-white dark:bg-gray-900 pb-24">
-    <MonthSelector />
-
     <!-- Header -->
     <div class="relative flex items-center justify-center pt-2 mb-2">
       <h2 class="text-3xl font-bold">Savings</h2>

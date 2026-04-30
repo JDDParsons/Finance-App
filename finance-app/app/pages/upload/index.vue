@@ -1,6 +1,6 @@
 <script setup>
 
-import { uploadFile, signOut } from '~/composables/supabase'
+import { uploadFile } from '~/composables/supabase'
 
 useHead({ title: 'Upload | R&J Finance' })
 
@@ -36,12 +36,7 @@ async function upload() {
 </script>
 <template>
     <div>
-        <UHeader title="Finance App">
-          <template #right>
-            <UColorModeSwitch />
-            <UButton class="ml-2" color="neutral" variant="ghost" size="sm" @click="signOut()">Sign out</UButton>
-          </template>
-        </UHeader>
+        <UHeader title="Finance App" />
         <UMain>
             <UContainer>
                 <div v-if="fileUploaded" class="flex flex-col items-center justify-center p-8 mb-12 space-y-4">

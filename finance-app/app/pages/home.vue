@@ -1,6 +1,5 @@
 <script setup>
 import { useBudgetIcon } from '~/composables/useBudgetIcon'
-import { useSignOut } from '~/composables/useSignOut'
 import MonthlyExpensesChart from '~/components/home/MonthlyExpensesChart.vue'
 
 useHead({ title: 'Home | R&J Finance' })
@@ -10,7 +9,6 @@ ChartJS.register(Title, Tooltip, Legend, ArcElement)
 
 const store = useFinanceStore()
 const { budgetIcon } = useBudgetIcon()
-const { handleSignOut } = useSignOut()
 const UNCATEGORIZED_ICON = 'heroicons:question-mark-circle-solid'
 
 onMounted(async () => {
@@ -270,14 +268,8 @@ const chartOptions = {
         
         <!-- Header -->
         <div class="relative flex items-center justify-center pt-2 mt-2 mb-2">
-        <h2 class="text-3xl font-bold">Summary</h2>
-        <div class="absolute right-0 flex items-center gap-2">
-            <UColorModeSwitch />
-            <UButton color="neutral" variant="ghost" size="sm" icon="heroicons-solid:arrow-right-on-rectangle" aria-label="Sign out" @click="handleSignOut" />
+            <h2 class="text-3xl font-bold">Summary</h2>
         </div>
-        </div>
-
-        <MonthSelector />
 
         <div class="flex flex-col items-center justify-center space-y-2">
 

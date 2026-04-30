@@ -99,11 +99,7 @@ onMounted(async () => {
 
 <template>
   <div>
-    <UHeader title="Personal Finance App">
-      <template #right>
-        <UColorModeSwitch />
-      </template>
-    </UHeader>
+    <UHeader title="Personal Finance App" />
     <UMain>
       <UContainer>
         <div class="flex justify-start pt-6 mb-4">

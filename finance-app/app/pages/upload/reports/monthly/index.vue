@@ -8,7 +8,7 @@ import DoughnutChartA from '~/components/upload/DoughnutChartA.vue';
 import DoughnutChartB from '~/components/upload/DoughnutChartB.vue';
 import CategoryDropdown from '~/components/upload/CategoryDropdown.vue';
 
-import { getAllByMonth, getCategories, getStatementGroups, signOut } from '~/composables/supabase';
+import { getAllByMonth, getCategories, getStatementGroups } from '~/composables/supabase';
 
 // Utility function to attach category labels
 function attachCategoryLabel(
@@ -263,12 +263,7 @@ const carouselItems = computed(() => ([
 </script>
 <template>
     <div class="min-h-screen flex flex-col">
-        <UHeader title="Finance App">
-          <template #right>
-            <UColorModeSwitch />
-            <UButton class="ml-2" color="neutral" variant="ghost" size="sm" @click="signOut()">Sign out</UButton>
-          </template>
-        </UHeader>
+        <UHeader title="Finance App" />
         <UBanner v-if="numberOfUncategorized > 0" icon="i-lucide-info" color="neutral" to="/upload/transactions" :title="`${numberOfUncategorized} uncategorized transactions in ${selectedMonthLabel} ${selectedYear}.`" />
         <UMain class="flex-1 flex items-center justify-center pt-5">
             <UContainer>
