@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useSelectedMonthTitle } from '~/composables/useSelectedMonthTitle'
 import { useFinanceStore } from '~/stores/finance'
 
 useHead({ title: 'Cash Flow | R&J Finance' })
 
 const store = useFinanceStore()
 const { show: showOverlay } = useSuccessOverlay()
+const { monthTitle } = useSelectedMonthTitle()
 
 onMounted(() => { store.ensureLoaded() })
 
@@ -120,10 +122,17 @@ async function saveExpense() {
 <template>
   <UContainer>
 
-      <!-- Header -->
-      <div class="relative flex items-center justify-center pt-2 mt-2 mb-2">
-        <h2 class="text-3xl font-bold">Cashflow</h2>
-      </div>
+      <UPageHeader
+        class="pt-2 mt-2 mb-4"
+        :headline="monthTitle"
+        title="Cashflow"
+        description="Review expenses and income activity for the selected month."
+        :ui="{
+          headline: 'mb-2.5 text-sm font-semibold text-primary flex items-center gap-1.5 justify-center lg:justify-start',
+          title: 'text-3xl sm:text-4xl text-pretty font-bold text-highlighted text-center lg:text-left',
+          description: 'text-sm text-pretty text-muted text-center lg:text-left'
+        }"
+      />
 
 
     <!-- Tabs -->

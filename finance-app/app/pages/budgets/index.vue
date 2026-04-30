@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useSelectedMonthTitle } from '~/composables/useSelectedMonthTitle'
 import { useFinanceStore } from '~/stores/finance'
 
 useHead({ title: 'Budgets | R&J Finance' })
 
 const store = useFinanceStore()
 const router = useRouter()
+const { monthTitle } = useSelectedMonthTitle()
 const searchText = ref('')
 
 onMounted(() => { store.ensureLoaded() })
@@ -143,13 +145,19 @@ function sortBudgetsByProgress() {
 <template>
     <UContainer>
 
-        <!-- Header -->
-        <div class="relative flex items-center justify-center pt-2 mt-2 mb-2">
-            <h2 class="text-3xl font-bold">Budgets</h2>
-        </div>
-
-        <div class="relative flex items-center justify-center pt-2 mb-2">
-            <div class="absolute right-0 flex items-center gap-1">
+        <UPageHeader
+            class="pt-2 mt-2 mb-2"
+            :headline="monthTitle"
+            title="Budgets"
+            description="Track category budgets, compare spending, and update monthly allocations."
+            :ui="{
+              headline: 'mb-2.5 text-sm font-semibold text-primary flex items-center gap-1.5 justify-center lg:justify-start',
+              title: 'text-3xl sm:text-4xl text-pretty font-bold text-highlighted text-center lg:text-left',
+              description: 'text-sm text-pretty text-muted text-center lg:text-left'
+            }"
+        >
+            <template #actions>
+                <div class="flex items-center gap-1">
                 <UDropdownMenu :items="sortDropdownItems" :content="{ align: 'end' }">
                     <UButton
                         color="neutral"
@@ -168,8 +176,9 @@ function sortBudgetsByProgress() {
                         aria-label="More options"
                     />
                 </UDropdownMenu>
-            </div>
-        </div>
+                </div>
+            </template>
+        </UPageHeader>
         <!-- Budget Allocation Chart -->
         <BudgetsAllocationBarChart class="mt-4 mb-2" />
 

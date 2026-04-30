@@ -1,5 +1,6 @@
 <script setup>
 import { useBudgetIcon } from '~/composables/useBudgetIcon'
+import { useSelectedMonthTitle } from '~/composables/useSelectedMonthTitle'
 import MonthlyExpensesChart from '~/components/home/MonthlyExpensesChart.vue'
 
 useHead({ title: 'Home | R&J Finance' })
@@ -9,6 +10,7 @@ ChartJS.register(Title, Tooltip, Legend, ArcElement)
 
 const store = useFinanceStore()
 const { budgetIcon } = useBudgetIcon()
+const { monthTitle } = useSelectedMonthTitle()
 const UNCATEGORIZED_ICON = 'heroicons:question-mark-circle-solid'
 
 onMounted(async () => {
@@ -119,11 +121,6 @@ function toggleExpenseFromTotal(expenseId) {
   }
   excludedExpenseIds.value = [...excludedExpenseIds.value, expenseId]
 }
-
-const monthLabel = computed(() => {
-  const { year, month } = store.selectedMonth
-  return new Date(year, month - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' })
-})
 
 const chartColors = ref({ remaining: '#22c55e' })
 const NO_BUDGET_COLOR = '#F3F4F6'   // light grey
@@ -266,10 +263,17 @@ const chartOptions = {
 <template>
     <UContainer>
         
-        <!-- Header -->
-        <div class="relative flex items-center justify-center pt-2 mt-2 mb-2">
-            <h2 class="text-3xl font-bold">Summary</h2>
-        </div>
+        <UPageHeader
+            class="pt-2 mt-2 mb-4"
+            :headline="monthTitle"
+            title="Summary"
+            description="Overview of income, spending, and remaining balance for the selected month."
+            :ui="{
+              headline: 'mb-2.5 text-sm font-semibold text-primary flex items-center gap-1.5 justify-center lg:justify-start',
+              title: 'text-3xl sm:text-4xl text-pretty font-bold text-highlighted text-center lg:text-left',
+              description: 'text-sm text-pretty text-muted text-center lg:text-left'
+            }"
+        />
 
         <div class="flex flex-col items-center justify-center space-y-2">
 
