@@ -15,18 +15,18 @@ const displayBudgets = ref<any[]>([])
 const loading = computed(() => store.loading)
 const error = computed(() => store.error)
 
-// Keep displayBudgets in sync with store; re-apply search filter and default sort (progress low to high)
+// Keep displayBudgets in sync with store; re-apply search filter and default sort (amount descending)
 watchEffect(() => {
     const q = searchText.value.toLowerCase().trim()
     const filtered = q
         ? store.budgets.filter((b: any) => b.name.toLowerCase().includes(q))
         : [...store.budgets]
-    displayBudgets.value = filtered.sort((a: any, b: any) => (a.progress || 0) - (b.progress || 0))
+    displayBudgets.value = filtered.sort((a: any, b: any) => (b.currentPeriod?.amount || 0) - (a.currentPeriod?.amount || 0))
 })
-const activeSortLabel = ref('Progress')
+const activeSortLabel = ref('Amount')
 const ascendingIcon = 'heroicons-solid:arrow-long-up';
 const descendingIcon = 'heroicons-solid:arrow-long-down';
-const sortIcon = ref(ascendingIcon)
+const sortIcon = ref(descendingIcon)
 
 const sortDropdownItems = computed(() => [[
     { label: 'Name',     icon: activeSortLabel.value === 'Name'     ? sortIcon.value : undefined, onSelect: () => { activeSortLabel.value = 'Name';     sortBudgetsByName() } },
@@ -148,7 +148,7 @@ function sortBudgetsByProgress() {
 
     <UContainer>
         <!-- Budget Allocation Chart -->
-        <BudgetsAllocationBarChart class="mt-4 mb-2" />
+        <BudgetsAllocationGaugeBar class="mt-4 mb-2" />
 
         <div class="flex justify-end gap-1 mb-2">
           <UDropdownMenu :items="sortDropdownItems" :content="{ align: 'end' }">

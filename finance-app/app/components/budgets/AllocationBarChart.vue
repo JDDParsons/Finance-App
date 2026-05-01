@@ -50,15 +50,20 @@ function formatUSD(val) {
 function makeChartData(key) {
   return {
     labels: [''],
-    datasets: sortedBudgets.value.map((b, i) => ({
-      label: b.name,
-      data: [key === 'allocated'
-        ? (Number(b.currentPeriod?.amount) || 0)
-        : (Number(b.totalHitAmount) || 0)],
-      backgroundColor: b.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length],
-      borderRadius: 3,
-      barThickness: 22,
-    })),
+    datasets: sortedBudgets.value.map((b, i) => {
+      const color = b.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length]
+      return {
+        label: b.name,
+        data: [key === 'allocated'
+          ? (Number(b.currentPeriod?.amount) || 0)
+          : (Number(b.totalHitAmount) || 0)],
+        backgroundColor: `${color}40`,
+        borderColor: color,
+        borderWidth: 1,
+        borderRadius: 3,
+        barThickness: 22,
+      }
+    }),
   }
 }
 

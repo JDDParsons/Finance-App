@@ -26,15 +26,27 @@ const spentPercent = computed(() => {
   if (budgetAmount.value <= 0) return 0
   return (spentAmount.value / budgetAmount.value) * 100
 })
-const progressPercent = computed(() => Math.min(spentPercent.value, 100))
-
 const accentColor = computed(() => props.budget.color || '#34d399')
 const iconName = computed(() => props.budget.icon ?? budgetIcon(props.budget.name))
-const progressBarColor = computed(() => {
-  if (spentPercent.value > 99) return '#ef4444'
-  if (spentPercent.value > 85) return '#f97316'
-  if (spentPercent.value > 50) return '#eab308'
+
+// Bar width resets each 100% tier: 0-100 → green, 100-200 → yellow, 200+ → red
+const barWidth = computed(() => {
+  if (spentPercent.value > 200) return Math.min(spentPercent.value - 200, 100)
+  if (spentPercent.value > 100) return spentPercent.value - 100
+  return Math.min(spentPercent.value, 100)
+})
+
+const barColor = computed(() => {
+  if (spentPercent.value > 200) return '#ef4444'
+  if (spentPercent.value > 100) return '#eab308'
   return '#22c55e'
+})
+
+// Track background upgrades to the previous tier's fill color once exceeded
+const trackStyle = computed(() => {
+  if (spentPercent.value > 200) return { backgroundColor: '#eab308' }
+  if (spentPercent.value > 100) return { backgroundColor: '#22c55e' }
+  return {}
 })
 
 const cardStyle = computed(() => ({
@@ -80,10 +92,10 @@ function formatCurrency(value: number) {
       {{ formatCurrency(budgetAmount) }}
     </p>
 
-    <div class="absolute inset-x-4 bottom-3 h-1.5 overflow-hidden rounded-full bg-white/65 dark:bg-black/15">
+    <div class="absolute inset-x-4 bottom-3 h-1.5 overflow-hidden rounded-full bg-white/65 dark:bg-black/15" :style="trackStyle">
       <div
         class="h-full rounded-full transition-all duration-500"
-        :style="{ width: `${progressPercent}%`, backgroundColor: progressBarColor }"
+        :style="{ width: `${barWidth}%`, backgroundColor: barColor }"
       />
     </div>
   </button>
