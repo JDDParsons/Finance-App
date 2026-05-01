@@ -78,12 +78,19 @@ const cumulativeSpending = computed(() => {
   return cumulative
 })
 
+// Show a dot only at the last (today's) point on the spending line
+const spendingPointRadii = computed(() => {
+  const data = cumulativeSpending.value
+  const lastIdx = data.reduce((acc: number, val, i) => val !== null ? i : acc, -1)
+  return [0, ...data.map((_: any, i: number) => i === lastIdx ? 4 : 0)]
+})
+
 const chartData = computed(() => ({
-  labels: Array.from({ length: daysInMonth.value }, (_, i) => `${i + 1}`),
+  labels: ['0', ...Array.from({ length: daysInMonth.value }, (_, i) => `${i + 1}`)],
   datasets: [
     {
       label: 'Baseline',
-      data: baselineData.value,
+      data: [0, ...baselineData.value],
       borderColor: '#22c55e',
       backgroundColor: 'rgba(34, 197, 94, 0.12)',
       fill: true,
@@ -95,18 +102,31 @@ const chartData = computed(() => ({
     },
     {
       label: 'Spending',
-      data: cumulativeSpending.value,
+      data: [0, ...cumulativeSpending.value],
       borderColor: '#F59E0B',
       backgroundColor: 'rgba(245, 158, 11, 0.15)',
       fill: true,
       tension: 0.3,
-      pointRadius: 0,
-      pointHoverRadius: 4,
-      borderWidth: 2,
-      order: 1,
+      pointRadius: spendingPointRadii.value,
+      pointHoverRadius: 5,
     },
   ],
 }))
+
+const lineChart = ref()
+
+watch(chartData, (newData) => {
+  const chart = lineChart.value?.chart
+  if (!chart) return
+  chart.data.labels = newData.labels
+  chart.data.datasets.forEach((dataset: any, i: number) => {
+    dataset.data = newData.datasets[i]?.data ?? []
+    if (newData.datasets[i]?.pointRadius !== undefined) {
+      dataset.pointRadius = newData.datasets[i].pointRadius
+    }
+  })
+  chart.update('none')
+}, { deep: true })
 
 const chartOptions = computed(() => ({
   responsive: true,
@@ -156,7 +176,6 @@ const chartOptions = computed(() => ({
 
     <USkeleton v-if="store.loading" class="w-full rounded-lg opacity-40" style="height: 205px;" />
 
-
       <div class="flex items-center justify-between gap-3 mb-3">
         <div class="flex items-center gap-4 text-xs text-muted">
           <span class="flex items-center gap-1.5">
@@ -170,8 +189,8 @@ const chartOptions = computed(() => ({
         </div>
       </div>
 
-      <div class="h-42">
-        <Line :data="chartData" :options="chartOptions" />
+      <div class="h-44">
+        <Line ref="lineChart" :data="chartData" :options="chartOptions" />
       </div>
   </div>
 </template>
