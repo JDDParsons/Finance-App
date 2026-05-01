@@ -321,62 +321,6 @@ const chartOptions = {
           <CumulativeSpendingChart />
         </div>
 
-        <template v-if="false">
-        <div class="pt-5 pb-20 grid gap-6 lg:grid-cols-3">
-            <div class="lg:col-span-1">
-                <h2 class="text-md text-center pb-1">Top expenses this month</h2>
-                    <ul v-if="store.loading" class="rounded-lg overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
-                        <li
-                            v-for="n in 5"
-                            :key="n"
-                            class="flex items-center justify-between px-2.5 py-1.5 bg-elevated min-h-9"
-                        >
-                            <div class="flex items-center gap-2">
-                                <USkeleton class="w-3.5 h-3.5 rounded opacity-40" />
-                                <div class="space-y-1">
-                                    <USkeleton class="h-3 w-24 rounded opacity-40" />
-                                    <USkeleton class="h-2.5 w-16 rounded opacity-40" />
-                                </div>
-                            </div>
-                            <USkeleton class="h-3.5 w-14 rounded opacity-40" />
-                        </li>
-                    </ul>
-                    <ul v-else class="rounded-lg overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
-                        <li
-                            v-for="(hit, i) in top10Expenses"
-                            :key="hit.id"
-                          class="flex items-center justify-between px-2.5 py-1.5 bg-elevated cursor-pointer transition-opacity border-l-4 min-h-9"
-                          :class="{ 'opacity-50': isExpenseExcluded(hit.id) }"
-                          :style="{ borderLeftColor: hit.budgetColor ?? '#D1D5DB' }"
-                          @click="toggleExpenseFromTotal(hit.id)"
-                        >
-                            <div class="flex items-center gap-2 min-w-0">
-                                <span class="text-xs text-muted w-3 shrink-0">{{ i + 1 }}</span>
-                                <div
-                                  class="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-                                  :style="hit.budgetColor
-                                    ? { backgroundColor: hit.budgetColor + '33' }
-                                    : { backgroundColor: '#F3F4F6', backgroundImage: 'repeating-linear-gradient(45deg, #D1D5DB 0, #D1D5DB 0.45px, transparent 0, transparent 50%), repeating-linear-gradient(-45deg, #D1D5DB 0, #D1D5DB 0.45px, transparent 0, transparent 50%)', backgroundSize: '6px 6px' }"
-                                >
-                                  <UIcon
-                                    :name="hit.budgetIconName"
-                                    class="w-3.5 h-3.5"
-                                    :style="{ color: hit.budgetColor ?? '#9CA3AF' }"
-                                  />
-                                </div>
-                                <p class="text-[11px] text-muted truncate">{{ hit.note || '—' }}</p>
-                            </div>
-                            <p class="font-semibold text-warning text-xs shrink-0">${{ Number(hit.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</p>
-                        </li>
-                        <li v-if="top10Expenses.length === 0" class="text-sm text-muted text-center py-4">No expenses this month.</li>
-                    </ul>
-            </div>
-
-            <div class="lg:col-span-2 min-w-0">
-                <MonthlyExpensesChart />
-            </div>
-        </div>
-        </template>
         </template>
 
         <div v-else class="flex flex-col items-center justify-center py-24 text-center gap-4">

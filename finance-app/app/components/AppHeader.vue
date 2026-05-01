@@ -16,9 +16,12 @@ const { monthTitle } = useSelectedMonthTitle()
 <template>
   <UHeader :toggle="false">
     <template #left>
-      <div class="mt-1">
-        <p v-if="showMonth" class="text-sm font-semibold text-primary uppercase tracking-wide">{{ monthTitle }}</p>
-        <h1 class="text-xl font-bold text-highlighted">{{ title }}</h1>
+      <div class="flex items-center gap-2.5">
+        <img src="/icon.png" alt="" class="h-12 w-12 rounded-lg shrink-0" />
+        <div class="mt-1">
+          <p v-if="showMonth" class="text-sm font-semibold text-primary uppercase tracking-wide">{{ monthTitle }}</p>
+          <h1 class="text-xl font-bold text-highlighted">{{ title }}</h1>
+        </div>
       </div>
     </template>
     <template #right>

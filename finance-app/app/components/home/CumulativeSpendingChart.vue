@@ -36,13 +36,6 @@ const daysInMonth = computed(() => {
   return new Date(year, month, 0).getDate()
 })
 
-const displayedDayCount = computed(() => {
-  const { year, month } = store.selectedMonth
-  const now = new Date()
-  const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1)
-  return isCurrentMonth ? now.getDate() : daysInMonth.value
-})
-
 const totalIncome = computed(() =>
   store.income.reduce((sum: number, i: any) => sum + (Number(i.amount) || 0), 0)
 )
@@ -52,32 +45,41 @@ const dailyBudget = computed(() =>
   daysInMonth.value > 0 ? totalIncome.value / daysInMonth.value : 0
 )
 
-// Cumulative spending: running total up to each day
+// Baseline always spans the full month
+const baselineData = computed(() =>
+  Array.from({ length: daysInMonth.value }, (_, i) => dailyBudget.value * (i + 1))
+)
+
+// Spending is cumulative up to today; null beyond that so the line stops
 const cumulativeSpending = computed(() => {
-  const dailyTotals = Array(displayedDayCount.value).fill(0)
+  const { year, month } = store.selectedMonth
+  const now = new Date()
+  const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1)
+  const cutoffDay = isCurrentMonth ? now.getDate() : daysInMonth.value
+
+  const dailyTotals = Array(daysInMonth.value).fill(0)
   for (const hit of store.budgetHits) {
     const amount = Number(hit.amount) || 0
     const day = Number(String(hit.date ?? '').slice(8, 10))
-    if (!day || day > displayedDayCount.value) continue
+    if (!day || day > cutoffDay) continue
     dailyTotals[day - 1] += amount
   }
 
-  const cumulative: number[] = []
+  const cumulative: (number | null)[] = []
   let running = 0
-  for (const daily of dailyTotals) {
-    running += daily
-    cumulative.push(running)
+  for (let i = 0; i < daysInMonth.value; i++) {
+    if (i < cutoffDay) {
+      running += dailyTotals[i]
+      cumulative.push(running)
+    } else {
+      cumulative.push(null)
+    }
   }
   return cumulative
 })
 
-// Baseline: what should have been spent by each day
-const baselineData = computed(() =>
-  Array.from({ length: displayedDayCount.value }, (_, i) => dailyBudget.value * (i + 1))
-)
-
 const chartData = computed(() => ({
-  labels: Array.from({ length: displayedDayCount.value }, (_, i) => `${i + 1}`),
+  labels: Array.from({ length: daysInMonth.value }, (_, i) => `${i + 1}`),
   datasets: [
     {
       label: 'Baseline',
