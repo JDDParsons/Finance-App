@@ -10,7 +10,7 @@ const props = withDefaults(defineProps<{
   showProfile: true,
 })
 
-const { monthTitle } = useSelectedMonthTitle()
+const { monthTitle, monthColor } = useSelectedMonthTitle()
 </script>
 
 <template>
@@ -19,7 +19,7 @@ const { monthTitle } = useSelectedMonthTitle()
       <div class="flex items-center gap-2.5">
         <img src="/icon.png" alt="" class="h-12 w-12 rounded-lg shrink-0" />
         <div class="mt-1">
-          <p v-if="showMonth" class="text-sm font-semibold text-primary uppercase tracking-wide">{{ monthTitle }}</p>
+          <p v-if="showMonth" class="text-sm font-semibold uppercase tracking-wide" :style="{ color: monthColor }">{{ monthTitle }}</p>
           <h1 class="text-xl font-bold text-highlighted">{{ title }}</h1>
         </div>
       </div>
