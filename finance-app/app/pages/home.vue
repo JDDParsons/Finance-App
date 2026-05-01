@@ -27,7 +27,7 @@ const excludedExpenseIds = ref([])
 const top10Expenses = computed(() => {
   return [...store.budgetHits]
     .sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0))
-    .slice(0, 10)
+    .slice(0, 5)
     .map(h => {
       const budget = store.budgets.find(b => b.id === h.budget_id)
       return {
@@ -267,10 +267,10 @@ const chartOptions = {
     <AppHeader title="Summary" />
 
     <UContainer>
-
         <template v-if="store.loading || hasData">
         <div class="flex flex-col items-center justify-center space-y-2">
-
+            <h2 class="text-md text-center font-bold pt-3">Keep it steady, Jack</h2>
+            <h2 class="text-sm text-center">You're on track to save some of your income.</h2>
             <div v-if="store.loading" class="w-full max-w-sm" style="height: 200px;">
                 <USkeleton class="w-full h-full opacity-40" style="border-radius: 50% 50% 0 0 / 100% 100% 0 0;" />
             </div>
@@ -319,10 +319,10 @@ const chartOptions = {
         <div class="pt-5 pb-20 grid gap-6 lg:grid-cols-3">
             <!-- Largest Expenses -->
             <div class="lg:col-span-1">
-                <h2 class="text-2xl text-center font-bold pb-2">Largest Expenses</h2>
+                <h2 class="text-md text-center pb-1">Top expenses this month</h2>
                     <ul v-if="store.loading" class="rounded-lg overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
                         <li
-                            v-for="n in 10"
+                            v-for="n in 5"
                             :key="n"
                             class="flex items-center justify-between px-2.5 py-1.5 bg-elevated min-h-9"
                         >
