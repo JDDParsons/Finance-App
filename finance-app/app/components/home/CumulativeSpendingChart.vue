@@ -45,19 +45,24 @@ const dailyBudget = computed(() =>
   daysInMonth.value > 0 ? totalIncome.value / daysInMonth.value : 0
 )
 
-// Baseline always spans the full month
-const baselineData = computed(() =>
-  Array.from({ length: daysInMonth.value }, (_, i) => dailyBudget.value * (i + 1))
-)
-
-// Spending is cumulative up to today; null beyond that so the line stops
-const cumulativeSpending = computed(() => {
+// Number of days to display: up to today for the current month, full month otherwise
+const displayedDays = computed(() => {
   const { year, month } = store.selectedMonth
   const now = new Date()
   const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1)
-  const cutoffDay = isCurrentMonth ? now.getDate() : daysInMonth.value
+  return isCurrentMonth ? now.getDate() : daysInMonth.value
+})
 
-  const dailyTotals = Array(daysInMonth.value).fill(0)
+// Baseline spans only up to displayedDays
+const baselineData = computed(() =>
+  Array.from({ length: displayedDays.value }, (_, i) => dailyBudget.value * (i + 1))
+)
+
+// Spending is cumulative up to today (no nulls — chart is trimmed to today)
+const cumulativeSpending = computed(() => {
+  const cutoffDay = displayedDays.value
+
+  const dailyTotals = Array(cutoffDay).fill(0)
   for (const hit of store.budgetHits) {
     const amount = Number(hit.amount) || 0
     const day = Number(String(hit.date ?? '').slice(8, 10))
@@ -65,28 +70,23 @@ const cumulativeSpending = computed(() => {
     dailyTotals[day - 1] += amount
   }
 
-  const cumulative: (number | null)[] = []
+  const cumulative: number[] = []
   let running = 0
-  for (let i = 0; i < daysInMonth.value; i++) {
-    if (i < cutoffDay) {
-      running += dailyTotals[i]
-      cumulative.push(running)
-    } else {
-      cumulative.push(null)
-    }
+  for (let i = 0; i < cutoffDay; i++) {
+    running += dailyTotals[i]
+    cumulative.push(running)
   }
   return cumulative
 })
 
 // Show a dot only at the last (today's) point on the spending line
 const spendingPointRadii = computed(() => {
-  const data = cumulativeSpending.value
-  const lastIdx = data.reduce((acc: number, val, i) => val !== null ? i : acc, -1)
-  return [0, ...data.map((_: any, i: number) => i === lastIdx ? 4 : 0)]
+  const len = cumulativeSpending.value.length
+  return [0, ...Array.from({ length: len }, (_, i) => i === len - 1 ? 4 : 0)]
 })
 
 const chartData = computed(() => ({
-  labels: ['0', ...Array.from({ length: daysInMonth.value }, (_, i) => `${i + 1}`)],
+  labels: ['0', ...Array.from({ length: displayedDays.value }, (_, i) => `${i + 1}`)],
   datasets: [
     {
       label: 'Baseline',
@@ -172,19 +172,20 @@ const chartOptions = computed(() => ({
 
 <template>
   <div>
-    <h2 class="text-sm text-center pb-2">Cumulative Spending</h2>
+    <h2 class="text-sm text-center pb-2">Cumulative Daily Spending</h2>
 
     <USkeleton v-if="store.loading" class="w-full rounded-lg opacity-40" style="height: 205px;" />
 
+    <template v-else>
       <div class="flex items-center justify-between gap-3 mb-3">
         <div class="flex items-center gap-4 text-xs text-muted">
           <span class="flex items-center gap-1.5">
             <span class="inline-block w-4 h-0.5 bg-green-500 rounded-full"></span>
-            Baseline
+            Maximum daily budget
           </span>
           <span class="flex items-center gap-1.5">
             <span class="inline-block w-4 h-0.5 bg-amber-400 rounded-full"></span>
-            Spending
+            Actual amount spent
           </span>
         </div>
       </div>
@@ -192,5 +193,6 @@ const chartOptions = computed(() => ({
       <div class="h-44">
         <Line ref="lineChart" :data="chartData" :options="chartOptions" />
       </div>
+    </template>
   </div>
 </template>

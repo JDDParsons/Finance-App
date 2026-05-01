@@ -126,47 +126,17 @@ function toggleExpenseFromTotal(expenseId) {
 }
 
 const chartColors = ref({ remaining: '#22c55e' })
-const NO_BUDGET_COLOR = '#F3F4F6'   // light grey
+const NO_BUDGET_COLOR = '#9CA3AF'
 
 const FALLBACK_PALETTE = [
   '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6',
   '#EC4899', '#14B8A6', '#F97316', '#84CC16', '#06B6D4', '#10B981',
 ]
 
-// Stripe pattern for the "No budget" arc
-const noBudgetPattern = ref(null)
-
-function makeStripePattern() {
-  const tileSize = 6
-  const resolution = 2
-  const offscreen = document.createElement('canvas')
-  offscreen.width = tileSize * resolution
-  offscreen.height = tileSize * resolution
-  const ctx2 = offscreen.getContext('2d')
-  ctx2.scale(resolution, resolution)
-  // Fill background
-  ctx2.fillStyle = NO_BUDGET_COLOR
-  ctx2.fillRect(0, 0, tileSize, tileSize)
-  // Draw X pattern (two diagonal lines)
-  ctx2.strokeStyle = '#D1D5DB'
-  ctx2.lineWidth = 0.45
-  ctx2.beginPath()
-  ctx2.moveTo(0, 0)
-  ctx2.lineTo(tileSize, tileSize)
-  ctx2.moveTo(tileSize, 0)
-  ctx2.lineTo(0, tileSize)
-  ctx2.stroke()
-  // Create a temporary canvas to get a rendering context for createPattern
-  const host = document.createElement('canvas')
-  const hostCtx = host.getContext('2d')
-  return hostCtx.createPattern(offscreen, 'repeat')
-}
-
 function resolveChartColors() {
   const style = getComputedStyle(document.documentElement)
   const primary = style.getPropertyValue('--ui-primary').trim()
-  if (primary) chartColors.value.remaining = primary
-  noBudgetPattern.value = makeStripePattern()
+  if (primary && primary.startsWith('#')) chartColors.value.remaining = primary
 }
 
 const chartData = computed(() => {
@@ -195,22 +165,23 @@ const chartData = computed(() => {
     labels.push(budget?.name ?? 'No budget')
     data.push(total)
     if (budgetId === '__none__') {
-      backgroundColors.push(noBudgetPattern.value ?? NO_BUDGET_COLOR)
-      borderColors.push('transparent')
-      borderWidths.push(0)
+      backgroundColors.push(`${NO_BUDGET_COLOR}60`)
+      borderColors.push(NO_BUDGET_COLOR)
+      borderWidths.push(1)
     } else {
-      backgroundColors.push(budget?.color ?? FALLBACK_PALETTE[fallbackIdx++ % FALLBACK_PALETTE.length])
-      borderColors.push('transparent')
-      borderWidths.push(2)
+      const color = budget?.color ?? FALLBACK_PALETTE[fallbackIdx++ % FALLBACK_PALETTE.length]
+      backgroundColors.push(`${color}60`)
+      borderColors.push(color)
+      borderWidths.push(1)
     }
   }
 
   // Append the Remaining slice
   labels.push('Remaining')
   data.push(remaining.value)
-  backgroundColors.push(chartColors.value.remaining)
-  borderColors.push('transparent')
-  borderWidths.push(2)
+  backgroundColors.push(`${chartColors.value.remaining}99`)
+  borderColors.push(chartColors.value.remaining)
+  borderWidths.push(1)
 
   return {
     labels,
@@ -269,6 +240,10 @@ const chartOptions = {
 
     <UContainer>
         <template v-if="store.loading || hasData">
+        <div
+          class="transition-opacity duration-300"
+          :class="{ 'opacity-40 pointer-events-none': store.refreshing }"
+        >
         <div class="flex flex-col items-center justify-center space-y-2">
             <h2 class="text-md text-center font-bold pt-3">Keep it steady, Jack</h2>
             <h2 class="text-sm text-center">You're on track to save some of your income.</h2>
@@ -321,6 +296,7 @@ const chartOptions = {
           <CumulativeSpendingChart />
         </div>
 
+        </div> <!-- end transition wrapper -->
         </template>
 
         <div v-else class="flex flex-col items-center justify-center py-24 text-center gap-4">

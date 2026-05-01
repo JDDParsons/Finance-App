@@ -22,6 +22,7 @@ export const useFinanceStore = defineStore('finance', () => {
   const income = ref<any[]>([])
   const accounts = computed(() => accountsStore.accounts)
   const loading = ref(false)
+  const refreshing = ref(false)
   const error = ref<string | null>(null)
   const initialized = ref(false)
   const userProfiles = ref<Map<string, { firstName: string | null; avatarLink: string | null }>>(new Map())
@@ -57,7 +58,11 @@ export const useFinanceStore = defineStore('finance', () => {
 
   async function fetchAll() {
     try {
-      loading.value = true
+      if (initialized.value) {
+        refreshing.value = true
+      } else {
+        loading.value = true
+      }
       error.value = null
       const { year, month } = selectedMonth.value
       const prevYear = month === 1 ? year - 1 : year
@@ -86,6 +91,7 @@ export const useFinanceStore = defineStore('finance', () => {
       error.value = err?.message || 'Failed to load data'
     } finally {
       loading.value = false
+      refreshing.value = false
     }
   }
 
@@ -206,6 +212,7 @@ export const useFinanceStore = defineStore('finance', () => {
     defaultExpenseAccount,
     defaultIncomeAccount,
     loading,
+    refreshing,
     error,
     initialized,
     fetchAll,

@@ -23,6 +23,10 @@ const now = new Date()
 const currentYear = now.getFullYear()
 const currentMonth = now.getMonth() + 1
 
+// Tab defaults to the selected month's year so the active month is always visible on open
+const activeTab = ref(store.selectedMonth.year)
+watch(open, (val) => { if (val) activeTab.value = store.selectedMonth.year })
+
 // Sorted descending so newest year appears first; always include the current year
 const availableYears = computed(() => {
   const years = new Set(store.availableMonths.map(m => m.year))
@@ -98,29 +102,42 @@ const relativeHeading = computed(() => {
       </UButton>
 
       <template #content>
-        <div class="p-3 space-y-4 min-w-48">
-          <div v-for="year in availableYears" :key="year">
-            <p class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+        <div class="p-3 min-w-48">
+          <!-- Year tabs -->
+          <div class="flex gap-1 mb-3 border-b border-gray-200 dark:border-gray-700">
+            <button
+              v-for="year in availableYears"
+              :key="year"
+              :class="[
+                'px-3 py-1 text-sm font-medium transition-colors -mb-px border-b-2',
+                activeTab === year
+                  ? 'border-primary-500 text-primary-500'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer'
+              ]"
+              @click="activeTab = year"
+            >
               {{ year }}
-            </p>
-            <div class="grid grid-cols-4 gap-1">
-              <button
-                v-for="(abbr, idx) in MONTHS_ABBR"
-                :key="idx"
-                :disabled="!isAvailable(year, idx + 1)"
-                :class="[
-                  'rounded px-2 py-1 text-sm transition-colors',
-                  isSelected(year, idx + 1)
-                    ? 'bg-primary-500 text-white font-semibold'
-                    : isAvailable(year, idx + 1)
-                      ? 'hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer'
-                      : 'opacity-30 cursor-not-allowed'
-                ]"
-                @click="selectMonth(year, idx + 1)"
-              >
-                {{ abbr }}
-              </button>
-            </div>
+            </button>
+          </div>
+
+          <!-- Months for the active year -->
+          <div class="grid grid-cols-4 gap-1">
+            <button
+              v-for="(abbr, idx) in MONTHS_ABBR"
+              :key="idx"
+              :disabled="!isAvailable(activeTab, idx + 1)"
+              :class="[
+                'rounded px-2 py-1 text-sm transition-colors',
+                isSelected(activeTab, idx + 1)
+                  ? 'bg-primary-500 text-white font-semibold'
+                  : isAvailable(activeTab, idx + 1)
+                    ? 'hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer'
+                    : 'opacity-30 cursor-not-allowed'
+              ]"
+              @click="selectMonth(activeTab, idx + 1)"
+            >
+              {{ abbr }}
+            </button>
           </div>
         </div>
       </template>
