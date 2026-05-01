@@ -10,12 +10,12 @@ export default defineNuxtConfig({
     baseURL: '/Finance-App/',
     head: {
       link: [
-        { rel: 'apple-touch-icon', href: '/Finance-App/cathcart_app_icon.png' },
+        { rel: 'apple-touch-icon', href: '/Finance-App/icon.png' },
       ],
       meta: [
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
-        { name: 'apple-mobile-web-app-title', content: 'R&J Home Finance' },
+        { name: 'apple-mobile-web-app-title', content: 'Home Finance' },
       ],
     },
   },

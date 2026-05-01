@@ -143,44 +143,33 @@ function sortBudgetsByProgress() {
 </script>
 
 <template>
-    <UContainer>
+  <div>
+    <AppHeader title="Budgets" />
 
-        <UPageHeader
-            class="pt-2 mt-2 mb-2"
-            :headline="monthTitle"
-            title="Budgets"
-            description="Track category budgets, compare spending, and update monthly allocations."
-            :ui="{
-              headline: 'mb-2.5 text-sm font-semibold text-primary flex items-center gap-1.5 justify-center lg:justify-start',
-              title: 'text-3xl sm:text-4xl text-pretty font-bold text-highlighted text-center lg:text-left',
-              description: 'text-sm text-pretty text-muted text-center lg:text-left'
-            }"
-        >
-            <template #actions>
-                <div class="flex items-center gap-1">
-                <UDropdownMenu :items="sortDropdownItems" :content="{ align: 'end' }">
-                    <UButton
-                        color="neutral"
-                        variant="ghost"
-                        icon="heroicons:bars-arrow-up-20-solid"
-                        size="md"
-                        :aria-label="`Sort by ${activeSortLabel}`"
-                    />
-                </UDropdownMenu>
-                <UDropdownMenu :items="headerMenuItems" :content="{ align: 'end' }">
-                    <UButton
-                        color="neutral"
-                        variant="ghost"
-                        icon="heroicons-solid:ellipsis-vertical"
-                        size="md"
-                        aria-label="More options"
-                    />
-                </UDropdownMenu>
-                </div>
-            </template>
-        </UPageHeader>
+    <UContainer>
         <!-- Budget Allocation Chart -->
         <BudgetsAllocationBarChart class="mt-4 mb-2" />
+
+        <div class="flex justify-end gap-1 mb-2">
+          <UDropdownMenu :items="sortDropdownItems" :content="{ align: 'end' }">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              icon="heroicons:bars-arrow-up-20-solid"
+              size="md"
+              :aria-label="`Sort by ${activeSortLabel}`"
+            />
+          </UDropdownMenu>
+          <UDropdownMenu :items="headerMenuItems" :content="{ align: 'end' }">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              icon="heroicons-solid:ellipsis-vertical"
+              size="md"
+              aria-label="More options"
+            />
+          </UDropdownMenu>
+        </div>
 
 
 
@@ -277,4 +266,5 @@ function sortBudgetsByProgress() {
             </template>
         </USlideover>
     </UContainer>
+  </div>
 </template>

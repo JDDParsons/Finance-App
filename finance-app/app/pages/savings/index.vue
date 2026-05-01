@@ -80,17 +80,7 @@ onMounted(async () => {
 
 <template>
   <div class="min-h-screen bg-white dark:bg-gray-900 pb-24">
-    <UPageHeader
-      class="pt-2 mb-4"
-      :headline="monthTitle"
-      title="Savings"
-      description="Follow savings trends and month-by-month totals for the selected month."
-      :ui="{
-        headline: 'mb-2.5 text-sm font-semibold text-primary flex items-center gap-1.5 justify-center lg:justify-start',
-        title: 'text-3xl sm:text-4xl text-pretty font-bold text-highlighted text-center lg:text-left',
-        description: 'text-sm text-pretty text-muted text-center lg:text-left'
-      }"
-    />
+    <AppHeader title="Savings" />
 
     <div class="px-4 pt-4 flex flex-col gap-4">
 

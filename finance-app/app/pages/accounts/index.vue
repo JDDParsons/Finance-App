@@ -215,15 +215,15 @@ const { institutionLogo, institutionIcon, institutionBgClass } = useInstitutionB
 </script>
 
 <template>
-  <UContainer>
-    <!-- Header -->
-    <div class="relative flex items-center justify-center pt-2 mt-2 mb-2">
-      <h2 class="text-3xl font-bold">Profile</h2>
-      <div class="absolute right-0 flex items-center gap-2">
+  <div>
+    <AppHeader title="Profile" :show-month="false" :show-profile="false">
+      <template #actions>
         <UColorModeSwitch />
         <UButton color="neutral" variant="ghost" size="sm" icon="heroicons-solid:arrow-right-on-rectangle" aria-label="Sign out" @click="handleSignOut" />
-      </div>
-    </div>
+      </template>
+    </AppHeader>
+
+    <UContainer>
 
     <!-- Profile Header -->
     <div class="flex flex-col items-center pt-8 pb-6 mb-2">
@@ -457,4 +457,5 @@ const { institutionLogo, institutionIcon, institutionBgClass } = useInstitutionB
       </template>
     </UModal>
   </UContainer>
+  </div>
 </template>

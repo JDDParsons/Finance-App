@@ -3,8 +3,10 @@ import { useFinanceStore } from '~/stores/finance'
 
 const props = withDefaults(defineProps<{
   iconOnly?: boolean
+  plain?: boolean
 }>(), {
-  iconOnly: false
+  iconOnly: false,
+  plain: false
 })
 
 const store = useFinanceStore()
@@ -76,14 +78,16 @@ const relativeHeading = computed(() => {
         variant="ghost"
         size="sm"
         :loading="store.loading"
-        :class="props.iconOnly
+        :class="props.plain
+          ? ''
+          : props.iconOnly
           ? 'inline-flex items-center justify-center rounded-full border border-gray-200 bg-white/90 p-3 text-gray-600 shadow-lg shadow-black/10 backdrop-blur transition-colors hover:text-primary-500 dark:border-gray-700 dark:bg-gray-900/90 dark:text-gray-300 dark:hover:text-primary-400'
           : 'drop-shadow'"
         :aria-label="`Select month: ${monthLabel} (${relativeHeading})`"
         :title="`${monthLabel} (${relativeHeading})`"
       >
-        <UIcon v-if="props.iconOnly && !store.loading" name="heroicons-solid:calendar-days" class="size-6" />
-        <div v-if="!props.iconOnly" class="flex flex-col items-center leading-tight px-3 py-2">
+        <UIcon v-if="(props.iconOnly || props.plain) && !store.loading" name="heroicons-solid:calendar-days" class="size-6" />
+        <div v-if="!props.iconOnly && !props.plain" class="flex flex-col items-center leading-tight px-3 py-2">
           <span class="text-xl font-semibold text-highlighted">
             {{ relativeHeading }}
           </span>

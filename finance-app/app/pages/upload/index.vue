@@ -36,7 +36,7 @@ async function upload() {
 </script>
 <template>
     <div>
-        <UHeader title="Finance App" />
+        <AppHeader title="Upload" :show-month="false" />
         <UMain>
             <UContainer>
                 <div v-if="fileUploaded" class="flex flex-col items-center justify-center p-8 mb-12 space-y-4">

@@ -263,18 +263,10 @@ const chartOptions = {
 </script>
 
 <template>
+  <div>
+    <AppHeader title="Summary" />
+
     <UContainer>
-        
-        <UPageHeader
-            class="pt-2 mt-2 mb-4"
-            :headline="monthTitle"
-            title="Summary"
-            :ui="{
-              headline: 'text-sm font-semibold text-primary flex items-center justify-center lg:justify-start',
-              title: 'text-2xl sm:text-4xl text-pretty font-bold text-highlighted text-center lg:text-left',
-              description: 'text-sm text-pretty text-muted text-center lg:text-left'
-            }"
-        />
 
         <template v-if="store.loading || hasData">
         <div class="flex flex-col items-center justify-center space-y-2">
@@ -391,4 +383,5 @@ const chartOptions = {
         </div>
 
     </UContainer>
+  </div>
 </template>

@@ -5,12 +5,8 @@ const accountsStore = useAccountsStore()
 const route = useRoute()
 
 const isAuthenticated = computed(() => route.path !== '/')
-const showMonthShortcut = computed(() =>
-  ['/home', '/budgets', '/cashflow', '/savings'].includes(route.path)
-)
-const showProfileShortcut = computed(() =>
-  isAuthenticated.value && !route.path.startsWith('/accounts')
-)
+const showMonthShortcut = computed(() => false)
+const showProfileShortcut = computed(() => false)
 
 onMounted(() => {
   accountsStore.ensureLoaded()
