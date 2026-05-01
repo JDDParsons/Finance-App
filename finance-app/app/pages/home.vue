@@ -1,7 +1,8 @@
 <script setup>
 import { useBudgetIcon } from '~/composables/useBudgetIcon'
 import { useSelectedMonthTitle } from '~/composables/useSelectedMonthTitle'
-import MonthlyExpensesChart from '~/components/home/MonthlyExpensesChart.vue'
+// import MonthlyExpensesChart from '~/components/home/MonthlyExpensesChart.vue'
+import CumulativeSpendingChart from '~/components/home/CumulativeSpendingChart.vue'
 
 useHead({ title: 'Home | R&J Finance' })
 import { Doughnut } from 'vue-chartjs'
@@ -316,8 +317,12 @@ const chartOptions = {
             </div>
         </div>
 
+        <div class="pt-5 pb-20">
+          <CumulativeSpendingChart />
+        </div>
+
+        <template v-if="false">
         <div class="pt-5 pb-20 grid gap-6 lg:grid-cols-3">
-            <!-- Largest Expenses -->
             <div class="lg:col-span-1">
                 <h2 class="text-md text-center pb-1">Top expenses this month</h2>
                     <ul v-if="store.loading" class="rounded-lg overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
@@ -347,7 +352,6 @@ const chartOptions = {
                         >
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-xs text-muted w-3 shrink-0">{{ i + 1 }}</span>
-                                <!-- Budget icon: colored circle or grey X pattern for uncategorized -->
                                 <div
                                   class="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
                                   :style="hit.budgetColor
@@ -366,12 +370,13 @@ const chartOptions = {
                         </li>
                         <li v-if="top10Expenses.length === 0" class="text-sm text-muted text-center py-4">No expenses this month.</li>
                     </ul>
-            </div><!-- end largest expenses -->
+            </div>
 
             <div class="lg:col-span-2 min-w-0">
                 <MonthlyExpensesChart />
             </div>
         </div>
+        </template>
         </template>
 
         <div v-else class="flex flex-col items-center justify-center py-24 text-center gap-4">
