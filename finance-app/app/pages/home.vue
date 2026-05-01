@@ -58,6 +58,8 @@ const totalIncome = computed(() =>
   store.income.reduce((sum, i) => sum + (Number(i.amount) || 0), 0)
 )
 
+const hasData = computed(() => store.income.length > 0 || store.budgetHits.length > 0)
+
 const remaining = computed(() => Math.max(totalIncome.value - totalExpenses.value, 0))
 
 // ── month-over-month ─────────────────────────────────────────────────────────
@@ -267,14 +269,14 @@ const chartOptions = {
             class="pt-2 mt-2 mb-4"
             :headline="monthTitle"
             title="Summary"
-            description="Overview of income, spending, and remaining balance for the selected month."
             :ui="{
-              headline: 'mb-2.5 text-sm font-semibold text-primary flex items-center gap-1.5 justify-center lg:justify-start',
-              title: 'text-3xl sm:text-4xl text-pretty font-bold text-highlighted text-center lg:text-left',
+              headline: 'text-sm font-semibold text-primary flex items-center justify-center lg:justify-start',
+              title: 'text-2xl sm:text-4xl text-pretty font-bold text-highlighted text-center lg:text-left',
               description: 'text-sm text-pretty text-muted text-center lg:text-left'
             }"
         />
 
+        <template v-if="store.loading || hasData">
         <div class="flex flex-col items-center justify-center space-y-2">
 
             <div v-if="store.loading" class="w-full max-w-sm" style="height: 200px;">
@@ -378,5 +380,15 @@ const chartOptions = {
                 <MonthlyExpensesChart />
             </div>
         </div>
+        </template>
+
+        <div v-else class="flex flex-col items-center justify-center py-24 text-center gap-4">
+            <UIcon name="heroicons:chart-bar" class="w-16 h-16 text-muted opacity-30" />
+            <div>
+                <p class="text-xl font-semibold text-highlighted">No data for {{ monthTitle }}</p>
+                <p class="text-sm text-muted mt-1">Upload transactions or add income to get started.</p>
+            </div>
+        </div>
+
     </UContainer>
 </template>

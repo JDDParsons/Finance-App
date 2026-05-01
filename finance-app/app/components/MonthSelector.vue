@@ -17,16 +17,24 @@ const MONTHS_FULL = [
 
 const open = ref(false)
 
-// Sorted descending so newest year appears first
-const availableYears = computed(() =>
-  [...new Set(store.availableMonths.map(m => m.year))].sort((a, b) => b - a)
-)
+const now = new Date()
+const currentYear = now.getFullYear()
+const currentMonth = now.getMonth() + 1
+
+// Sorted descending so newest year appears first; always include the current year
+const availableYears = computed(() => {
+  const years = new Set(store.availableMonths.map(m => m.year))
+  years.add(currentYear)
+  return [...years].sort((a, b) => b - a)
+})
 
 const availableKeys = computed(() =>
   new Set(store.availableMonths.map(m => m.year * 100 + m.month))
 )
 
 function isAvailable(year: number, month: number) {
+  // The current calendar month is always selectable even if it has no data yet
+  if (year === currentYear && month === currentMonth) return true
   return availableKeys.value.has(year * 100 + month)
 }
 
