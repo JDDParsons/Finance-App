@@ -8,9 +8,9 @@ const { visible } = useSuccessOverlay()
       <div
         v-if="visible"
         class="fixed inset-0 z-[9999] flex items-center justify-center"
-        style="background: rgba(0,0,0,0.55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);"
+        style="background: rgba(0,0,0,0); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);"
       >
-        <BudgetsAnimatedCheckmark style="--checkmark-size: 9rem;" />
+        <BudgetsAnimatedCheckmark style="--checkmark-size: 16rem;" />
       </div>
     </Transition>
   </Teleport>
