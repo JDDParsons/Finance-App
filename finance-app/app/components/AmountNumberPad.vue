@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const MAX_DIGITS = 10 // max $99,999,999.99
+
 const props = withDefaults(defineProps<{
   modelValue?: string
 }>(), {
@@ -9,39 +11,48 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
-const rawValue = computed(() => props.modelValue ?? '')
+// Internal state: string of digit characters representing cents.
+// e.g. "123" = $1.23, "" = $0.00
+const digitsStr = ref('')
+
 const flashedKey = ref<string | null>(null)
 let flashTimeout: ReturnType<typeof setTimeout> | null = null
 
-const displayAmount = computed(() => {
-  const numericValue = Number(rawValue.value)
-
-  if (!rawValue.value || Number.isNaN(numericValue)) {
-    return '$0.00'
+// Sync internal state from the incoming prop, guarded to prevent emit→watch loops.
+watch(() => props.modelValue, (val) => {
+  const cents = Math.round(parseFloat(val || '0') * 100)
+  const synced = cents > 0 ? String(cents) : ''
+  if (synced !== digitsStr.value) {
+    digitsStr.value = synced
   }
+}, { immediate: true })
 
+const centsValue = computed(() => parseInt(digitsStr.value || '0', 10))
+
+const displayAmount = computed(() => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(numericValue)
+  }).format(centsValue.value / 100)
 })
 
-function appendDigit(digit: string) {
-  const current = rawValue.value
-  const nextValue = current === '0' ? digit : `${current}${digit}`
-  emit('update:modelValue', nextValue)
+function emitValue() {
+  emit('update:modelValue', centsValue.value > 0 ? (centsValue.value / 100).toFixed(2) : '')
 }
 
-function appendDecimal() {
-  const current = rawValue.value
-  if (current.includes('.')) return
-  emit('update:modelValue', current ? `${current}.` : '0.')
+function appendDigit(digit: number) {
+  if (digitsStr.value === '' && digit === 0) return
+  if (digitsStr.value.length >= MAX_DIGITS) return
+  digitsStr.value += String(digit)
+  emitValue()
 }
 
-function clearValue() {
-  emit('update:modelValue', '')
+function backspace() {
+  if (!digitsStr.value.length) return
+  digitsStr.value = digitsStr.value.slice(0, -1)
+  emitValue()
 }
 
 function flashKey(key: string) {
@@ -56,31 +67,25 @@ function flashKey(key: string) {
   }, 140)
 }
 
-function pressKey(key: string) {
+function pressKey(key: string | null) {
+  if (!key) return
   flashKey(key)
 
-  if (key === 'clear') {
-    clearValue()
+  if (key === 'backspace') {
+    backspace()
     return
   }
 
-  if (key === '.') {
-    appendDecimal()
-    return
+  if (/^\d$/.test(key)) {
+    appendDigit(parseInt(key, 10))
   }
-
-  const [wholePart, decimalPart = ''] = rawValue.value.split('.')
-  if (rawValue.value.includes('.') && decimalPart.length >= 2) return
-  if (!rawValue.value.includes('.') && wholePart === '0' && key === '0') return
-
-  appendDigit(key)
 }
 
-const keypadRows = [
+const keypadRows: (string | null)[][] = [
   ['1', '2', '3'],
   ['4', '5', '6'],
   ['7', '8', '9'],
-  ['.', '0', 'clear']
+  [null, '0', 'backspace']
 ]
 
 onBeforeUnmount(() => {
@@ -110,23 +115,27 @@ onBeforeUnmount(() => {
 
     <div class="mt-auto grid grid-cols-3 gap-1 border-t border-gray-200 px-3 pt-1 pb-1 dark:border-gray-800">
       <template v-for="row in keypadRows" :key="row.join('-')">
-        <button
-          v-for="key in row"
-          :key="key"
-          type="button"
-          class="flex items-center justify-center border transition-colors duration-150 active:scale-[0.98] cursor-pointer"
-          :class="[
-            flashedKey === key
-              ? 'border-green-300 bg-green-100 text-gray-900 dark:border-green-600 dark:bg-green-800/50 dark:text-white'
-              : '',
-            key === 'clear'
-              ? 'h-18 rounded-2xl border-red-200 bg-red-50 text-2xl font-semibold text-red-500 hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-950/70'
-              : 'h-18 rounded-2xl border-gray-200 bg-gray-50 text-2xl font-semibold text-gray-900 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800'
-          ]"
-          @click="pressKey(key)"
-        >
-          {{ key === 'clear' ? 'Clear' : key }}
-        </button>
+        <template v-for="key in row" :key="String(key)">
+          <div v-if="key === null" class="h-18" aria-hidden="true" />
+          <button
+            v-else
+            type="button"
+            class="flex items-center justify-center border transition-colors duration-150 active:scale-[0.98] cursor-pointer"
+            :class="[
+              flashedKey === key
+                ? 'border-green-300 bg-green-100 text-gray-900 dark:border-green-600 dark:bg-green-800/50 dark:text-white'
+                : '',
+              key === 'backspace'
+                ? 'h-18 rounded-2xl border-gray-200 bg-gray-50 text-gray-400 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-500 dark:hover:bg-gray-800'
+                : 'h-18 rounded-2xl border-gray-200 bg-gray-50 text-2xl font-semibold text-gray-900 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800'
+            ]"
+            :aria-label="key === 'backspace' ? 'Backspace' : key"
+            @click="pressKey(key)"
+          >
+            <UIcon v-if="key === 'backspace'" name="heroicons:backspace" class="size-7" />
+            <template v-else>{{ key }}</template>
+          </button>
+        </template>
       </template>
     </div>
   </div>
