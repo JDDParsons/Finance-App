@@ -302,7 +302,7 @@ async function handleSubmit() {
                   <UButton
                     color="primary"
                     variant="solid"
-                    class="h-12 w-full justify-center text-base font-medium text-black hover:bg-green-600 dark:text-black"
+                    class="h-12 w-full justify-center rounded-full bg-gradient-to-r from-green-400 to-emerald-500 text-base font-semibold text-white shadow-lg shadow-green-500/30 transition-all duration-200 hover:from-green-500 hover:to-emerald-600 hover:shadow-green-500/50 active:scale-[0.98]"
                     @click="handleSubmit"
                     :disabled="loading"
                     :loading="loading"
