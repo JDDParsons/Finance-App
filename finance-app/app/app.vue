@@ -3,18 +3,37 @@ import { useAccountsStore } from './stores/accounts'
 
 const accountsStore = useAccountsStore()
 const route = useRoute()
+const router = useRouter()
+const runtimeConfig = useRuntimeConfig()
+
+const isLoading = ref(true)
 
 const isAuthenticated = computed(() => route.path !== '/')
 const showMonthShortcut = computed(() => false)
 const showProfileShortcut = computed(() => false)
 
-onMounted(() => {
+onMounted(async () => {
   accountsStore.ensureLoaded()
+  await router.isReady()
+  isLoading.value = false
 })
 </script>
 
 <template>
   <UApp class="overflow-x-hidden">
+    <Transition leave-active-class="transition-opacity duration-500 ease-in-out" leave-to-class="opacity-0">
+      <div
+        v-if="isLoading"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-white dark:bg-gray-950"
+      >
+        <img
+          :src="`${runtimeConfig.app.baseURL}BudgifyWithLabel.png`"
+          alt="Budgify"
+          class="w-56"
+        />
+      </div>
+    </Transition>
+
     <SideNav v-if="isAuthenticated" class="hidden lg:flex" />
     <div :class="isAuthenticated ? 'lg:pl-56' : ''">
       <NuxtPage />
