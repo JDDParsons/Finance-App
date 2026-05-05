@@ -10,16 +10,16 @@ const props = withDefaults(defineProps<{
   showProfile: true,
 })
 
-const { monthTitle, monthColor } = useSelectedMonthTitle()
+const { monthTitle } = useSelectedMonthTitle()
 </script>
 
 <template>
   <UHeader :toggle="false">
     <template #left>
       <div class="flex items-center gap-2.5">
-        <img src="/icon.png" alt="" class="h-12 w-12 rounded-lg shrink-0" />
+        <img src="/Budgify.png" alt="" class="h-14 w-14 rounded-lg shrink-0" />
         <div class="mt-1">
-          <p v-if="showMonth" class="text-sm font-semibold uppercase tracking-wide" :style="{ color: monthColor }">{{ monthTitle }}</p>
+          <p v-if="showMonth" class="text-sm font-semibold uppercase tracking-wide text-primary">{{ monthTitle }}</p>
           <h1 class="text-xl font-bold text-highlighted">{{ title }}</h1>
         </div>
       </div>

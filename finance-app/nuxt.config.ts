@@ -10,13 +10,13 @@ export default defineNuxtConfig({
     baseURL: '/Finance-App/',
     head: {
       link: [
-        { rel: 'icon', type: 'image/png', href: '/Finance-App/icon.png' },
-        { rel: 'apple-touch-icon', href: '/Finance-App/icon.png' },
+        { rel: 'icon', type: 'image/png', href: '/Finance-App/Budgify.png' },
+        { rel: 'apple-touch-icon', href: '/Finance-App/Budgify.png' },
       ],
       meta: [
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
-        { name: 'apple-mobile-web-app-title', content: 'Goodcents' },
+        { name: 'apple-mobile-web-app-title', content: 'Budgify' },
       ],
     },
   },
