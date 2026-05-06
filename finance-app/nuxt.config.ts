@@ -12,6 +12,11 @@ export default defineNuxtConfig({
       link: [
         { rel: 'icon', type: 'image/png', href: '/Finance-App/Budgify.png' },
         { rel: 'apple-touch-icon', href: '/Finance-App/Budgify.png' },
+        {
+          rel: 'apple-touch-startup-image',
+          href: '/Finance-App/splash/iphone-14-pro-max.png',
+          media: '(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
+        },
       ],
       meta: [
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
