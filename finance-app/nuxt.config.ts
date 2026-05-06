@@ -12,42 +12,26 @@ export default defineNuxtConfig({
       link: [
         { rel: 'icon', type: 'image/png', href: '/Finance-App/Budgify.png' },
         { rel: 'apple-touch-icon', href: '/Finance-App/Budgify.png' },
-        {
-          rel: 'apple-touch-startup-image',
-          href: '/Finance-App/splash/splash.png',
-          media: '(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
-        },
-        {
-          rel: 'apple-touch-startup-image',
-          href: '/Finance-App/splash/splash.png',
-          media: '(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
-        },
-        {
-          rel: 'apple-touch-startup-image',
-          href: '/Finance-App/splash/splash.png',
-          media: '(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
-        },
-        {
-          rel: 'apple-touch-startup-image',
-          href: '/Finance-App/splash/splash.png',
-          media: '(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)',
-        },
-        {
-          rel: 'apple-touch-startup-image',
-          href: '/Finance-App/splash/splash.png',
-          media: '(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
-        },
-        {
-          rel: 'apple-touch-startup-image',
-          href: '/Finance-App/splash/splash.png',
-          media: '(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
-        },
+        // Single fallback startup image for iOS standalone mode.
+        // iOS does not support manifest-driven splash reliably across versions.
+        { rel: 'apple-touch-startup-image', href: '/Finance-App/BudgifyWithLabel.png' },
       ],
       meta: [
+        { name: 'theme-color', content: '#ffffff' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
         { name: 'apple-mobile-web-app-title', content: 'Budgify' },
       ],
+    },
+  },
+  pwa: {
+    registerType: 'autoUpdate',
+    manifest: {
+      name: 'Budgify',
+      short_name: 'Budgify',
+      theme_color: '#ffffff',
+      background_color: '#ffffff',
+      display: 'standalone',
     },
   },
   runtimeConfig: {
