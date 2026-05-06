@@ -2,7 +2,7 @@
 import { useSelectedMonthTitle } from '~/composables/useSelectedMonthTitle'
 
 const props = withDefaults(defineProps<{
-  title: string
+  title?: string
   showMonth?: boolean
   showProfile?: boolean
 }>(), {
@@ -18,9 +18,13 @@ const { monthTitle } = useSelectedMonthTitle()
     <template #left>
       <div class="flex items-center gap-2.5">
         <img src="/Budgify.png" alt="" class="h-14 w-14 rounded-lg shrink-0" />
-        <div class="mt-1">
-          <p v-if="showMonth" class="text-sm font-semibold uppercase tracking-wide text-primary">{{ monthTitle }}</p>
-          <h1 class="text-xl font-bold text-highlighted">{{ title }}</h1>
+        <div>
+          <p
+            v-if="showMonth"
+            class="text-4xl text-neutral font-extrabold leading-none tracking-tight sm:text-4xl"
+          >
+            {{ monthTitle }}
+          </p>
         </div>
       </div>
     </template>
