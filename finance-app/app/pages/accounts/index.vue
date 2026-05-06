@@ -216,7 +216,7 @@ const { institutionLogo, institutionIcon, institutionBgClass } = useInstitutionB
 
 <template>
   <div>
-    <AppHeader title="Profile" :show-month="false" :show-profile="false">
+    <AppHeader title="Profile" :show-profile="false" :show-month-selector="false">
       <template #actions>
         <UColorModeSwitch />
         <UButton color="neutral" variant="ghost" size="sm" icon="heroicons-solid:arrow-right-on-rectangle" aria-label="Sign out" @click="handleSignOut" />
