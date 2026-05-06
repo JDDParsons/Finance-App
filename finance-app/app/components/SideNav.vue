@@ -15,6 +15,20 @@
         <span class="text-sm">{{ item.label }}</span>
       </NuxtLink>
     </div>
+    <div class="px-3 pb-6">
+      <button
+        class="fab w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary-500 hover:bg-primary-600 transition-colors text-white font-medium text-sm"
+        :class="{ 'fab--pressing': isPressing }"
+        @click="navigateTo('/cashflow/create')"
+        @mousedown="isPressing = true"
+        @mouseup="isPressing = false"
+        @mouseleave="isPressing = false"
+        aria-label="Add expense"
+      >
+        <UIcon name="fa-solid:plus" class="size-4" />
+        Add Expense
+      </button>
+    </div>
   </nav>
 </template>
 
@@ -26,4 +40,16 @@ const navigation = [
   { label: 'Savings', icon: 'streamline-flex:decent-work-and-economic-growth-solid', to: '/savings' },
   { label: 'Upload', icon: 'heroicons-solid:arrow-up-tray', to: '/upload' },
 ]
+
+const isPressing = ref(false)
 </script>
+
+<style scoped>
+.fab {
+  will-change: transform;
+}
+
+.fab--pressing {
+  transform: scale(0.96);
+}
+</style>
