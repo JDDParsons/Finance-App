@@ -26,10 +26,10 @@ export const useSavingsStore = defineStore('savings', () => {
   const loadingKeys = ref<Set<string>>(new Set())
   const error = ref<string | null>(null)
 
-  // The 12 month slots, newest (current selected month) first
+  // The 13 month slots (newest first) — extra slot so 12M chart has enough data when current month is excluded
   const trailingMonths = computed(() => {
     const { year, month } = financeStore.selectedMonth
-    return Array.from({ length: 12 }, (_, i) => offsetMonth(year, month, -i))
+    return Array.from({ length: 13 }, (_, i) => offsetMonth(year, month, -i))
   })
 
   function monthLabel(year: number, month: number) {

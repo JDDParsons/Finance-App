@@ -2,6 +2,7 @@
 import { useFinanceStore } from '~/stores/finance'
 import { useSavingsStore } from '~/stores/savings'
 import { useBudgetIcon } from '~/composables/useBudgetIcon'
+import { useSavingsTrend } from '~/composables/useSavingsTrend'
 
 useHead({ title: 'Savings | R&J Finance' })
 import { Bar } from 'vue-chartjs'
@@ -49,7 +50,8 @@ const currentMonthName = computed(() => MONTH_NAMES[financeStore.selectedMonth.m
 const chartSpan = ref(6)
 
 const chartMonths = computed(() => {
-  const sliced = savingsStore.months.slice(0, chartSpan.value)
+  const count = isCurrentRealMonth.value ? chartSpan.value + 1 : chartSpan.value
+  const sliced = savingsStore.months.slice(0, count)
   const reversed = [...sliced].reverse()
   return isCurrentRealMonth.value ? reversed.slice(0, -1) : reversed
 })
@@ -198,6 +200,8 @@ const totalSavings = computed(() =>
 
 const isBreakdownOpen = ref(true)
 
+const { savingsTrend } = useSavingsTrend(chartMonths)
+
 onMounted(async () => {
   await financeStore.ensureLoaded()
   await savingsStore.fetchAll()
@@ -209,6 +213,15 @@ onMounted(async () => {
     <AppHeader title="Savings" />
 
     <div class="px-4 pt-4 flex flex-col gap-4">
+
+      <!-- Savings trend summary -->
+      <div class="flex flex-col items-center text-center gap-1 pt-1">
+        <p
+          class="text-sm font-semibold"
+          :class="savingsTrend.tone === 'positive' ? 'text-green-500' : savingsTrend.tone === 'warning' ? 'text-yellow-500' : 'text-gray-400'"
+        >{{ savingsTrend.headline }}</p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 max-w-xs">{{ savingsTrend.subtitle }}</p>
+      </div>
 
       <!-- Savings chart -->
       <div class="flex flex-col gap-2">
@@ -222,8 +235,8 @@ onMounted(async () => {
             type="button"
             class="px-3 py-1 text-xs font-medium rounded-full transition-colors"
             :class="chartSpan === span
-              ? 'bg-gray-800 dark:bg-gray-100 text-white dark:text-gray-900'
-              : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'"
+              ? 'bg-green-500/15 border border-green-500 text-green-500'
+              : 'border border-transparent text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'"
             @click="chartSpan = span"
           >
             {{ span }}M
@@ -234,10 +247,10 @@ onMounted(async () => {
       <!-- Current-month notice -->
       <div
         v-if="isCurrentRealMonth"
-        class="rounded-2xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-4 flex items-start gap-3"
+        class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/20 p-4 flex items-start gap-3"
       >
-        <UIcon name="heroicons-solid:information-circle" class="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-        <p class="text-sm text-blue-700 dark:text-blue-300">
+        <UIcon name="heroicons-solid:information-circle" class="w-7 h-7 text-gray-400 shrink-0 mt-0.5" />
+        <p class="text-sm text-gray-700 dark:text-gray-300">
           Savings for {{ currentMonthName }} aren't in yet. Check back at the end of the month!
         </p>
       </div>
