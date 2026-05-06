@@ -1,6 +1,7 @@
 <script setup>
 import { useBudgetIcon } from '~/composables/useBudgetIcon'
 import { useSelectedMonthTitle } from '~/composables/useSelectedMonthTitle'
+import { useStatusMessage } from '~/composables/useStatusMessage'
 // import MonthlyExpensesChart from '~/components/home/MonthlyExpensesChart.vue'
 import CumulativeSpendingChart from '~/components/home/CumulativeSpendingChart.vue'
 
@@ -59,6 +60,8 @@ const totalIncome = computed(() =>
   store.income.reduce((sum, i) => sum + (Number(i.amount) || 0), 0)
 )
 
+const { statusMessage, isCurrentMonth, rawRemaining, budgetProjectedBalance } = useStatusMessage(totalIncome, totalExpenses)
+
 const hasData = computed(() => store.income.length > 0 || store.budgetHits.length > 0)
 
 const remaining = computed(() => Math.max(totalIncome.value - totalExpenses.value, 0))
@@ -110,7 +113,6 @@ const needleAngle = computed(() => {
   const ratio = Math.min(totalExpenses.value / Math.max(totalIncome.value, 1), 1)
   return -90 + ratio * 180
 })
-
 
 
 function isExpenseExcluded(expenseId) {
@@ -245,8 +247,8 @@ const chartOptions = {
           :class="{ 'opacity-40 pointer-events-none': store.refreshing }"
         >
         <div class="flex flex-col items-center justify-center space-y-2">
-            <h2 class="text-md text-center font-bold pt-3">Keep it steady, Jack</h2>
-            <h2 class="text-sm text-center">You're on track to save some of your income.</h2>
+            <h2 class="text-md text-center font-bold pt-3">{{ statusMessage.headline }}</h2>
+            <h2 class="text-sm text-center">{{ statusMessage.subtitle }}</h2>
             <div v-if="store.loading" class="w-full max-w-sm" style="height: 200px;">
                 <USkeleton class="w-full h-full opacity-40" style="border-radius: 50% 50% 0 0 / 100% 100% 0 0;" />
             </div>
