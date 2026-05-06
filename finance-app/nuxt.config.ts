@@ -14,8 +14,33 @@ export default defineNuxtConfig({
         { rel: 'apple-touch-icon', href: '/Finance-App/Budgify.png' },
         {
           rel: 'apple-touch-startup-image',
-          href: '/Finance-App/splash/iphone-14-pro-max.png',
-          media: '(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
+          href: '/Finance-App/splash/splash.png',
+          media: '(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
+        },
+        {
+          rel: 'apple-touch-startup-image',
+          href: '/Finance-App/splash/splash.png',
+          media: '(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
+        },
+        {
+          rel: 'apple-touch-startup-image',
+          href: '/Finance-App/splash/splash.png',
+          media: '(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
+        },
+        {
+          rel: 'apple-touch-startup-image',
+          href: '/Finance-App/splash/splash.png',
+          media: '(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)',
+        },
+        {
+          rel: 'apple-touch-startup-image',
+          href: '/Finance-App/splash/splash.png',
+          media: '(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
+        },
+        {
+          rel: 'apple-touch-startup-image',
+          href: '/Finance-App/splash/splash.png',
+          media: '(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
         },
       ],
       meta: [
@@ -31,6 +56,6 @@ export default defineNuxtConfig({
       supabaseAnonKey: process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY || '',
       isCI: !!process.env.CI,
       isMobile: process.env.NUXT_PUBLIC_IS_MOBILE === 'true',
-    },  
+    },
   }
 })
