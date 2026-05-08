@@ -53,9 +53,11 @@ const chartMonths = computed(() => {
   const sliced = savingsStore.months.slice(0, chartSpan.value)
   const reversed = [...sliced].reverse()
   if (!isCurrentRealMonth.value) return reversed
-  // Mark the last entry (current calendar month) as pending — shown but no bar data
+  // Mark the last entry as pending and substitute unallocated income as the projected savings
   return reversed.map((m: any, i: number) =>
-    i === reversed.length - 1 ? { ...m, isPending: true } : m
+    i === reversed.length - 1
+      ? { ...m, isPending: true, savings: unallocatedIncome.value }
+      : m
   )
 })
 
@@ -252,16 +254,30 @@ const chartSummaryNote = computed(() => {
   if (isCurrentRealMonth.value) {
     const currentFull = MONTH_NAMES[financeStore.selectedMonth.month - 1]
     return positive
-      ? { prefix: `Your savings since ${since} could be up to `, amount: amt, suffix: ` by end of ${currentFull}`, positive }
-      : { prefix: `Your deficit since ${since} could reach `, amount: amt, suffix: ` by end of ${currentFull}`, positive }
+      ? { prefix: `Based on your budgets, you could save around `, amount: amt, suffix: ` from ${since} through end of ${currentFull}`, positive }
+      : { prefix: `You're on track to overspend `, amount: amt, suffix: ` since ${since} through end of ${currentFull}`, positive }
   }
 
   return positive
-    ? { prefix: "You've saved ", amount: amt, suffix: ` since ${since}`, positive }
-    : { prefix: "You've overspent ", amount: amt, suffix: ` since ${since}`, positive }
+    ? { prefix: "You saved ", amount: amt, suffix: ` from ${since}`, positive }
+    : { prefix: "You overspent ", amount: amt, suffix: ` from ${since}`, positive }
 })
 
 const { savingsTrend } = useSavingsTrend(chartMonths)
+
+const compoundProjection = computed(() => {
+  const allMonths = chartMonths.value.filter((m: any) => m.hasData)
+  if (allMonths.length === 0) return null
+  const total = allMonths.reduce((s: number, m: any) => s + m.savings, 0)
+  if (total <= 0) return null
+  const future = total * Math.pow(1.07, 10)
+  const fmt = (n: number) => '$' + Math.round(n).toLocaleString('en-US')
+  return {
+    principal: fmt(total),
+    future: fmt(future),
+    growth: fmt(future - total),
+  }
+})
 
 onMounted(async () => {
   await financeStore.ensureLoaded()
@@ -273,7 +289,7 @@ onMounted(async () => {
   <div class="min-h-screen bg-white dark:bg-gray-900 pb-24">
     <AppHeader title="Savings" />
 
-    <div class="px-4 pt-4 flex flex-col gap-4">
+    <div class="px-4 pt-4 flex flex-col gap-1">
 
       <!-- Savings trend summary -->
       <div class="flex flex-col items-center text-center gap-1 pt-1">
@@ -285,7 +301,7 @@ onMounted(async () => {
       </div>
 
       <!-- Savings chart -->
-      <div class="flex flex-col gap-2">
+      <div class="flex flex-col gap-1">
         <div class="h-64">
           <Bar :data="chartData" :options="chartOptions" :plugins="[currentMonthOverlayPlugin]" />
         </div>
@@ -303,9 +319,28 @@ onMounted(async () => {
             {{ span }}M
           </button>
         </div>
-        <p v-if="chartSummaryNote" class="text-center text-md text-gray-400 dark:text-gray-500 mt-1">
-          {{ chartSummaryNote.prefix }}<span :class="chartSummaryNote.positive ? 'text-green-500' : 'text-yellow-500'" class="font-semibold">{{ chartSummaryNote.amount }}</span>{{ chartSummaryNote.suffix }}
+        <p v-if="chartSummaryNote" class="text-center text-sm text-gray-400 dark:text-gray-500 mt-1">
+          {{ chartSummaryNote.prefix }}<span :class="chartSummaryNote.positive ? 'text-green-500' : 'text-yellow-500'" class="font-semibold">{{ chartSummaryNote.amount }}</span>{{ chartSummaryNote.suffix }}.
         </p>
+      </div>
+
+      <!-- 10-year compound interest projection -->
+      <div v-if="compoundProjection" class="flex flex-col items-center mt-2 gap-2">
+        <p class="text-xs text-gray-400 dark:text-gray-500 text-center">If you invested these savings today...</p>
+        <div class="relative flex items-center justify-center w-36 h-36 rounded-full bg-green-500/10 border-4 border-green-500/60">
+          <div class="flex flex-col items-center gap-0.5">
+            <span class="text-2xl font-bold text-green-500 leading-tight">{{ compoundProjection.future }}</span>
+            <span class="text-xs text-green-400/80 font-medium">in 10 years</span>
+          </div>
+        </div>
+        <div class="flex flex-col items-center gap-1 text-center">
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            <span class="font-medium text-gray-600 dark:text-gray-300">{{ compoundProjection.principal }}</span> growing at 7% annual compound return
+          </p>
+          <p class="text-md text-gray-400 dark:text-gray-500">
+            That's <span class="text-green-500 font-medium">{{ compoundProjection.growth }}</span> in interest alone!
+          </p>
+        </div>
       </div>
 
       <!-- Savings breakdown (selected month, past months only) -->
