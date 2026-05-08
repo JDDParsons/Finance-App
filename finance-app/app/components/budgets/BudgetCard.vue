@@ -72,12 +72,12 @@ function formatCurrency(value: number) {
 <template>
   <button
     type="button"
-    class="group relative flex min-h-32 w-full flex-col items-center overflow-hidden rounded-2xl border px-4 pt-4 pb-5 text-center shadow-sm transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+    class="group relative flex min-h-30 w-full flex-col items-center overflow-hidden rounded-2xl border px-4 pt-2 pb-5 text-center shadow-sm transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
     :style="cardStyle"
     :aria-label="`Open ${budget.name} budget`"
     @click="emit('select', budget.id)"
   >
-    <p class="line-clamp-2 text-sm font-semibold text-gray-700 dark:text-gray-100">
+    <p class="line-clamp-2 text-xs font-semibold text-gray-700 dark:text-gray-100">
       {{ budget.name }}
     </p>
 
@@ -88,7 +88,7 @@ function formatCurrency(value: number) {
       <UIcon :name="iconName" class="size-5" />
     </div>
 
-    <p class="mt-1 mb-1 font-bold tracking-tight text-gray-900 dark:text-white">
+    <p class="mt-1 font-bold text-sm tracking-tight text-gray-900 dark:text-white">
       {{ formatCurrency(budgetAmount) }}
     </p>
 

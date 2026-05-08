@@ -47,8 +47,8 @@
 
 <script setup lang="ts">
 const leftNav = [
-  { label: 'Home', icon: 'fa-solid-home', to: '/home' },
-  { label: 'Budgets', icon: 'pepicons-pop:dollar-circle-filled', to: '/budgets' },
+  { label: 'Home', icon: 'si:meter-fill', to: '/home' },
+  { label: 'Budgets', icon: 'material-symbols:stack-hexagon-rounded', to: '/budgets' },
 ]
 
 const rightNav = [

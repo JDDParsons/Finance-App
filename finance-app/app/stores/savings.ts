@@ -25,6 +25,7 @@ export const useSavingsStore = defineStore('savings', () => {
   const cache = ref<Record<string, { income: number; expenses: number } | null>>({})
   const loadingKeys = ref<Set<string>>(new Set())
   const error = ref<string | null>(null)
+  const initialized = ref(false)
 
   // The 12 month slots (newest first)
   const trailingMonths = computed(() => {
@@ -84,6 +85,8 @@ export const useSavingsStore = defineStore('savings', () => {
     })
   })
 
+  const loading = computed(() => loadingKeys.value.size > 0)
+
   const grandTotal = computed(() =>
     months.value.reduce((sum, m) => sum + (m.hasData ? m.savings : 0), 0)
   )
@@ -115,6 +118,11 @@ export const useSavingsStore = defineStore('savings', () => {
     // Fetch all non-current months in the trailing window in parallel
     const toFetch = trailingMonths.value.slice(1)
     await Promise.all(toFetch.map(({ year, month }) => fetchMonth(year, month, force)))
+    initialized.value = true
+  }
+
+  async function ensureLoaded() {
+    if (!initialized.value) await fetchAll()
   }
 
   // Re-fetch when selected month changes
@@ -122,13 +130,16 @@ export const useSavingsStore = defineStore('savings', () => {
 
   function invalidateCache() {
     cache.value = {}
+    initialized.value = false
   }
 
   return {
     months,
     grandTotal,
+    loading,
     error,
     fetchAll,
+    ensureLoaded,
     invalidateCache
   }
 })

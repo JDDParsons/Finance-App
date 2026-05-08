@@ -23,17 +23,7 @@ watchEffect(() => {
         : [...store.budgets]
     displayBudgets.value = filtered.sort((a: any, b: any) => (b.currentPeriod?.amount || 0) - (a.currentPeriod?.amount || 0))
 })
-const activeSortLabel = ref('Amount')
-const ascendingIcon = 'heroicons-solid:arrow-long-up';
-const descendingIcon = 'heroicons-solid:arrow-long-down';
-const sortIcon = ref(descendingIcon)
 
-const sortDropdownItems = computed(() => [[
-    { label: 'Name',     icon: activeSortLabel.value === 'Name'     ? sortIcon.value : undefined, onSelect: () => { activeSortLabel.value = 'Name';     sortBudgetsByName() } },
-    { label: 'Spending', icon: activeSortLabel.value === 'Spending' ? sortIcon.value : undefined, onSelect: () => { activeSortLabel.value = 'Spending'; sortBudgetsByTotalHitAmount() } },
-    { label: 'Amount',   icon: activeSortLabel.value === 'Amount'  ? sortIcon.value : undefined, onSelect: () => { activeSortLabel.value = 'Amount';   sortBudgetsByAmount() } },
-    { label: 'Progress', icon: activeSortLabel.value === 'Progress' ? sortIcon.value : undefined, onSelect: () => { activeSortLabel.value = 'Progress'; sortBudgetsByProgress() } },
-]])
 
 const headerMenuItems = computed(() => [[
     { label: 'Add Budget', icon: 'heroicons-solid:plus', onSelect: () => { isSlideoverOpen.value = true } },
@@ -87,58 +77,7 @@ function goToBudget(budgetId: string) {
 }
 
 
-const spendingSortOrder = ref<'asc' | 'desc'>('asc')
-function sortBudgetsByTotalHitAmount() {
-    if (spendingSortOrder.value === 'asc') {
-        displayBudgets.value.sort((a, b) => (a.totalHitAmount || 0) - (b.totalHitAmount || 0))
-        spendingSortOrder.value = 'desc'
-        sortIcon.value = descendingIcon
-    } else {
-        displayBudgets.value.sort((a, b) => (b.totalHitAmount || 0) - (a.totalHitAmount || 0))
-        spendingSortOrder.value = 'asc' 
-        sortIcon.value = ascendingIcon
-    }
-}
 
-const nameSortOrder = ref<'asc' | 'desc'>('asc')
-function sortBudgetsByName() {
-    if (nameSortOrder.value === 'asc') {
-        displayBudgets.value.sort((a, b) => a.name.localeCompare(b.name))
-        nameSortOrder.value = 'desc'
-        sortIcon.value = descendingIcon
-    } else {
-        displayBudgets.value.sort((a, b) => b.name.localeCompare(a.name))
-        nameSortOrder.value = 'asc'
-        sortIcon.value = ascendingIcon
-    }
-}
-
-
-const amountSortOrder = ref<'asc' | 'desc'>('asc')
-function sortBudgetsByAmount() {
-        if (amountSortOrder.value === 'asc') {
-            displayBudgets.value.sort((a, b) => (a.currentPeriod?.amount || 0) - (b.currentPeriod?.amount || 0))
-            amountSortOrder.value = 'desc'
-            sortIcon.value = descendingIcon
-        } else {
-            displayBudgets.value.sort((a, b) => (b.currentPeriod?.amount || 0) - (a.currentPeriod?.amount || 0))
-            amountSortOrder.value = 'asc'
-            sortIcon.value = ascendingIcon
-        }
-}
-
-const progressSortOrder = ref<'asc' | 'desc'>('desc')
-function sortBudgetsByProgress() {
-    if (progressSortOrder.value === 'asc') {
-        displayBudgets.value.sort((a, b) => (a.progress || 0) - (b.progress || 0))
-        progressSortOrder.value = 'desc'
-        sortIcon.value = descendingIcon
-    } else {
-        displayBudgets.value.sort((a, b) => (b.progress || 0) - (a.progress || 0))
-        progressSortOrder.value = 'asc'
-        sortIcon.value = ascendingIcon
-    }
-}
 
 </script>
 
@@ -148,18 +87,8 @@ function sortBudgetsByProgress() {
 
     <UContainer>
         <!-- Budget Allocation Chart -->
-        <BudgetsAllocationGaugeBar class="mt-4 mb-2" />
-
-        <div class="flex justify-end gap-1 mb-2">
-          <UDropdownMenu :items="sortDropdownItems" :content="{ align: 'end' }">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              icon="heroicons:bars-arrow-up-20-solid"
-              size="md"
-              :aria-label="`Sort by ${activeSortLabel}`"
-            />
-          </UDropdownMenu>
+        <div class="flex items-end gap-1 mt-4 mb-2">
+          <BudgetsAllocationGaugeBar class="flex-1" />
           <UDropdownMenu :items="headerMenuItems" :content="{ align: 'end' }">
             <UButton
               color="neutral"
@@ -167,6 +96,7 @@ function sortBudgetsByProgress() {
               icon="heroicons-solid:ellipsis-vertical"
               size="md"
               aria-label="More options"
+              class="!py-0"
             />
           </UDropdownMenu>
         </div>

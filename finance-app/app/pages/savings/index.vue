@@ -281,7 +281,7 @@ const compoundProjection = computed(() => {
 
 onMounted(async () => {
   await financeStore.ensureLoaded()
-  await savingsStore.fetchAll()
+  await savingsStore.ensureLoaded()
 })
 </script>
 
@@ -303,7 +303,8 @@ onMounted(async () => {
       <!-- Savings chart -->
       <div class="flex flex-col gap-1">
         <div class="h-64">
-          <Bar :data="chartData" :options="chartOptions" :plugins="[currentMonthOverlayPlugin]" />
+          <USkeleton v-if="savingsStore.loading" class="w-full h-full rounded-xl" />
+          <Bar v-else :data="chartData" :options="chartOptions" :plugins="[currentMonthOverlayPlugin]" />
         </div>
         <div class="flex justify-center gap-1">
           <button
