@@ -5,6 +5,7 @@ interface ChartMonth {
   label: string
   savings: number
   hasData: boolean
+  isPending?: boolean
 }
 
 function fmt(value: number) {

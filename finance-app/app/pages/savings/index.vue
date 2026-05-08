@@ -50,16 +50,19 @@ const currentMonthName = computed(() => MONTH_NAMES[financeStore.selectedMonth.m
 const chartSpan = ref(6)
 
 const chartMonths = computed(() => {
-  const count = isCurrentRealMonth.value ? chartSpan.value + 1 : chartSpan.value
-  const sliced = savingsStore.months.slice(0, count)
+  const sliced = savingsStore.months.slice(0, chartSpan.value)
   const reversed = [...sliced].reverse()
-  return isCurrentRealMonth.value ? reversed.slice(0, -1) : reversed
+  if (!isCurrentRealMonth.value) return reversed
+  // Mark the last entry (current calendar month) as pending — shown but no bar data
+  return reversed.map((m: any, i: number) =>
+    i === reversed.length - 1 ? { ...m, isPending: true } : m
+  )
 })
 
 // Running cumulative total; null for months with no data (gap in line)
 const cumulativeData = computed(() => {
   let running = 0
-  return chartMonths.value.map(m => {
+  return chartMonths.value.map((m: any) => {
     if (!m.hasData) return null
     running += m.savings
     return running
@@ -67,16 +70,16 @@ const cumulativeData = computed(() => {
 })
 
 const chartData = computed(() => ({
-  labels: chartMonths.value.map(m => m.label.split(' ')[0]),
+  labels: chartMonths.value.map((m: any) => m.label.split(' ')[0]),
   datasets: [
     {
       type: 'bar' as const,
       label: 'Monthly Savings',
-      data: chartMonths.value.map(m => (m.hasData ? m.savings : null)),
-      backgroundColor: chartMonths.value.map(m =>
+      data: chartMonths.value.map((m: any) => m.hasData ? m.savings : null),
+      backgroundColor: chartMonths.value.map((m: any) =>
         m.savings >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(234,179,8,0.7)'
       ),
-      borderColor: chartMonths.value.map(m =>
+      borderColor: chartMonths.value.map((m: any) =>
         m.savings >= 0 ? '#22c55e' : '#eab308'
       ),
       borderWidth: 1,
@@ -97,6 +100,38 @@ const chartData = computed(() => ({
     }
   ]
 }))
+
+// Plugin: draws diagonal stripes over the current (pending) month's bar
+const currentMonthOverlayPlugin = {
+  id: 'currentMonthOverlay',
+  afterDraw(chart: any) {
+    if (!isCurrentRealMonth.value) return
+    const meta = chart.getDatasetMeta(0)
+    if (!meta?.data?.length) return
+    const bar = meta.data[meta.data.length - 1]
+    if (!bar) return
+    const { ctx } = chart
+    const bx = bar.x
+    const bw = bar.width ?? 0
+    const top = Math.min(bar.y, bar.base)
+    const height = Math.abs(bar.base - bar.y)
+    if (height < 1) return
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(bx - bw / 2, top, bw, height)
+    ctx.clip()
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)'
+    ctx.lineWidth = 3
+    const spacing = 7
+    for (let i = -(height + bw); i < bw + height; i += spacing) {
+      ctx.beginPath()
+      ctx.moveTo(bx - bw / 2 + i, top)
+      ctx.lineTo(bx - bw / 2 + i + height, top + height)
+      ctx.stroke()
+    }
+    ctx.restore()
+  }
+}
 
 const chartOptions = {
   responsive: true,
@@ -198,7 +233,33 @@ const totalSavings = computed(() =>
   unassignedSpent.value
 )
 
-const isBreakdownOpen = ref(true)
+const isBreakdownOpen = ref(false)
+
+// Net savings note for the chart's visible range (excludes current pending month)
+const chartSummaryNote = computed(() => {
+  const allMonths = chartMonths.value.filter((m: any) => m.hasData)
+  if (allMonths.length === 0) return null
+  const total = allMonths.reduce((s: number, m: any) => s + m.savings, 0)
+  // Use oldest non-pending month for the "since" label when possible
+  const oldest = allMonths.find((m: any) => !m.isPending) ?? allMonths[0]
+  const currentYear = new Date().getFullYear()
+  const since = oldest.year === currentYear
+    ? MONTH_NAMES[oldest.month - 1]
+    : `${MONTH_NAMES[oldest.month - 1]} ${oldest.year}`
+  const amt = '$' + Math.abs(total).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+  const positive = total >= 0
+
+  if (isCurrentRealMonth.value) {
+    const currentFull = MONTH_NAMES[financeStore.selectedMonth.month - 1]
+    return positive
+      ? { prefix: `Your savings since ${since} could be up to `, amount: amt, suffix: ` by end of ${currentFull}`, positive }
+      : { prefix: `Your deficit since ${since} could reach `, amount: amt, suffix: ` by end of ${currentFull}`, positive }
+  }
+
+  return positive
+    ? { prefix: "You've saved ", amount: amt, suffix: ` since ${since}`, positive }
+    : { prefix: "You've overspent ", amount: amt, suffix: ` since ${since}`, positive }
+})
 
 const { savingsTrend } = useSavingsTrend(chartMonths)
 
@@ -226,7 +287,7 @@ onMounted(async () => {
       <!-- Savings chart -->
       <div class="flex flex-col gap-2">
         <div class="h-64">
-          <Bar :data="chartData" :options="chartOptions" />
+          <Bar :data="chartData" :options="chartOptions" :plugins="[currentMonthOverlayPlugin]" />
         </div>
         <div class="flex justify-center gap-1">
           <button
@@ -242,21 +303,13 @@ onMounted(async () => {
             {{ span }}M
           </button>
         </div>
-      </div>
-
-      <!-- Current-month notice -->
-      <div
-        v-if="isCurrentRealMonth"
-        class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/20 p-4 flex items-start gap-3"
-      >
-        <UIcon name="heroicons-solid:information-circle" class="w-7 h-7 text-gray-400 shrink-0 mt-0.5" />
-        <p class="text-sm text-gray-700 dark:text-gray-300">
-          Savings for {{ currentMonthName }} aren't in yet. Check back at the end of the month!
+        <p v-if="chartSummaryNote" class="text-center text-md text-gray-400 dark:text-gray-500 mt-1">
+          {{ chartSummaryNote.prefix }}<span :class="chartSummaryNote.positive ? 'text-green-500' : 'text-yellow-500'" class="font-semibold">{{ chartSummaryNote.amount }}</span>{{ chartSummaryNote.suffix }}
         </p>
       </div>
 
-      <!-- Savings breakdown (past months only) -->
-      <template v-else>
+      <!-- Savings breakdown (selected month, past months only) -->
+      <template v-if="!isCurrentRealMonth">
 
         <!-- Loading skeleton -->
         <div v-if="financeStore.loading" class="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow">
