@@ -27,7 +27,7 @@ const profileInitial = computed(() => {
   <UHeader :toggle="false">
     <template #left>
       <div class="flex items-center gap-2.5">
-        <img src="/Budgify.png" alt="" class="h-14 w-14 rounded-lg shrink-0" />
+        <img src="/BudgifyWithLabel.png" alt="" class="h-14 w-14 rounded-lg shrink-0" />
         <div>
           <p
             v-if="showMonth"
