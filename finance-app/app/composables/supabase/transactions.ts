@@ -26,6 +26,16 @@ async function attachLatestCategory(transactions: any[]) {
   return transactions.map(t => ({ ...t, currentCategoryId: latestMap.get(t.id) || null }))
 }
 
+export async function getCategories() {
+  const { data, error } = await getClient()
+    .from('Category')
+    .select('id, label')
+    .order('label', { ascending: true })
+
+  if (error) throw error
+  return (data || []).map((c: any) => ({ id: c.id, label: c.label }))
+}
+
 export async function getAllTransactionsSorted() {
   const { data, error } = await getClient()
     .from('Transaction')

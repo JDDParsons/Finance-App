@@ -59,8 +59,6 @@ async function upload() {
                             <UButton to="/upload" color="primary" active-color="primary" size="xl" @click="upload()">Submit bank statement</UButton>
                             <div class="flex space-x-4 pt-7">
                                 <UButton to="/home" color="neutral" variant="outline" size="sm">Back</UButton>
-                                
-                                <UButton to="/upload/reports/monthly" color="secondary" variant="outline" size="sm">View reports</UButton>
                             </div>
                         </div>
                     </div>
