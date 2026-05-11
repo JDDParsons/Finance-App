@@ -1,64 +1,6 @@
 import Papa from 'papaparse'
 import { getSupabase, resolveHouseholdId } from './client'
-
-// Return all transactions sorted by date (newest first)
-export async function getAllSorted() {
-  const supabase = getSupabase()
-  const { data: transactions, error } = await supabase
-    .from('Transaction')
-    .select('*')
-    .order('transaction_date', { ascending: false })
-
-  if (error) throw error
-
-  console.log(`Fetched ${transactions?.length ?? 0} total transactions.`)
-
-  return attachLatestCategory(transactions || [])
-}
-
-export async function getAllByMonth(year: number, month: number) {
-  const supabase = getSupabase()
-  const startDate = new Date(year, month - 1, 1).toISOString()
-  const endDate = new Date(year, month, 1).toISOString()
-
-  const { data: transactions, error } = await supabase
-    .from('Transaction')
-    .select('*')
-    .gte('transaction_date', startDate)
-    .lt('transaction_date', endDate)
-    .order('transaction_date', { ascending: false })
-
-  if (error) throw error
-
-  console.log(
-    `Fetched ${transactions?.length ?? 0} transactions for ${year}-${month}.`
-  )
-
-  return attachLatestCategory(transactions || [])
-}
-
-// Helper to attach latest category to transactions
-async function attachLatestCategory(transactions: any[]) {
-  const supabase = getSupabase()
-  const ids = transactions.map(t => t.id)
-
-  const { data: txCats, error } = await (supabase as any).rpc('get_transaction_categories', { transaction_ids: ids })
-  if (error) throw error
-
-  // Pick latest category per transaction
-  const latestMap = new Map<string, string>()
-
-  for (const row of txCats || []) {
-    if (!latestMap.has(row.transaction_id)) {
-      latestMap.set(row.transaction_id, row.category_id)
-    }
-  }
-
-  return transactions.map(t => ({
-    ...t,
-    currentCategoryId: latestMap.get(t.id) || null
-  }))
-}
+import { upsertTransactions } from './transactions'
 
 // Fetch categories ordered by label
 export async function getCategories() {
@@ -159,38 +101,7 @@ export async function getStatementGroups() {
   return items
 }
 
-// Upsert a transaction category (create or update)
-export async function setTransactionCategory(transactionId: string, categoryId: string) {
-  const supabase = getSupabase()
-  if (!transactionId || !categoryId) throw new Error('Missing transactionId or categoryId')
-
-  const { data: existing, error: selErr } = await (supabase as any)
-    .from('Transaction_Category')
-    .select('*')
-    .eq('transaction_id', transactionId)
-    .maybeSingle()
-
-  if (selErr) throw selErr
-
-  if (existing) {
-    const { data, error } = await (supabase as any)
-      .from('Transaction_Category')
-      .update({ category_id: categoryId } as any)
-      .eq('id', existing.id)
-      .select()
-      .single()
-    if (error) throw error
-    return data
-  } else {
-    const { data, error } = await (supabase as any)
-      .from('Transaction_Category')
-      .insert({ transaction_id: transactionId, category_id: categoryId } as any)
-      .select()
-      .single()
-    if (error) throw error
-    return data
-  }
-}
+// Upsert a transaction category (create or update) — moved to transactions.ts
 
 // Upload a CSV file (read in browser, parse and insert transactions)
 export async function uploadFile(file: File) {
@@ -224,10 +135,5 @@ export async function uploadFile(file: File) {
     household_id: householdId
   }))
 
-  const { count, error } = await (supabase as any)
-    .from('Transaction')
-    .upsert(data as any, { onConflict: 'id', count: 'exact' })
-
-  if (error) throw error
-  return { count }
+  return await upsertTransactions(data)
 }

@@ -8,7 +8,7 @@ import DoughnutChartA from '~/components/upload/DoughnutChartA.vue';
 import DoughnutChartB from '~/components/upload/DoughnutChartB.vue';
 import CategoryDropdown from '~/components/upload/CategoryDropdown.vue';
 
-import { getAllByMonth, getCategories, getStatementGroups } from '~/composables/supabase';
+import { getTransactionsByMonth, getCategories, getStatementGroups } from '~/composables/supabase';
 
 // Utility function to attach category labels
 function attachCategoryLabel(
@@ -193,7 +193,7 @@ async function fetchReportDetails(year: number, month: number) {
   loading.value = true;
     try {
       const [rowsRes, catData] = await Promise.all([
-        getAllByMonth(year, month),
+        getTransactionsByMonth(year, month),
         getCategories()
       ])
 

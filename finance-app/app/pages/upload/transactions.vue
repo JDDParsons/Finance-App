@@ -4,7 +4,7 @@ import type { TableColumn } from '@nuxt/ui'
 import CategoryDropdown from '~/components/upload/CategoryDropdown.vue'
 
 useHead({ title: 'Transactions | R&J Finance' })
-import { getAllSorted, getCategories } from '~/composables/supabase'
+import { getAllTransactionsSorted, getCategories } from '~/composables/supabase'
 
 
 
@@ -87,7 +87,7 @@ const columns: TableColumn<any>[] = [
 
 onMounted(async () => {
   try {
-    rows.value = await getAllSorted()
+    rows.value = await getAllTransactionsSorted()
     categories.value = await getCategories()
   } catch (err: any) {
     error.value = err.message || 'Failed to load data'
