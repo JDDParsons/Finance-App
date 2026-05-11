@@ -1,17 +1,20 @@
 import { getSupabase, resolveHouseholdId } from './client'
 
+function getClient() {
+  return getSupabase().schema('finance-app')
+}
+
 export async function createBudgetHit(budgetId: string | null, date: string, amount: string, note: string, accountId: string | null = null) {
   const supabase = getSupabase()
   const { data: auth } = await supabase.auth.getSession()
   const householdId = await resolveHouseholdId()
-  const parsedAmount = parseFloat(amount)
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('Budget_Hit')
     .insert({
       budget_id: budgetId,
-      date: date,
-      amount: parsedAmount,
-      note: note,
+      date,
+      amount: parseFloat(amount),
+      note,
       type: 'Expense',
       account_id: accountId,
       user_id: auth.session?.user?.id,
@@ -21,13 +24,11 @@ export async function createBudgetHit(budgetId: string | null, date: string, amo
     .single()
 
   if (error) throw error
-
   return data
 }
 
 export async function getBudgetHits() {
-  const supabase = getSupabase()
-  const { data: hits, error } = await supabase
+  const { data: hits, error } = await getClient()
     .from('Budget_Hit')
     .select('*')
     .eq('type', 'Expense')
@@ -38,8 +39,7 @@ export async function getBudgetHits() {
 }
 
 export async function getBudgetHitsByBudgetId(budgetId: string) {
-  const supabase = getSupabase()
-  const { data: hits, error } = await supabase
+  const { data: hits, error } = await getClient()
     .from('Budget_Hit')
     .select('*')
     .eq('budget_id', budgetId)
@@ -51,9 +51,7 @@ export async function getBudgetHitsByBudgetId(budgetId: string) {
 }
 
 export async function deleteBudgetHit(id: string) {
-  const supabase = getSupabase()
-
-  const { error } = await supabase
+  const { error } = await getClient()
     .from('Budget_Hit')
     .delete()
     .eq('id', id)
@@ -62,16 +60,13 @@ export async function deleteBudgetHit(id: string) {
 }
 
 export async function updateBudgetHit(id: string, budgetId: string | null, date: string, amount: string, note: string, accountId: string | null = null) {
-  const supabase = getSupabase()
-
-  const parsedAmount = parseFloat(amount)
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('Budget_Hit')
     .update({
       budget_id: budgetId,
-      date: date,
-      amount: parsedAmount,
-      note: note,
+      date,
+      amount: parseFloat(amount),
+      note,
       account_id: accountId,
     })
     .eq('id', id)
@@ -79,16 +74,14 @@ export async function updateBudgetHit(id: string, budgetId: string | null, date:
     .single()
 
   if (error) throw error
-
   return data
 }
 
 // --- Income ---
 
 export async function getIncome() {
-  const supabase = getSupabase()
   const householdId = await resolveHouseholdId()
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('Budget_Hit')
     .select('*')
     .eq('type', 'Income')
@@ -103,7 +96,7 @@ export async function insertIncome(amount: number, date: string, note: string, a
   const supabase = getSupabase()
   const { data: auth } = await supabase.auth.getSession()
   const householdId = await resolveHouseholdId()
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('Budget_Hit')
     .insert({
       amount,
@@ -123,8 +116,7 @@ export async function insertIncome(amount: number, date: string, note: string, a
 }
 
 export async function deleteIncome(id: string) {
-  const supabase = getSupabase()
-  const { error } = await supabase
+  const { error } = await getClient()
     .from('Budget_Hit')
     .delete()
     .eq('id', id)
@@ -133,11 +125,10 @@ export async function deleteIncome(id: string) {
 }
 
 export async function getBudgetHitsByMonth(year: number, month: number) {
-  const supabase = getSupabase()
   const nextMonth = month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 }
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`
   const endDate = `${nextMonth.year}-${String(nextMonth.month).padStart(2, '0')}-01`
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('Budget_Hit')
     .select('*')
     .eq('type', 'Expense')
@@ -167,12 +158,11 @@ export async function getUserProfiles(userIds: string[]): Promise<Array<{ id: st
 }
 
 export async function getIncomeByMonth(year: number, month: number) {
-  const supabase = getSupabase()
   const householdId = await resolveHouseholdId()
   const nextMonth = month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 }
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`
   const endDate = `${nextMonth.year}-${String(nextMonth.month).padStart(2, '0')}-01`
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('Budget_Hit')
     .select('*')
     .eq('type', 'Income')
