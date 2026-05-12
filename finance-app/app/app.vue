@@ -5,6 +5,14 @@ const accountsStore = useAccountsStore()
 const route = useRoute()
 const router = useRouter()
 const runtimeConfig = useRuntimeConfig()
+const colorMode = useColorMode()
+
+// Dynamically update theme-color so the iOS PWA status bar matches dark/light mode
+useHead(() => ({
+  meta: [
+    { name: 'theme-color', content: colorMode.value === 'dark' ? '#030712' : '#ffffff' },
+  ],
+}))
 
 const isLoading = ref(true)
 

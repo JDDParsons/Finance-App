@@ -53,7 +53,7 @@ async function handleVerificationCode() {
 
 </script>
 <template>
-    <div>
+    <div class="pt-safe">
         <UMain>
             <UContainer>
                 <div class="flex flex-col items-center justify-center pt-25 space-y-8">
