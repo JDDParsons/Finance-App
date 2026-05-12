@@ -286,7 +286,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-white dark:bg-gray-900 pb-24">
+  <div class="min-h-screen bg-white dark:bg-gray-900 pb-24 lg:pb-6">
     <AppHeader title="Savings" />
 
     <div class="px-4 pt-4 flex flex-col gap-1">

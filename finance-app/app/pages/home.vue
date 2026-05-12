@@ -4,6 +4,8 @@ import { useSelectedMonthTitle } from '~/composables/useSelectedMonthTitle'
 import { useStatusMessage } from '~/composables/useStatusMessage'
 // import MonthlyExpensesChart from '~/components/home/MonthlyExpensesChart.vue'
 import CumulativeSpendingChart from '~/components/home/CumulativeSpendingChart.vue'
+import DailySpendingRatioChart from '~/components/home/DailySpendingRatioChart.vue'
+import DailyStatsGrid from '~/components/home/DailyStatsGrid.vue'
 
 useHead({ title: 'Home | R&J Finance' })
 import { Doughnut } from 'vue-chartjs'
@@ -237,7 +239,7 @@ const chartOptions = {
 </script>
 
 <template>
-  <div>
+  <div class="min-h-screen">
     <AppHeader title="Summary" />
 
     <UContainer>
@@ -246,56 +248,54 @@ const chartOptions = {
           class="transition-opacity duration-300"
           :class="{ 'opacity-40 pointer-events-none': store.refreshing }"
         >
-        <div class="flex flex-col items-center justify-center space-y-2">
+        <div class="flex flex-col items-center space-y-2">
             <h2 class="text-md text-center font-bold pt-3">{{ statusMessage.headline }}</h2>
             <h2 class="text-sm text-center">{{ statusMessage.subtitle }}</h2>
-            <div v-if="store.loading" class="w-full max-w-sm" style="height: 200px;">
-                <USkeleton class="w-full h-full opacity-40" style="border-radius: 50% 50% 0 0 / 100% 100% 0 0;" />
-            </div>
 
-            <div v-else class="w-full max-w-sm relative" style="height: 200px;">
-                <Doughnut :data="chartData" :options="chartOptions" />
-                <GaugeNeedle :angle="needleAngle" :color="chartColors.expenses" />
-            </div>
+            <!-- Donut + daily stats side by side -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 w-full">
+                <!-- Left: donut + summary totals (2/4) -->
+                <div class="flex flex-col items-center gap-2 md:col-span-2">
+                    <div v-if="store.loading" class="w-full max-w-sm md:max-w-none h-[200px] md:h-[300px]">
+                        <USkeleton class="w-full h-full opacity-40" style="border-radius: 50% 50% 0 0 / 100% 100% 0 0;" />
+                    </div>
 
-            <div class="flex gap-8 text-center">
-                <div>
-                    <p class="text-sm text-gray-400">Income</p>
-                    <p class="text-lg font-semibold">${{ totalIncome.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
+                    <div v-else class="w-full max-w-sm md:max-w-none relative h-[200px] md:h-[300px]">
+                        <Doughnut :data="chartData" :options="chartOptions" />
+                        <GaugeNeedle :angle="needleAngle" :color="chartColors.expenses" />
+                    </div>
+
+                    <div class="flex gap-8 text-center">
+                        <div>
+                            <p class="text-sm text-gray-400">Income</p>
+                            <p class="text-lg font-semibold">${{ totalIncome.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-400">Expenses</p>
+                            <p class="text-lg font-semibold text-warning">${{ totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
+                            <p v-if="expenseMoMChange !== null" class="text-xs mt-0.5" :class="expenseMoMChange > 0 ? 'text-red-400' : 'text-green-400'">
+                                {{ expenseMoMChange > 0 ? '↑' : '↓' }} {{ Math.abs(expenseMoMChange).toFixed(1) }}% vs last mo.
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-400">Remaining</p>
+                            <p class="text-lg font-semibold text-primary">${{ remaining.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <p class="text-sm text-gray-400">Expenses</p>
-                    <p class="text-lg font-semibold text-warning">${{ totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
-                    <p v-if="expenseMoMChange !== null" class="text-xs mt-0.5" :class="expenseMoMChange > 0 ? 'text-red-400' : 'text-green-400'">
-                        {{ expenseMoMChange > 0 ? '↑' : '↓' }} {{ Math.abs(expenseMoMChange).toFixed(1) }}% vs last mo.
-                    </p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-400">Remaining</p>
-                    <p class="text-lg font-semibold text-primary">${{ remaining.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
-                </div>
-            </div>
-            <!-- Insights row -->
-            <div v-if="!store.loading" class="flex gap-6 text-center pt-1">
-                <div>
-                    <p class="text-xs text-gray-400">Daily Avg</p>
-                    <p class="text-sm font-semibold">~${{ dailyAverage.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
-                </div>
-                <div v-if="daysRemaining > 0">
-                    <p class="text-xs text-gray-400">Projected (EOM)</p>
-                    <p class="text-sm font-semibold" :class="projectedBalance >= 0 ? 'text-primary' : 'text-red-400'">
-                        ${{ projectedBalance.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}
-                    </p>
-                </div>
-                <div v-else>
-                    <p class="text-xs text-gray-400">Days in Month</p>
-                    <p class="text-sm font-semibold">{{ daysInMonth }}</p>
+
+                <!-- Right: daily stats grid (2/4) -->
+                <div class="w-full self-center md:col-span-2">
+                    <DailyStatsGrid />
                 </div>
             </div>
         </div>
 
-        <div class="pt-5 pb-20">
-          <CumulativeSpendingChart />
+        <div class="pt-5 pb-20 lg:pb-6">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="md:col-span-2"><CumulativeSpendingChart /></div>
+            <div class="md:col-span-2"><DailySpendingRatioChart /></div>
+          </div>
         </div>
 
         </div> <!-- end transition wrapper -->

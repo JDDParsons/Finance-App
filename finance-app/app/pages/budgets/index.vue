@@ -82,7 +82,7 @@ function goToBudget(budgetId: string) {
 </script>
 
 <template>
-  <div>
+  <div class="min-h-screen">
     <AppHeader title="Budgets" />
 
     <UContainer>
@@ -120,7 +120,7 @@ function goToBudget(budgetId: string) {
             <p class="text-gray-400">No budgets yet. Use the menu to create one.</p>
         </div>
 
-        <div v-else class="grid grid-cols-3 gap-3 pb-24 sm:grid-cols-3 lg:grid-cols-4">
+        <div v-else class="grid grid-cols-3 gap-3 pb-24 lg:pb-6 sm:grid-cols-3 lg:grid-cols-4">
             <BudgetsBudgetCard
                 v-for="budget in displayBudgets"
                 :key="budget.id"

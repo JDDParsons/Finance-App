@@ -23,7 +23,7 @@ onMounted(() => { store.ensureLoaded() })
       <h2 class="text-3xl font-bold">Budget Summary</h2>
     </div>
 
-    <div class="pb-24 space-y-4">
+    <div class="pb-24 lg:pb-6 space-y-4">
       <BudgetsUncategorizedAlert />
       <BudgetsAllocationPieChart />
       <BudgetsSummary />

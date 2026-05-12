@@ -127,7 +127,7 @@ async function saveExpense() {
 
 
     <!-- Tabs -->
-    <div class="px-4 pb-24">
+    <div class="px-4 pb-24 lg:pb-6">
       <UTabs
         v-model="activeTab"
         color="primary"
