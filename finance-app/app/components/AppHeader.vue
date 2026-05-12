@@ -24,7 +24,7 @@ const profileInitial = computed(() => {
 </script>
 
 <template>
-  <UHeader :toggle="false" class="pt-safe">
+  <UHeader :toggle="false">
     <template #left>
       <div class="flex items-center gap-2.5">
         <img src="/BudgifyWithLabel.png" alt="" class="h-14 w-14 rounded-lg shrink-0" />

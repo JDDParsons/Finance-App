@@ -10,9 +10,22 @@ body {
   overflow-x: hidden;
   font-family: 'Plus Jakarta Sans', sans-serif;
   touch-action: manipulation;
+  /* Push all page content below the iOS status bar globally */
+  padding-top: env(safe-area-inset-top);
 }
 
 html {
   scrollbar-gutter: stable;
   touch-action: manipulation;
+  /* Fill the status bar area with the correct background colour */
+  background-color: #ffffff;
+}
+
+html.dark {
+  background-color: #030712; /* gray-950 */
+}
+
+/* Keep the sticky UHeader below the safe area when scrolled */
+header[data-slot="root"] {
+  top: env(safe-area-inset-top);
 }
