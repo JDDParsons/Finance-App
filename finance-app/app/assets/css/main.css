@@ -25,9 +25,14 @@ html.dark {
   background-color: #030712; /* gray-950 */
 }
 
-/* Extend sticky UHeader into the status bar area.
-   top: 0 so it covers the full area; padding-top pushes content below the status bar. */
+/* Extend sticky UHeader to cover the status bar area.
+   - margin-top cancels the body padding-top so the header sits flush at y=0
+   - --ui-header-height grows to include the safe area (box-sizing: border-box, so total height = safe area + 4rem)
+   - padding-top pushes the header's content (logo, buttons) below the safe area
+   - top: 0 ensures it sticks to the very top of the viewport when scrolled */
 header[data-slot="root"] {
   top: 0;
+  margin-top: calc(-1 * env(safe-area-inset-top));
   padding-top: env(safe-area-inset-top);
+  --ui-header-height: calc(env(safe-area-inset-top) + 4rem);
 }
