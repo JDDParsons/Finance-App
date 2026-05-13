@@ -10,6 +10,7 @@ export default defineNuxtConfig({
     baseURL: '/Finance-App/',
     head: {
       link: [
+        { rel: 'manifest', href: '/Finance-App/manifest.webmanifest' },
         { rel: 'icon', type: 'image/png', href: '/Finance-App/Budgify.png' },
         { rel: 'apple-touch-icon', href: '/Finance-App/Budgify.png' },
         // Single fallback startup image for iOS standalone mode.
