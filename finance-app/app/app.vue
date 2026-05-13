@@ -65,7 +65,7 @@ onMounted(async () => {
     >
       <UIcon name="heroicons-solid:user-circle" class="size-6" />
     </NuxtLink>
-    <BottomNav v-if="isAuthenticated" class="lg:hidden" />
+    <BottomNav v-if="isAuthenticated && route.path !== '/cashflow/create'" class="lg:hidden" />
     <SuccessOverlay />
   </UApp>
 </template>

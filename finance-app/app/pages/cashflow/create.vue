@@ -176,8 +176,8 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 h-[100dvh] overflow-hidden bg-white dark:bg-gray-950">
-    <div class="mx-auto flex h-full max-w-2xl flex-col bg-white dark:bg-gray-950">
+  <div class="bg-white dark:bg-gray-950">
+    <div class="mx-auto flex min-h-[calc(100dvh-env(safe-area-inset-top))] max-w-2xl flex-col bg-white dark:bg-gray-950">
       <div class="border-b border-gray-200 px-2 py-2 dark:border-gray-800 sm:px-4">
         <UButton
           color="neutral"
