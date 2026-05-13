@@ -30,9 +30,47 @@ export default defineNuxtConfig({
     manifest: {
       name: 'Budgify',
       short_name: 'Budgify',
+      description: 'Personal finance & budget tracker',
+      id: '/Finance-App/',
+      start_url: '/Finance-App/',
+      scope: '/Finance-App/',
       theme_color: '#ffffff',
       background_color: '#ffffff',
       display: 'standalone',
+      orientation: 'portrait',
+      icons: [
+        {
+          src: '/Finance-App/icons/icon-192.png',
+          sizes: '192x192',
+          type: 'image/png',
+        },
+        {
+          src: '/Finance-App/icons/icon-512.png',
+          sizes: '512x512',
+          type: 'image/png',
+        },
+        {
+          src: '/Finance-App/icons/icon-512-maskable.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'maskable',
+        },
+      ],
+    },
+    workbox: {
+      globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+      runtimeCaching: [
+        {
+          // Supabase API — network first, fallback to last cached response
+          urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+          handler: 'NetworkFirst' as const,
+          options: {
+            cacheName: 'supabase-api',
+            expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
+            networkTimeoutSeconds: 10,
+          },
+        },
+      ],
     },
   },
   runtimeConfig: {
