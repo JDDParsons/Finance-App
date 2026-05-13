@@ -286,10 +286,11 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-white dark:bg-gray-900 pb-24 lg:pb-6">
+  <div class="min-h-screen">
     <AppHeader title="Savings" />
 
-    <div class="px-4 pt-4 flex flex-col gap-1">
+    <UContainer>
+    <div class="pt-4 pb-24 lg:pb-6 flex flex-col gap-1">
 
       <!-- Savings trend summary -->
       <div class="flex flex-col items-center text-center gap-1 pt-1">
@@ -302,7 +303,7 @@ onMounted(async () => {
 
       <!-- Savings chart -->
       <div class="flex flex-col gap-1">
-        <div class="h-64">
+        <div class="h-64 lg:h-96">
           <USkeleton v-if="savingsStore.loading" class="w-full h-full rounded-xl" />
           <Bar v-else :data="chartData" :options="chartOptions" :plugins="[currentMonthOverlayPlugin]" />
         </div>
@@ -523,5 +524,6 @@ onMounted(async () => {
       </template>
 
     </div>
+    </UContainer>
   </div>
 </template>

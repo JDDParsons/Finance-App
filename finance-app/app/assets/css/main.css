@@ -25,7 +25,9 @@ html.dark {
   background-color: #030712; /* gray-950 */
 }
 
-/* Keep the sticky UHeader below the safe area when scrolled */
+/* Extend sticky UHeader into the status bar area.
+   top: 0 so it covers the full area; padding-top pushes content below the status bar. */
 header[data-slot="root"] {
-  top: env(safe-area-inset-top);
+  top: 0;
+  padding-top: env(safe-area-inset-top);
 }

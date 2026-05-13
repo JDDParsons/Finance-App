@@ -190,7 +190,7 @@ const chartOptions = computed(() => ({
         </div>
       </div>
 
-      <div class="h-44">
+      <div class="h-44 lg:h-[264px]">
         <Line ref="lineChart" :data="chartData" :options="chartOptions" />
       </div>
     </template>
