@@ -13,12 +13,16 @@ import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement } from 'chart.js'
 ChartJS.register(Title, Tooltip, Legend, ArcElement)
 
 const store = useFinanceStore()
+const savingsStore = useSavingsStore()
+const accountsStore = useAccountsStore()
 const { budgetIcon } = useBudgetIcon()
 const { monthTitle } = useSelectedMonthTitle()
 const UNCATEGORIZED_ICON = 'heroicons:question-mark-circle-solid'
 
 onMounted(async () => {
   await store.ensureLoaded()
+  await savingsStore.ensureLoaded()
+  await accountsStore.ensureLoaded()
   resolveChartColors()
 })
 
