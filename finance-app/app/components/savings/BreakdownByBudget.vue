@@ -128,7 +128,7 @@ const isBreakdownOpen = ref(true)
             <p class="text-xs font-medium text-gray-800 dark:text-gray-100 truncate">{{ h.note || 'No description' }}</p>
             <p class="text-xs text-gray-400 dark:text-gray-500">{{ h.date }}</p>
           </div>
-          <span class="text-sm font-medium shrink-0 text-yellow-400">
+          <span class="text-sm font-medium shrink-0 text-gray-400 dark:text-gray-500">
             -{{ formatCurrency(Number(h.amount)) }}
           </span>
         </div>
@@ -168,7 +168,7 @@ const isBreakdownOpen = ref(true)
               Spent {{ formatCurrency(b.totalHitAmount) }} of {{ formatCurrency(b.currentPeriod?.amount ?? 0) }}
             </p>
           </div>
-          <span class="text-sm font-medium shrink-0 text-yellow-400">
+          <span class="text-sm font-medium shrink-0 text-gray-400 dark:text-gray-500">
             {{ formatCurrency(b.totalRemainingAmount ?? 0) }}
           </span>
         </div>
@@ -208,7 +208,7 @@ const isBreakdownOpen = ref(true)
               Spent {{ formatCurrency(b.totalHitAmount) }} of {{ formatCurrency(b.currentPeriod?.amount ?? 0) }}
             </p>
           </div>
-          <span class="text-sm font-medium shrink-0 text-green-400">
+          <span class="text-sm font-medium shrink-0 text-gray-400 dark:text-gray-500">
             +{{ formatCurrency(b.totalRemainingAmount ?? 0) }}
           </span>
         </div>

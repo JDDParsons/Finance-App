@@ -283,7 +283,7 @@ onMounted(async () => {
         <div class="flex justify-center mt-2">
           <button
             type="button"
-            class="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded-full text-green-500 border border-green-500/40 hover:bg-green-500/10 transition-colors"
+            class="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded-full text-blue-500 border border-blue-500/40 hover:bg-blue-500/10 transition-colors"
             @click="isSlideoverOpen = true"
           >
             <UIcon name="heroicons:banknotes" class="w-4 h-4" />
@@ -315,7 +315,7 @@ onMounted(async () => {
       <USlideover v-model:open="isSlideoverOpen" class="w-full sm:max-w-md">
         <template #content>
           <div class="flex flex-col h-full">
-            <div class="flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700" style="padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: 1rem;">
               <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">{{ currentMonthName }} Breakdown</h3>
               <button
                 type="button"
