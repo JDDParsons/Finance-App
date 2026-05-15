@@ -7,15 +7,14 @@ export default defineNuxtConfig({
   modules: ['@nuxt/ui', '@pinia/nuxt', '@vite-pwa/nuxt'],
   css: ['@/assets/css/main.css'],
   app: {
-    baseURL: '/Finance-App/',
     head: {
       link: [
-        { rel: 'manifest', href: '/Finance-App/manifest.webmanifest' },
-        { rel: 'icon', type: 'image/png', href: '/Finance-App/Budgify.png' },
-        { rel: 'apple-touch-icon', href: '/Finance-App/Budgify.png' },
+        { rel: 'manifest', href: '/manifest.webmanifest' },
+        { rel: 'icon', type: 'image/png', href: '/Budgify.png' },
+        { rel: 'apple-touch-icon', href: '/Budgify.png' },
         // Single fallback startup image for iOS standalone mode.
         // iOS does not support manifest-driven splash reliably across versions.
-        { rel: 'apple-touch-startup-image', href: '/Finance-App/BudgifyWithLabel.png' },
+        { rel: 'apple-touch-startup-image', href: '/BudgifyWithLabel.png' },
       ],
       meta: [
         { name: 'theme-color', content: '#ffffff' },
@@ -32,26 +31,26 @@ export default defineNuxtConfig({
       name: 'Budgify',
       short_name: 'Budgify',
       description: 'Personal finance & budget tracker',
-      id: '/Finance-App/',
-      start_url: '/Finance-App/',
-      scope: '/Finance-App/',
+      id: '/',
+      start_url: '/',
+      scope: '/',
       theme_color: '#ffffff',
       background_color: '#ffffff',
       display: 'standalone',
       orientation: 'portrait',
       icons: [
         {
-          src: '/Finance-App/icons/icon-192.png',
+          src: '/icons/icon-192.png',
           sizes: '192x192',
           type: 'image/png',
         },
         {
-          src: '/Finance-App/icons/icon-512.png',
+          src: '/icons/icon-512.png',
           sizes: '512x512',
           type: 'image/png',
         },
         {
-          src: '/Finance-App/icons/icon-512-maskable.png',
+          src: '/icons/icon-512-maskable.png',
           sizes: '512x512',
           type: 'image/png',
           purpose: 'maskable',
