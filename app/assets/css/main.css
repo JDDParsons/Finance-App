@@ -25,6 +25,17 @@ html.dark {
   background-color: var(--ui-bg); /* match Nuxt UI dark mode body bg */
 }
 
+/* Safe-area-aware utilities for elements taken out of normal flow.
+   - top-safe-4: use instead of top-4 on position:fixed elements near the top
+   - pt-safe:    use instead of inline padding-top on panels/modals that start flush at the top */
+@utility top-safe-4 {
+  top: calc(env(safe-area-inset-top, 0px) + 1rem);
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
 /* Extend sticky UHeader to cover the status bar area.
    - margin-top cancels the body padding-top so the header sits flush at y=0
    - --ui-header-height grows to include the safe area (box-sizing: border-box, so total height = safe area + 4rem)
