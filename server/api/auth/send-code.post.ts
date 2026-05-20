@@ -27,7 +27,10 @@ export default defineEventHandler(async (event) => {
   })
 
   if (error) {
-    throw createError({ statusCode: 500, message: 'Error sending verification code: ' + error.message })
+    if (error.message.includes('email rate limit exceeded')) {
+      throw createError({ statusCode: 429, message: 'Too many requests. Try again in a little while.' })
+    }
+    throw createError({ statusCode: 500, message: 'Error: ' + error.message + '.' })
   }
 
   return { success: true }

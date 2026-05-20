@@ -1,7 +1,7 @@
 <script setup>
-import { sendMagicLink, validateCode, getSession } from '~/composables/supabase'
+import { sendVerificationCode, validateCode, getSession } from '~/composables/supabase'
 
-useHead({ title: 'Login | R&J Finance' })
+useHead({ title: 'Budgify' })
 
 const toast = useToast();
 const email = ref('');
@@ -19,7 +19,7 @@ onMounted(async () => {
     }
 });
 
-async function handleSendMagicLink() {
+async function handleSendVerificationCode() {
     loading.value = true;
     emailError.value = '';
     try {
@@ -30,7 +30,7 @@ async function handleSendMagicLink() {
             toast.add({ title: 'Invalid email', description: msg, color: 'error' });
             return;
         }
-        const result = await sendMagicLink(email.value);
+        const result = await sendVerificationCode(email.value);
         if (!result.success) {
             emailError.value = result.message;
         }
@@ -79,6 +79,7 @@ async function handleVerificationCode() {
     <div>
         <UMain>
             <UContainer>
+                <UColorModeButton class="absolute top-4 right-4" />
                 <div class="flex flex-col items-center justify-center pt-25 space-y-8">
 
                     <div v-if="codeRequested">
@@ -86,34 +87,34 @@ async function handleVerificationCode() {
                             <h1 class="text-4xl font-bold mb-4">Check your email</h1>
                             <p class="text-lg text-gray-400">Enter the 6-digit code below to sign in.</p>
                         </div>
-                        <UPinInput  v-model="pin" :length="6" color="primary" highlight size="xl" class="mt-4 w-full justify-center" />
+                        <UPinInput  v-model="pin" :length="6" color="primary" highlight size="xl" class="mt-4 w-80 justify-center" />
                     </div>
-                    <div v-else>
-                        <div class="flex justify-center pb-10">
-                            <img src="/BudgifyWithLabel.png" alt="Budgify" class="h-64 w-auto" />
+                    <div v-else class="flex flex-col items-center">
+                        <div class="pb-5">
+                            <img src="/BudgifyWithLabel.png" alt="Budgify" class="h-90" />
                         </div>
-
-                            <UFormField :error="emailError || undefined" class="mb-2">
+                        <div>
+                            <UFormField :error="emailError || undefined" class="mb-2 w-80">
                                 <UInput 
                                     type="email" 
                                     variant="soft" 
                                     size="xl" 
                                     class="w-full"
                                     color="neutral" 
-                                    placeholder="Enter your email..." 
+                                    placeholder="Enter your email" 
                                     v-model="email"
                                     :disabled="loading"
                                 />
                             </UFormField>
                             <UButton 
-                                class="mt-2 w-full" 
+                                class="h-8 w-full bg-linear-to-r from-green-500 to-emerald-600 text-base font-semibold text-white shadow-lg shadow-green-500/30 transition-all duration-200 hover:from-green-600 hover:to-emerald-700 hover:shadow-green-500/50 active:scale-[0.98]" 
                                 color="primary" 
-                                @click="handleSendMagicLink"
+                                @click="handleSendVerificationCode"
                                 :loading="loading"
                             >
                                 Send verification code
-                                </UButton>
-
+                            </UButton>
+                        </div>
                     </div>
                 </div>
             </UContainer>

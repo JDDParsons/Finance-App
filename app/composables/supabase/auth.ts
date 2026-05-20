@@ -1,6 +1,6 @@
 import { getSupabase, setHouseholdId } from './client'
 
-export async function sendMagicLink(email: string): Promise<{ success: boolean; message: string }> {
+export async function sendVerificationCode(email: string): Promise<{ success: boolean; message: string }> {
   try {
     await $fetch('/api/auth/send-code', { method: 'POST', body: { email } })
     return { success: true, message: 'Verification code sent! Please check your email.' }
