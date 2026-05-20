@@ -97,7 +97,7 @@ async function handleVerificationCode() {
                             <img src="/BudgifyWithLabel.png" alt="Budgify" class="h-64 w-auto" />
                         </div>
 
-                            <UFormField :error="emailError" class="text-lg font-semibold mb-4" required>
+                            <UFormField :error="emailError || undefined" class="mb-2">
                                 <UInput 
                                     type="email" 
                                     variant="soft" 
@@ -108,15 +108,15 @@ async function handleVerificationCode() {
                                     v-model="email"
                                     :disabled="loading"
                                 />
-                                <UButton 
-                                    class="mt-4 w-full" 
-                                    color="primary" 
-                                    @click="handleSendMagicLink"
-                                    :loading="loading"
-                                >
-                                    Send verification code
-                                </UButton>
                             </UFormField>
+                            <UButton 
+                                class="mt-2 w-full" 
+                                color="primary" 
+                                @click="handleSendMagicLink"
+                                :loading="loading"
+                            >
+                                Send verification code
+                                </UButton>
 
                     </div>
                 </div>
