@@ -1,4 +1,4 @@
-import { getSession } from '~/composables/supabase'
+import { getSupabase } from '~/composables/supabase/client'
 import { useProfileStore } from '~/stores/profile'
 
 export default defineNuxtRouteMiddleware(async (to) => {
@@ -8,7 +8,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
 
     try {
-        const session = await getSession();
+        const supabase = getSupabase()
+        const { data: { session } } = await supabase.auth.getSession()
         if (!session) {
             if (to.path !== '/') {
                 return navigateTo('/');

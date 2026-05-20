@@ -1,5 +1,6 @@
 <script setup>
-import { sendVerificationCode, validateCode, getSession } from '~/composables/supabase'
+import { validateCode } from '~/composables/supabase'
+import { getSupabase } from '~/composables/supabase/client'
 
 useHead({ title: 'Budgify' })
 
@@ -13,7 +14,8 @@ const codeRequested = ref(false);
 watch(email, () => { emailError.value = ''; });
 
 onMounted(async () => {
-    const session = await getSession();
+    const supabase = getSupabase()
+    const { data: { session } } = await supabase.auth.getSession()
     if (session) {
         await navigateTo('/home');
     }
@@ -30,7 +32,11 @@ async function handleSendVerificationCode() {
             toast.add({ title: 'Invalid email', description: msg, color: 'error' });
             return;
         }
-        const result = await sendVerificationCode(email.value);
+        const result = await $fetch('/api/auth/send-code', {
+            method: 'POST',
+            body: { email: email.value },
+        }).then(() => ({ success: true, message: 'Verification code sent! Please check your email.' }))
+          .catch((err) => ({ success: false, message: err?.data?.message || err?.message || 'Unknown error' }))
         if (!result.success) {
             emailError.value = result.message;
         }

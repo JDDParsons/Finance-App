@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { setTransactionCategory } from '~/composables/supabase'
+import { useTransactionsApi } from '~/composables/api/useTransactionsApi'
 
 interface Category {
   id: string
@@ -12,6 +12,8 @@ const props = defineProps<{
   currentCategoryId: string | null
   categories: Category[]
 }>()
+
+const { setTransactionCategory } = useTransactionsApi()
 
 const currentCategoryId = ref<string | undefined>(props.currentCategoryId || undefined);
 const loading = ref(false)

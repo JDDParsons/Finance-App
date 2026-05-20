@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { getIncomeByMonth, getBudgetHitsByMonth } from '~/composables/supabase'
+import { useHitsApi } from '~/composables/api/useHitsApi'
 import { useFinanceStore } from './finance'
 
 const MONTH_NAMES = [
@@ -20,6 +20,7 @@ function cacheKey(year: number, month: number) {
 
 export const useSavingsStore = defineStore('savings', () => {
   const financeStore = useFinanceStore()
+  const { getIncomeByMonth, getBudgetHitsByMonth } = useHitsApi()
 
   // Fetched data cache keyed by "YYYY-MM" (null = fetched but empty, undefined = not fetched)
   const cache = ref<Record<string, { income: number; expenses: number } | null>>({})

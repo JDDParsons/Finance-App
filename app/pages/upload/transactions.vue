@@ -4,7 +4,8 @@ import type { TableColumn } from '@nuxt/ui'
 import CategoryDropdown from '~/components/upload/CategoryDropdown.vue'
 
 useHead({ title: 'Transactions | R&J Finance' })
-import { getAllTransactionsSorted, getCategories } from '~/composables/supabase'
+import { useTransactionsApi } from '~/composables/api/useTransactionsApi'
+const { getAllTransactionsSorted, getCategories } = useTransactionsApi()
 
 
 

@@ -1,13 +1,9 @@
 import { defineStore } from 'pinia'
-import {
-  getAccounts,
-  createAccount,
-  updateAccount,
-  updateAccountBaseline,
-  deleteAccount,
-} from '~/composables/supabase'
+import { useAccountsApi } from '~/composables/api/useAccountsApi'
 
 export const useAccountsStore = defineStore('accounts', () => {
+  const { getAccounts, createAccount, updateAccount, updateAccountBaseline, deleteAccount } = useAccountsApi()
+
   const accounts = ref<any[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)

@@ -1,16 +1,20 @@
 import { defineStore } from 'pinia'
-import {
-  getBudgetsByMonth, getBudgetHitsByMonth, getIncomeByMonth,
-  getAvailableBudgetMonths,
-  insertIncome, deleteIncome,
-  createBudgetHit, deleteBudgetHit, updateBudgetHit,
-  createBudget,
-  getUserProfiles
-} from '~/composables/supabase'
+import { useBudgetsApi } from '~/composables/api/useBudgetsApi'
+import { useHitsApi } from '~/composables/api/useHitsApi'
 import { useAccountsStore } from './accounts'
 
 export const useFinanceStore = defineStore('finance', () => {
   const accountsStore = useAccountsStore()
+  const {
+    getBudgetsByMonth, getAvailableBudgetMonths,
+    createBudget,
+  } = useBudgetsApi()
+  const {
+    getBudgetHitsByMonth, getIncomeByMonth,
+    insertIncome, deleteIncome,
+    createBudgetHit, deleteBudgetHit, updateBudgetHit,
+    getUserProfiles,
+  } = useHitsApi()
 
   const _now = new Date()
   const selectedMonth = ref({ year: _now.getFullYear(), month: _now.getMonth() + 1 })

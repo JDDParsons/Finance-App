@@ -1,14 +1,14 @@
-import { getSupabase } from './client'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
-function getClient() {
-  return getSupabase().schema('finance-app')
+function getClient(supabase: SupabaseClient) {
+  return supabase.schema('finance-app')
 }
 
-async function attachLatestCategory(transactions: any[]) {
+async function attachLatestCategory(supabase: SupabaseClient, transactions: any[]) {
   if (transactions.length === 0) return transactions
 
   const ids = transactions.map(t => t.id)
-  const { data: txCats, error } = await getClient()
+  const { data: txCats, error } = await getClient(supabase)
     .from('Transaction_Category')
     .select('transaction_id, category_id, created_at')
     .in('transaction_id', ids)
@@ -26,8 +26,8 @@ async function attachLatestCategory(transactions: any[]) {
   return transactions.map(t => ({ ...t, currentCategoryId: latestMap.get(t.id) || null }))
 }
 
-export async function getCategories() {
-  const { data, error } = await getClient()
+export async function getCategories(supabase: SupabaseClient) {
+  const { data, error } = await getClient(supabase)
     .from('Category')
     .select('id, label')
     .order('label', { ascending: true })
@@ -36,21 +36,21 @@ export async function getCategories() {
   return (data || []).map((c: any) => ({ id: c.id, label: c.label }))
 }
 
-export async function getAllTransactionsSorted() {
-  const { data, error } = await getClient()
+export async function getAllTransactionsSorted(supabase: SupabaseClient) {
+  const { data, error } = await getClient(supabase)
     .from('Transaction')
     .select('*')
     .order('transaction_date', { ascending: false })
 
   if (error) throw error
-  return attachLatestCategory(data || [])
+  return attachLatestCategory(supabase, data || [])
 }
 
-export async function getTransactionsByMonth(year: number, month: number) {
+export async function getTransactionsByMonth(supabase: SupabaseClient, year: number, month: number) {
   const startDate = new Date(year, month - 1, 1).toISOString()
   const endDate = new Date(year, month, 1).toISOString()
 
-  const { data, error } = await getClient()
+  const { data, error } = await getClient(supabase)
     .from('Transaction')
     .select('*')
     .gte('transaction_date', startDate)
@@ -58,13 +58,17 @@ export async function getTransactionsByMonth(year: number, month: number) {
     .order('transaction_date', { ascending: false })
 
   if (error) throw error
-  return attachLatestCategory(data || [])
+  return attachLatestCategory(supabase, data || [])
 }
 
-export async function setTransactionCategory(transactionId: string, categoryId: string) {
-  if (!transactionId || !categoryId) throw new Error('Missing transactionId or categoryId')
+export async function setTransactionCategory(
+  supabase: SupabaseClient,
+  transactionId: string,
+  categoryId: string
+) {
+  if (!transactionId || !categoryId) throw createError({ statusCode: 400, message: 'Missing transactionId or categoryId' })
 
-  const { data: existing, error: selErr } = await getClient()
+  const { data: existing, error: selErr } = await getClient(supabase)
     .from('Transaction_Category')
     .select('*')
     .eq('transaction_id', transactionId)
@@ -73,7 +77,7 @@ export async function setTransactionCategory(transactionId: string, categoryId: 
   if (selErr) throw selErr
 
   if (existing) {
-    const { data, error } = await getClient()
+    const { data, error } = await getClient(supabase)
       .from('Transaction_Category')
       .update({ category_id: categoryId } as any)
       .eq('id', existing.id)
@@ -83,7 +87,7 @@ export async function setTransactionCategory(transactionId: string, categoryId: 
     return data
   }
 
-  const { data, error } = await getClient()
+  const { data, error } = await getClient(supabase)
     .from('Transaction_Category')
     .insert({ transaction_id: transactionId, category_id: categoryId } as any)
     .select()
@@ -93,6 +97,7 @@ export async function setTransactionCategory(transactionId: string, categoryId: 
 }
 
 export async function upsertTransactions(
+  supabase: SupabaseClient,
   transactions: Array<{
     id: string
     group: string | null
@@ -101,9 +106,10 @@ export async function upsertTransactions(
     description: string
     transaction_date: Date | string
     user_id: string | null | undefined
+    household_id: string | null | undefined
   }>
 ) {
-  const { count, error } = await getTransactionClient()
+  const { count, error } = await getClient(supabase)
     .from('Transaction')
     .upsert(transactions as any, { onConflict: 'id', count: 'exact' })
 
@@ -111,8 +117,8 @@ export async function upsertTransactions(
   return { count }
 }
 
-export async function deleteTransactionsByGroup(group: string) {
-  const { error } = await getTransactionClient()
+export async function deleteTransactionsByGroup(supabase: SupabaseClient, group: string) {
+  const { error } = await getClient(supabase)
     .from('Transaction')
     .delete()
     .eq('group', group)
