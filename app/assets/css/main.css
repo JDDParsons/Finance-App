@@ -22,7 +22,7 @@ html {
 }
 
 html.dark {
-  background-color: #030712; /* gray-950 */
+  background-color: var(--ui-bg); /* match Nuxt UI dark mode body bg */
 }
 
 /* Extend sticky UHeader to cover the status bar area.
