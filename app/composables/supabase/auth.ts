@@ -1,5 +1,12 @@
 import { getSupabase, setHouseholdId } from './client'
 
+export async function isAuthorizedEmail(email: string): Promise<boolean> {
+  const supabase = getSupabase()
+  const { data, error } = await supabase.rpc('is_authorized_email', { email_to_check: email })
+  if (error) throw new Error(error.message)
+  return data === true
+}
+
 export async function sendMagicLink(email: string): Promise<{ success: boolean; message: string }> {
   try {
     if (!email) {
@@ -15,10 +22,10 @@ export async function sendMagicLink(email: string): Promise<{ success: boolean; 
     })
 
     if (error) {
-      return { success: false, message: 'Error sending magic link: ' + error.message }
+      return { success: false, message: 'Error sending verification code: ' + error.message }
     }
 
-    return { success: true, message: 'Magic link sent! Please check your email.' }
+    return { success: true, message: 'Verification code sent! Please check your email.' }
   } catch (err: any) {
     return { success: false, message: 'Error: ' + (err?.message || 'Unknown error') }
   }

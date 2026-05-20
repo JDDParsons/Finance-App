@@ -1,8 +1,9 @@
 <script setup>
-import { sendMagicLink, validateCode, getSession} from '~/composables/supabase'
+import { sendMagicLink, validateCode, getSession, isAuthorizedEmail } from '~/composables/supabase'
 
 useHead({ title: 'Login | R&J Finance' })
 
+const toast = useToast();
 const email = ref('');
 const loading = ref(false);
 const pin = ref('');
@@ -18,8 +19,21 @@ onMounted(async () => {
 async function handleSendMagicLink() {
     loading.value = true;
     try {
+        const authorized = await isAuthorizedEmail(email.value);
+        if (!authorized) {
+            toast.add({
+                title: 'Access denied',
+                description: 'This email is not authorized to access Budgify.',
+                color: 'error',
+            });
+            return;
+        }
         const result = await sendMagicLink(email.value);
-        alert(result.message);
+        toast.add({
+            title: result.success ? 'Email sent' : 'Error',
+            description: result.message,
+            color: result.success ? 'success' : 'error',
+        });
         if (result.success) {
             codeRequested.value = true;
         }
@@ -45,7 +59,11 @@ async function handleVerificationCode() {
         await navigateTo('/home');
     }
     else if (result.error) {
-        alert(result.error.message);
+        toast.add({
+            title: 'Invalid code',
+            description: result.error.message,
+            color: 'error',
+        });
         pin.value = '';
         codeRequested.value = false;
     }
@@ -66,11 +84,10 @@ async function handleVerificationCode() {
                         <UPinInput  v-model="pin" :length="6" color="primary" highlight size="xl" class="mt-4 w-full justify-center" />
                     </div>
                     <div v-else>
-                        <div class="text-center pb-10">
-                            <h1 class="text-4xl font-bold mb-4">Welcome!</h1>
-                            <p class="text-lg text-gray-400">Enter your email to get started.</p>
+                        <div class="flex justify-center pb-10">
+                            <img src="/BudgifyWithLabel.png" alt="Budgify" class="h-64 w-auto" />
                         </div>
-                        <UCard class="w-full max-w-md p-8">
+
                             <UFormField description="" class="text-lg font-semibold mb-4" required>
                                 <UInput 
                                     type="email" 
@@ -91,7 +108,7 @@ async function handleVerificationCode() {
                                     Send verification code
                                 </UButton>
                             </UFormField>
-                        </UCard>
+
                     </div>
                 </div>
             </UContainer>
