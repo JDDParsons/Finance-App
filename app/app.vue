@@ -35,13 +35,15 @@ onMounted(async () => {
     <Transition leave-active-class="transition-opacity duration-500 ease-in-out" leave-to-class="opacity-0">
       <div
         v-if="isLoading"
-        class="fixed inset-0 z-100 flex flex-col items-center pt-25 bg-linear-to-b from-green-500 to-emerald-600"
+        class="fixed inset-0 z-100 flex flex-col items-center pt-safe bg-linear-to-b from-green-500 to-emerald-600"
       >
-        <img
-          :src="`${runtimeConfig.app.baseURL}BudgifyWithLabel.png`"
-          alt="Budgify"
-          class="h-90 brightness-0 invert"
-        />
+        <div class="pt-25">
+          <img
+            :src="`${runtimeConfig.app.baseURL}BudgifyWithLabel.png`"
+            alt="Budgify"
+            class="h-90 brightness-0 invert"
+          />
+        </div>
       </div>
     </Transition>
 
