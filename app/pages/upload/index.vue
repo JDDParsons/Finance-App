@@ -1,9 +1,10 @@
 <script setup>
 
-import { uploadFile } from '~/composables/supabase'
+import { useUploadApi } from '~/composables/api/useUploadApi'
 
 useHead({ title: 'Upload | R&J Finance' })
 
+const { uploadFile } = useUploadApi()
 const toast = useToast();
 const fileInput = ref(null);
 const fileUploaded = ref(false);

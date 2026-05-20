@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getBudgetHitsByBudgetId, deleteBudgetHit } from '~/composables/supabase'
+import { useHitsApi } from '~/composables/api/useHitsApi'
 import { useFinanceStore } from '~/stores/finance'
 
 const props = defineProps<{
@@ -10,6 +10,7 @@ const props = defineProps<{
 }>()
 
 const store = useFinanceStore()
+const { deleteBudgetHit } = useHitsApi()
 
 const accountMap = computed(() =>
     new Map<string, string>(store.accounts.map((a: any) => [a.id, a.name || a.institution || 'Account']))

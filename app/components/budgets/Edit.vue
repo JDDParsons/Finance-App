@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { updateBudget, deleteBudget } from '~/composables/supabase'
+import { useBudgetsApi } from '~/composables/api/useBudgetsApi'
 
 const props = defineProps<{
     budgetId: string
@@ -17,6 +17,7 @@ const emit = defineEmits<{
 }>()
 
 const store = useFinanceStore()
+const { updateBudget, deleteBudget } = useBudgetsApi()
 
 const name = ref(props.budgetName ?? '')
 const amount = ref(props.budgetAmount ?? 0)

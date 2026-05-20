@@ -1,11 +1,11 @@
-import { getSupabase, resolveHouseholdId, getCachedHouseholdId } from './client'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
-function getClient() {
-  return getSupabase().schema('finance-app')
+function getClient(supabase: SupabaseClient) {
+  return supabase.schema('finance-app')
 }
 
-async function getLatestAccountValueRecord(accountId: string) {
-  const { data, error } = await getClient()
+async function getLatestAccountValueRecord(supabase: SupabaseClient, accountId: string) {
+  const { data, error } = await getClient(supabase)
     .from('Account_Value')
     .select('id, created_at, baseline_amount, cumulative_amount, account_id, user_id')
     .eq('account_id', accountId)
@@ -16,11 +16,11 @@ async function getLatestAccountValueRecord(accountId: string) {
   return data?.[0] ?? null
 }
 
-async function getLatestAccountValueMap(accountIds: string[]) {
+async function getLatestAccountValueMap(supabase: SupabaseClient, accountIds: string[]) {
   const uniqueAccountIds = [...new Set(accountIds.filter(Boolean))]
   if (uniqueAccountIds.length === 0) return new Map<string, any>()
 
-  const { data, error } = await getClient()
+  const { data, error } = await getClient(supabase)
     .from('Account_Value')
     .select('id, created_at, baseline_amount, cumulative_amount, account_id, user_id')
     .in('account_id', uniqueAccountIds)
@@ -39,21 +39,23 @@ async function getLatestAccountValueMap(accountIds: string[]) {
 }
 
 async function saveAccountValue(
+  supabase: SupabaseClient,
   accountId: string,
   baselineAmount: number | null,
   cumulativeAmount: number | null,
-  userId: string | null | undefined
+  userId: string | null | undefined,
+  householdId: string | null
 ) {
-  const existing = await getLatestAccountValueRecord(accountId)
+  const existing = await getLatestAccountValueRecord(supabase, accountId)
 
   if (existing) {
-    const { data, error } = await getClient()
+    const { data, error } = await getClient(supabase)
       .from('Account_Value')
       .update({
         baseline_amount: baselineAmount,
         cumulative_amount: cumulativeAmount,
         user_id: existing.user_id ?? userId ?? null,
-        household_id: getCachedHouseholdId() ?? null,
+        household_id: householdId,
       })
       .eq('id', existing.id)
       .select()
@@ -63,14 +65,14 @@ async function saveAccountValue(
     return data
   }
 
-  const { data, error } = await getClient()
+  const { data, error } = await getClient(supabase)
     .from('Account_Value')
     .insert({
       account_id: accountId,
       baseline_amount: baselineAmount,
       cumulative_amount: cumulativeAmount,
       user_id: userId ?? null,
-      household_id: getCachedHouseholdId() ?? null,
+      household_id: householdId,
     })
     .select()
     .single()
@@ -79,15 +81,15 @@ async function saveAccountValue(
   return data
 }
 
-export async function getAccounts() {
-  const { data, error } = await getClient()
+export async function getAccounts(supabase: SupabaseClient) {
+  const { data, error } = await getClient(supabase)
     .from('Account')
     .select('*')
     .order('created_at', { ascending: false })
   if (error) throw error
 
   const accounts = data || []
-  const accountValues = await getLatestAccountValueMap(accounts.map((a: any) => a.id))
+  const accountValues = await getLatestAccountValueMap(supabase, accounts.map((a: any) => a.id))
 
   return accounts.map((account: any) => {
     const accountValue = accountValues.get(account.id)
@@ -100,6 +102,9 @@ export async function getAccounts() {
 }
 
 export async function createAccount(
+  supabase: SupabaseClient,
+  userId: string,
+  householdId: string,
   name: string,
   institution: string,
   baselineAmount: string,
@@ -108,11 +113,8 @@ export async function createAccount(
   isDefaultForExpenses: boolean,
   isDefaultForIncome: boolean
 ) {
-  const supabase = getSupabase()
-  const { data: auth } = await supabase.auth.getSession()
-  const householdId = await resolveHouseholdId()
   const parsed = baselineAmount ? parseFloat(baselineAmount) : null
-  const { data, error } = await getClient()
+  const { data, error } = await getClient(supabase)
     .from('Account')
     .insert({
       name: name || null,
@@ -121,14 +123,14 @@ export async function createAccount(
       is_credit_card: isCreditCard,
       is_default_for_expenses: isDefaultForExpenses,
       is_default_for_income: isDefaultForIncome,
-      user_id: auth.session?.user?.id,
-      household_id: householdId
+      user_id: userId,
+      household_id: householdId,
     })
     .select()
     .single()
   if (error) throw error
 
-  await saveAccountValue(data.id, parsed, parsed, auth.session?.user?.id)
+  await saveAccountValue(supabase, data.id, parsed, parsed, userId, householdId)
 
   return {
     ...data,
@@ -138,6 +140,7 @@ export async function createAccount(
 }
 
 export async function updateAccount(
+  supabase: SupabaseClient,
   id: string,
   name: string,
   institution: string,
@@ -146,7 +149,7 @@ export async function updateAccount(
   isDefaultForExpenses: boolean,
   isDefaultForIncome: boolean
 ) {
-  const { data, error } = await getClient()
+  const { data, error } = await getClient(supabase)
     .from('Account')
     .update({
       name: name || null,
@@ -161,7 +164,7 @@ export async function updateAccount(
     .single()
   if (error) throw error
 
-  const accountValue = await getLatestAccountValueRecord(id)
+  const accountValue = await getLatestAccountValueRecord(supabase, id)
 
   return {
     ...data,
@@ -170,12 +173,15 @@ export async function updateAccount(
   }
 }
 
-export async function updateAccountBaseline(id: string, baselineAmount: string) {
-  const supabase = getSupabase()
-  const { data: auth } = await supabase.auth.getSession()
+export async function updateAccountBaseline(
+  supabase: SupabaseClient,
+  userId: string,
+  householdId: string,
+  id: string,
+  baselineAmount: string
+) {
   const parsed = baselineAmount ? parseFloat(baselineAmount) : null
-
-  const data = await saveAccountValue(id, parsed, parsed, auth.session?.user?.id)
+  const data = await saveAccountValue(supabase, id, parsed, parsed, userId, householdId)
 
   return {
     baseline_amount: data?.baseline_amount ?? parsed,
@@ -183,14 +189,14 @@ export async function updateAccountBaseline(id: string, baselineAmount: string) 
   }
 }
 
-export async function deleteAccount(id: string) {
-  const { error: accountValueError } = await getClient()
+export async function deleteAccount(supabase: SupabaseClient, id: string) {
+  const { error: accountValueError } = await getClient(supabase)
     .from('Account_Value')
     .delete()
     .eq('account_id', id)
   if (accountValueError) throw accountValueError
 
-  const { error } = await getClient()
+  const { error } = await getClient(supabase)
     .from('Account')
     .delete()
     .eq('id', id)

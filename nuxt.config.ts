@@ -61,11 +61,11 @@ export default defineNuxtConfig({
       globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
       runtimeCaching: [
         {
-          // Supabase API — network first, fallback to last cached response
-          urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+          // Nuxt server API — network first, fallback to last cached response
+          urlPattern: /\/api\/.*/i,
           handler: 'NetworkFirst' as const,
           options: {
-            cacheName: 'supabase-api',
+            cacheName: 'nuxt-api',
             expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
             networkTimeoutSeconds: 10,
           },
@@ -81,5 +81,10 @@ export default defineNuxtConfig({
       isCI: !!process.env.CI,
       isMobile: process.env.NUXT_PUBLIC_IS_MOBILE === 'true',
     },
-  }
+  },
+  nitro: {
+    rollupConfig: {
+      external: ['papaparse'],
+    },
+  },
 })

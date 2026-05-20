@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import { getSupabase, setHouseholdId } from '~/composables/supabase'
+import { getSupabase } from '~/composables/supabase/client'
+import { useProfileApi } from '~/composables/api/useProfileApi'
 
 export interface UserProfile {
   id: string
@@ -19,26 +20,17 @@ export const useProfileStore = defineStore('profile', () => {
 
   async function init() {
     const supabase = getSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Not authenticated')
 
-    const { data, error } = await supabase
-      .from('Profile')
-      .select('*')
-      .eq('user_id', user.id)
-      .single()
-
-    if (error || !data) throw new Error('No profile found for user')
-
+    const { getProfile } = useProfileApi()
+    const data = await getProfile()
+    if (!data) throw new Error('No profile found for user')
     profile.value = data as UserProfile
-
-    // Keep householdId cache in sync for composables that use resolveHouseholdId
-    if (data.household_id) setHouseholdId(data.household_id)
   }
 
   function clear() {
     profile.value = null
-    setHouseholdId(null)
   }
 
   return { profile, isReady, householdId, init, clear }
