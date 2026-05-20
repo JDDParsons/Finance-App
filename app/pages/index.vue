@@ -1,5 +1,5 @@
 <script setup>
-import { sendMagicLink, validateCode, getSession, isAuthorizedEmail } from '~/composables/supabase'
+import { sendMagicLink, validateCode, getSession } from '~/composables/supabase'
 
 useHead({ title: 'Login | R&J Finance' })
 
@@ -28,17 +28,6 @@ async function handleSendMagicLink() {
             const msg = 'Please enter a valid email address.';
             emailError.value = msg;
             toast.add({ title: 'Invalid email', description: msg, color: 'error' });
-            return;
-        }
-        const authorized = await isAuthorizedEmail(email.value);
-        if (!authorized) {
-            const msg = 'This email is not authorized to access Budgify.';
-            emailError.value = msg;
-            toast.add({
-                title: 'Access denied',
-                description: msg,
-                color: 'error',
-            });
             return;
         }
         const result = await sendMagicLink(email.value);

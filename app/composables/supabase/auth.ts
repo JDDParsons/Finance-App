@@ -1,33 +1,12 @@
 import { getSupabase, setHouseholdId } from './client'
 
-export async function isAuthorizedEmail(email: string): Promise<boolean> {
-  const supabase = getSupabase()
-  const { data, error } = await supabase.rpc('is_authorized_email', { email_to_check: email })
-  if (error) throw new Error(error.message)
-  return data === true
-}
-
 export async function sendMagicLink(email: string): Promise<{ success: boolean; message: string }> {
   try {
-    if (!email) {
-      return { success: false, message: 'Please enter a valid email address.' }
-    }
-
-    const supabase = getSupabase()
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: typeof window !== 'undefined' ? window.location.href : ''
-      }
-    })
-
-    if (error) {
-      return { success: false, message: 'Error sending verification code: ' + error.message }
-    }
-
+    await $fetch('/api/auth/send-code', { method: 'POST', body: { email } })
     return { success: true, message: 'Verification code sent! Please check your email.' }
   } catch (err: any) {
-    return { success: false, message: 'Error: ' + (err?.message || 'Unknown error') }
+    const message = err?.data?.message || err?.message || 'Unknown error'
+    return { success: false, message }
   }
 }
 
