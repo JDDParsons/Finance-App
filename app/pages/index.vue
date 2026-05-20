@@ -23,6 +23,13 @@ async function handleSendMagicLink() {
     loading.value = true;
     emailError.value = '';
     try {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email.value || !emailRegex.test(email.value)) {
+            const msg = 'Please enter a valid email address.';
+            emailError.value = msg;
+            toast.add({ title: 'Invalid email', description: msg, color: 'error' });
+            return;
+        }
         const authorized = await isAuthorizedEmail(email.value);
         if (!authorized) {
             const msg = 'This email is not authorized to access Budgify.';
