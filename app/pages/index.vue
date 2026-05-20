@@ -5,9 +5,12 @@ useHead({ title: 'Login | R&J Finance' })
 
 const toast = useToast();
 const email = ref('');
+const emailError = ref('');
 const loading = ref(false);
 const pin = ref('');
 const codeRequested = ref(false);
+
+watch(email, () => { emailError.value = ''; });
 
 onMounted(async () => {
     const session = await getSession();
@@ -18,17 +21,23 @@ onMounted(async () => {
 
 async function handleSendMagicLink() {
     loading.value = true;
+    emailError.value = '';
     try {
         const authorized = await isAuthorizedEmail(email.value);
         if (!authorized) {
+            const msg = 'This email is not authorized to access Budgify.';
+            emailError.value = msg;
             toast.add({
                 title: 'Access denied',
-                description: 'This email is not authorized to access Budgify.',
+                description: msg,
                 color: 'error',
             });
             return;
         }
         const result = await sendMagicLink(email.value);
+        if (!result.success) {
+            emailError.value = result.message;
+        }
         toast.add({
             title: result.success ? 'Email sent' : 'Error',
             description: result.message,
@@ -88,7 +97,7 @@ async function handleVerificationCode() {
                             <img src="/BudgifyWithLabel.png" alt="Budgify" class="h-64 w-auto" />
                         </div>
 
-                            <UFormField description="" class="text-lg font-semibold mb-4" required>
+                            <UFormField :error="emailError" class="text-lg font-semibold mb-4" required>
                                 <UInput 
                                     type="email" 
                                     variant="soft" 
