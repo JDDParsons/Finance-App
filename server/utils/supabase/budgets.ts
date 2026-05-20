@@ -26,6 +26,8 @@ export async function createBudget(
     .select()
     .single()
 
+  if (error) throw error
+
   const now = new Date()
   const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
   const year = firstDay.getFullYear()
@@ -35,7 +37,7 @@ export async function createBudget(
   const { data: periodData, error: periodError } = await getClient(supabase)
     .from('Budget_Period')
     .insert({
-      budget_id: data?.id,
+      budget_id: data.id,
       date: result,
       amount: parseFloat(amount),
       user_id: userId,
@@ -45,7 +47,6 @@ export async function createBudget(
     .single()
 
   if (periodError) throw periodError
-  if (error) throw error
 
   return { data, periodData }
 }
@@ -197,6 +198,8 @@ export async function updateBudget(
     .select()
     .single()
 
+  if (error) throw error
+
   const targetYear = year ?? new Date().getFullYear()
   const targetMonth = month ?? (new Date().getMonth() + 1)
   const formattedDate = `${targetYear}-${String(targetMonth).padStart(2, '0')}-01`
@@ -210,7 +213,6 @@ export async function updateBudget(
     .single()
 
   if (periodError) throw periodError
-  if (error) throw error
   return { data, periodData }
 }
 
