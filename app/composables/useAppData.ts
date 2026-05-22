@@ -3,17 +3,15 @@ import { useAccountsStore } from '~/stores/accounts'
 import { useFinanceStore } from '~/stores/finance'
 import { useSavingsStore } from '~/stores/savings'
 
-// Module-level singletons persist across component remounts within a session
-const isReady = ref(false)
-const isLoading = ref(false)
-let pollingTimer: ReturnType<typeof setInterval> | null = null
-let visibilityHandler: (() => void) | null = null
-
 export function useAppData() {
   const profileStore = useProfileStore()
   const accountsStore = useAccountsStore()
   const financeStore = useFinanceStore()
   const savingsStore = useSavingsStore()
+  const isReady = useState('app-data-is-ready', () => false)
+  const isLoading = useState('app-data-is-loading', () => false)
+  let pollingTimer: ReturnType<typeof setInterval> | null = null
+  let visibilityHandler: (() => void) | null = null
 
   /** Initial load — runs all stores in parallel, keeps splash visible until complete. */
   async function load() {
