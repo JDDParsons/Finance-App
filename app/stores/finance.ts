@@ -60,7 +60,7 @@ export const useFinanceStore = defineStore('finance', () => {
 
   // ── fetch ─────────────────────────────────────────────────────────────────
 
-  /** @param silent When true, skips setting loading/refreshing flags (used by background polling). */
+  /** @param silent When true, skips setting loading/refreshing flags on this store and any dependent store fetches. */
   async function fetchAll(silent = false) {
     try {
       if (!silent) {
@@ -80,7 +80,7 @@ export const useFinanceStore = defineStore('finance', () => {
         getBudgetHitsByMonth(prevYear, prevMonth),
         getIncomeByMonth(year, month),
         getAvailableBudgetMonths(),
-        accountsStore.ensureLoaded()
+        accountsStore.fetchAccounts(false, silent),
       ])
       availableMonths.value = avail
       budgetHits.value = hits

@@ -30,12 +30,12 @@ export function useAppData() {
     }
   }
 
-  /** Silent background re-fetch — sets no loading/refreshing flags. */
+  /** Silent background re-fetch — no loading/refreshing flags are set on any store. */
   async function refresh() {
     await Promise.all([
-      accountsStore.fetchAccounts(true),
+      accountsStore.fetchAccounts(true, true),
       financeStore.fetchAll(true),
-      savingsStore.fetchAll(true),
+      savingsStore.fetchAll(true, true),
     ])
   }
 
