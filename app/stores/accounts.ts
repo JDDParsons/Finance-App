@@ -9,10 +9,10 @@ export const useAccountsStore = defineStore('accounts', () => {
   const error = ref<string | null>(null)
   const initialized = ref(false)
 
-  async function fetchAccounts(force = false) {
+  async function fetchAccounts(force = false, silent = false) {
     if (initialized.value && !force) return
 
-    loading.value = true
+    if (!silent) loading.value = true
     error.value = null
     try {
       accounts.value = await getAccounts()
@@ -21,7 +21,7 @@ export const useAccountsStore = defineStore('accounts', () => {
       error.value = e?.message || 'Failed to load accounts.'
       throw e
     } finally {
-      loading.value = false
+      if (!silent) loading.value = false
     }
   }
 

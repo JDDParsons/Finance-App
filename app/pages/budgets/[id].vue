@@ -7,8 +7,6 @@ const store = useFinanceStore()
 
 const budgetId = route.params.id as string
 
-await store.ensureLoaded()
-
 const budget = computed(() => store.budgets.find((b: any) => b.id === budgetId))
 
 useHead(computed(() => ({ title: budget.value ? `${budget.value.name} | R&J Finance` : 'Budget | R&J Finance' })))

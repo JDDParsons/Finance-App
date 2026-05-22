@@ -92,11 +92,11 @@ export const useSavingsStore = defineStore('savings', () => {
     months.value.reduce((sum, m) => sum + (m.hasData ? m.savings : 0), 0)
   )
 
-  async function fetchMonth(year: number, month: number, force = false) {
+  async function fetchMonth(year: number, month: number, force = false, silent = false) {
     const key = cacheKey(year, month)
     if (!force && cache.value[key] !== undefined) return
 
-    loadingKeys.value = new Set([...loadingKeys.value, key])
+    if (!silent) loadingKeys.value = new Set([...loadingKeys.value, key])
     try {
       const [incomeRows, expenseRows] = await Promise.all([
         getIncomeByMonth(year, month),
@@ -109,16 +109,18 @@ export const useSavingsStore = defineStore('savings', () => {
       error.value = e?.message || 'Failed to load savings data.'
       cache.value = { ...cache.value, [key]: null }
     } finally {
-      const next = new Set(loadingKeys.value)
-      next.delete(key)
-      loadingKeys.value = next
+      if (!silent) {
+        const next = new Set(loadingKeys.value)
+        next.delete(key)
+        loadingKeys.value = next
+      }
     }
   }
 
-  async function fetchAll(force = false) {
+  async function fetchAll(force = false, silent = false) {
     // Fetch all non-current months in the trailing window in parallel
     const toFetch = trailingMonths.value.slice(1)
-    await Promise.all(toFetch.map(({ year, month }) => fetchMonth(year, month, force)))
+    await Promise.all(toFetch.map(({ year, month }) => fetchMonth(year, month, force, silent)))
     initialized.value = true
   }
 

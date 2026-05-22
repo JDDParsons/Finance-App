@@ -10,7 +10,6 @@ const router = useRouter()
 const { monthTitle } = useSelectedMonthTitle()
 const searchText = ref('')
 
-onMounted(() => { store.ensureLoaded() })
 const displayBudgets = ref<any[]>([])
 const loading = computed(() => store.loading)
 const error = computed(() => store.error)

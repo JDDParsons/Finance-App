@@ -9,7 +9,6 @@ const store = useFinanceStore()
 const { show: showOverlay } = useSuccessOverlay()
 const { monthTitle } = useSelectedMonthTitle()
 
-onMounted(() => { store.ensureLoaded() })
 
 // Note suggestions for expense form
 const expenseNoteSuggestions = computed((): string[] => {

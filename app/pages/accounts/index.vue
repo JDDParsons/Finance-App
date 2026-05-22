@@ -66,10 +66,6 @@ const accountMenuItems = [[
   }
 ]]
 
-onMounted(() => {
-  accountsStore.ensureLoaded()
-})
-
 // --- Create ---
 function openCreate() {
   createName.value = ''

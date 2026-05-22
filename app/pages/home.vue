@@ -19,10 +19,7 @@ const { budgetIcon } = useBudgetIcon()
 const { monthTitle } = useSelectedMonthTitle()
 const UNCATEGORIZED_ICON = 'heroicons:question-mark-circle-solid'
 
-onMounted(async () => {
-  await store.ensureLoaded()
-  await savingsStore.ensureLoaded()
-  await accountsStore.ensureLoaded()
+onMounted(() => {
   resolveChartColors()
 })
 

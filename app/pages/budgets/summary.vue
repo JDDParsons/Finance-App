@@ -3,7 +3,6 @@ useHead({ title: 'Budget Summary | R&J Finance' })
 
 const store = useFinanceStore()
 
-onMounted(() => { store.ensureLoaded() })
 </script>
 
 <template>
