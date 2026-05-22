@@ -40,6 +40,24 @@ html.dark.app-loaded {
   background-image: none;
 }
 
+/* CSS-only pre-splash overlay: a fixed full-viewport green gradient that appears
+   before Vue has a chance to render. position:fixed + inset:0 guarantees it covers
+   the entire viewport (including iOS safe areas) regardless of html/body content height —
+   avoiding the tiling issue that occurs when html height is 0 before Vue mounts.
+   Removed by app.vue adding .app-loaded to <html> once data has loaded. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(to bottom, #22c55e, #059669);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+html.app-loaded body::before {
+  display: none;
+}
+
 /* Safe-area-aware utilities for elements taken out of normal flow.
    - top-safe-4: use instead of top-4 on position:fixed elements near the top
    - pt-safe:    use instead of inline padding-top on panels/modals that start flush at the top */
