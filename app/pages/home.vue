@@ -5,7 +5,7 @@ import { useStatusMessage } from '~/composables/useStatusMessage'
 // import MonthlyExpensesChart from '~/components/home/MonthlyExpensesChart.vue'
 import CumulativeSpendingChart from '~/components/home/CumulativeSpendingChart.vue'
 import DailySpendingRatioChart from '~/components/home/DailySpendingRatioChart.vue'
-import DailyStatsGrid from '~/components/home/DailyStatsGrid.vue'
+import SpendingDonutRow from '~/components/home/SpendingDonutRow.vue'
 
 useHead({ title: 'Home | R&J Finance' })
 import { Doughnut } from 'vue-chartjs'
@@ -288,9 +288,9 @@ const chartOptions = {
                     </div>
                 </div>
 
-                <!-- Right: daily stats grid (2/4) -->
+                <!-- Right: spending donut row (2/4) -->
                 <div class="w-full self-center md:col-span-2">
-                    <DailyStatsGrid />
+                    <SpendingDonutRow />
                 </div>
             </div>
         </div>

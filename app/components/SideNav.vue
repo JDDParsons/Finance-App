@@ -23,10 +23,10 @@
         @mousedown="isPressing = true"
         @mouseup="isPressing = false"
         @mouseleave="isPressing = false"
-        aria-label="Add expense"
+        aria-label="Add transaction"
       >
         <UIcon name="fa-solid:plus" class="size-4" />
-        Add Expense
+        Add Transaction
       </button>
     </div>
   </nav>

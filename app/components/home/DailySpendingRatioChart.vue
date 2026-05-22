@@ -141,27 +141,27 @@ const chartOptions = computed(() => ({
 
 <template>
   <div>
-    <h2 class="text-sm text-center pb-2">Daily Spending vs. Avg Income</h2>
+    <h2 class="text-sm text-center pb-2">See which days you overspent:</h2>
 
     <USkeleton v-if="store.loading" class="w-full rounded-lg opacity-40" style="height: 205px;" />
 
     <template v-else>
+      <div class="h-44 lg:h-[264px]">
+        <Bar ref="barChart" :data="chartData" :options="chartOptions" />
+      </div>
       <div class="flex items-center justify-between gap-3 mb-3">
         <div class="flex items-center gap-4 text-xs text-muted">
           <span class="flex items-center gap-1.5">
             <span class="inline-block w-3 h-3 rounded-sm bg-green-500 opacity-70"></span>
-            ≤ 100% of daily avg
+            Normal spending
           </span>
           <span class="flex items-center gap-1.5">
             <span class="inline-block w-3 h-3 rounded-sm bg-amber-400 opacity-80"></span>
-            &gt; 100% of daily avg
+            Overspending
           </span>
         </div>
       </div>
 
-      <div class="h-44 lg:h-[264px]">
-        <Bar ref="barChart" :data="chartData" :options="chartOptions" />
-      </div>
     </template>
   </div>
 </template>

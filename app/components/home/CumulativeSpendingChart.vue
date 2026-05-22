@@ -36,15 +36,6 @@ const daysInMonth = computed(() => {
   return new Date(year, month, 0).getDate()
 })
 
-const totalIncome = computed(() =>
-  store.income.reduce((sum: number, i: any) => sum + (Number(i.amount) || 0), 0)
-)
-
-// Daily budget = income spread evenly over the month
-const dailyBudget = computed(() =>
-  daysInMonth.value > 0 ? totalIncome.value / daysInMonth.value : 0
-)
-
 // Number of days to display: up to today for the current month, full month otherwise
 const displayedDays = computed(() => {
   const { year, month } = store.selectedMonth
@@ -53,10 +44,24 @@ const displayedDays = computed(() => {
   return isCurrentMonth ? now.getDate() : daysInMonth.value
 })
 
-// Baseline spans only up to displayedDays
-const baselineData = computed(() =>
-  Array.from({ length: displayedDays.value }, (_, i) => dailyBudget.value * (i + 1))
-)
+// Cumulative income based on real income records on their actual dates
+const cumulativeIncome = computed(() => {
+  const cutoffDay = displayedDays.value
+  const dailyTotals = Array(cutoffDay).fill(0)
+  for (const item of store.income) {
+    const amount = Number(item.amount) || 0
+    const day = Number(String(item.date ?? '').slice(8, 10))
+    if (!day || day > cutoffDay) continue
+    dailyTotals[day - 1] += amount
+  }
+  const cumulative: number[] = []
+  let running = 0
+  for (let i = 0; i < cutoffDay; i++) {
+    running += dailyTotals[i]
+    cumulative.push(running)
+  }
+  return cumulative
+})
 
 // Spending is cumulative up to today (no nulls — chart is trimmed to today)
 const cumulativeSpending = computed(() => {
@@ -89,8 +94,8 @@ const chartData = computed(() => ({
   labels: ['0', ...Array.from({ length: displayedDays.value }, (_, i) => `${i + 1}`)],
   datasets: [
     {
-      label: 'Baseline',
-      data: [0, ...baselineData.value],
+      label: 'Income',
+      data: [0, ...cumulativeIncome.value],
       borderColor: '#22c55e',
       backgroundColor: 'rgba(34, 197, 94, 0.12)',
       fill: true,
@@ -172,27 +177,27 @@ const chartOptions = computed(() => ({
 
 <template>
   <div>
-    <h2 class="text-sm text-center pb-2">Cumulative Daily Spending</h2>
+    <h2 class="text-sm text-center pb-2">See how your spending has accumulated:</h2>
 
     <USkeleton v-if="store.loading" class="w-full rounded-lg opacity-40" style="height: 205px;" />
 
     <template v-else>
+      <div class="h-44 lg:h-[264px]">
+        <Line ref="lineChart" :data="chartData" :options="chartOptions" />
+      </div>
       <div class="flex items-center justify-between gap-3 mb-3">
         <div class="flex items-center gap-4 text-xs text-muted">
           <span class="flex items-center gap-1.5">
             <span class="inline-block w-4 h-0.5 bg-green-500 rounded-full"></span>
-            Maximum daily budget
+            Income
           </span>
           <span class="flex items-center gap-1.5">
             <span class="inline-block w-4 h-0.5 bg-amber-400 rounded-full"></span>
-            Actual amount spent
+            Spending
           </span>
         </div>
       </div>
-
-      <div class="h-44 lg:h-[264px]">
-        <Line ref="lineChart" :data="chartData" :options="chartOptions" />
-      </div>
+      
     </template>
   </div>
 </template>
