@@ -19,8 +19,11 @@ html {
   touch-action: manipulation;
   /* Pre-splash: render-blocking CSS gradient covers the screen before Vue mounts.
      min-height: 100dvh prevents tiling — on iOS PWA, html height defaults to ~0px
-     before Vue renders, causing a linear-gradient to repeat vertically. */
-  background: linear-gradient(to bottom, #22c55e, #059669);
+     before Vue renders, causing a linear-gradient to repeat vertically.
+     background-color is the fallback for any pixel not covered by the gradient
+     (e.g. the home indicator area if dvh slightly underestimates screen height). */
+  background-image: linear-gradient(to bottom, #22c55e, #059669);
+  background-color: #059669;
   min-height: 100dvh;
 }
 
