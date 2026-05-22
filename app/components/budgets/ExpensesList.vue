@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useHitsApi } from '~/composables/api/useHitsApi'
 import { useFinanceStore } from '~/stores/finance'
 
 const props = defineProps<{
@@ -10,7 +9,6 @@ const props = defineProps<{
 }>()
 
 const store = useFinanceStore()
-const { deleteBudgetHit } = useHitsApi()
 
 const accountMap = computed(() =>
     new Map<string, string>(store.accounts.map((a: any) => [a.id, a.name || a.institution || 'Account']))
@@ -48,7 +46,7 @@ const emit = defineEmits<{
 async function handleDeleteHit(id: string) {
     if (!confirm('Are you sure you want to delete this budget hit?')) return
     try {
-        await deleteBudgetHit(id)
+        await store.removeExpense(id)
         emit('update')
         const numberOfHits = props.budgetHits?.length || 0
         if (numberOfHits === 0) {
@@ -64,7 +62,7 @@ async function handleModalDeleteHit() {
     if (!selectedHit.value) return
     if (!confirm('Are you sure you want to delete this expense? This action cannot be undone.')) return
     try {
-        await deleteBudgetHit(selectedHit.value.id)
+        await store.removeExpense(selectedHit.value.id)
         handleEditHitClose()
     } catch (err: any) {
         alert(err?.message || 'Failed to delete expense')

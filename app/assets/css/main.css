@@ -17,12 +17,27 @@ body {
 html {
   scrollbar-gutter: stable;
   touch-action: manipulation;
-  /* Fill the status bar area with the correct background colour */
-  background-color: #ffffff;
+  /* Splash gradient shown before Vue adds .app-loaded.
+     CSS is render-blocking, so this is the very first painted color — no white/dark flash. */
+  background: linear-gradient(to bottom, #22c55e, #059669);
 }
 
-html.dark {
-  background-color: var(--ui-bg); /* match Nuxt UI dark mode body bg */
+/* Force body transparent so the html gradient shows through during loading.
+   Nuxt UI sets body { background-color: var(--ui-bg) } which would otherwise
+   cover the gradient with white (light) or dark (dark mode). */
+html:not(.app-loaded) body {
+  background: transparent !important;
+}
+
+/* Restore correct backgrounds once app.vue adds .app-loaded */
+html.app-loaded {
+  background-color: #ffffff;
+  background-image: none;
+}
+
+html.dark.app-loaded {
+  background-color: var(--ui-bg);
+  background-image: none;
 }
 
 /* Safe-area-aware utilities for elements taken out of normal flow.

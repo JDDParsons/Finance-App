@@ -30,7 +30,6 @@ const CLOSE_AFTER_SUCCESS_MS = 1500
 let closeTimer: ReturnType<typeof setTimeout> | null = null
 
 onMounted(() => {
-  store.ensureLoaded()
   accountId.value = store.defaultExpenseAccount?.id ?? null
 })
 

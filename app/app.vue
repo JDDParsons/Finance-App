@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useAccountsStore } from './stores/accounts'
+import { useAppData } from '~/composables/useAppData'
 
-const accountsStore = useAccountsStore()
+const appData = useAppData()
 const route = useRoute()
 const router = useRouter()
 const runtimeConfig = useRuntimeConfig()
@@ -20,13 +20,33 @@ const isAuthenticated = computed(() => route.path !== '/')
 const showMonthShortcut = computed(() => false)
 const showProfileShortcut = computed(() => false)
 
+async function loadAndStart() {
+  isLoading.value = true
+  try {
+    await appData.load()
+  } finally {
+    document.documentElement.classList.add('app-loaded')
+    isLoading.value = false
+    appData.startPolling()
+  }
+}
+
 onMounted(async () => {
-  accountsStore.ensureLoaded()
-  await Promise.all([
-    router.isReady(),
-    new Promise(resolve => setTimeout(resolve, 1000)),
-  ])
-  isLoading.value = false
+  await router.isReady()
+  if (route.path === '/') {
+    // Login page: user isn't authenticated yet, nothing to fetch
+    document.documentElement.classList.add('app-loaded')
+    isLoading.value = false
+    return
+  }
+  await loadAndStart()
+})
+
+// Post-login: when the user authenticates and is redirected away from '/'
+watch(() => route.path, async (newPath, oldPath) => {
+  if (oldPath === '/' && newPath !== '/' && !appData.isReady.value) {
+    await loadAndStart()
+  }
 })
 </script>
 
@@ -35,7 +55,7 @@ onMounted(async () => {
     <Transition leave-active-class="transition-opacity duration-500 ease-in-out" leave-to-class="opacity-0">
       <div
         v-if="isLoading"
-        class="fixed inset-0 z-100 flex flex-col items-center pt-safe bg-linear-to-b from-green-500 to-emerald-600"
+        class="fixed inset-0 z-[100] flex flex-col items-center pt-safe bg-linear-to-b from-green-500 to-emerald-600"
       >
         <div class="pt-25">
           <img

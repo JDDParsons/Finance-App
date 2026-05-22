@@ -7,7 +7,7 @@ export const useFinanceStore = defineStore('finance', () => {
   const accountsStore = useAccountsStore()
   const {
     getBudgetsByMonth, getAvailableBudgetMonths,
-    createBudget,
+    createBudget, updateBudget, deleteBudget,
   } = useBudgetsApi()
   const {
     getBudgetHitsByMonth, getIncomeByMonth,
@@ -60,12 +60,15 @@ export const useFinanceStore = defineStore('finance', () => {
 
   // ── fetch ─────────────────────────────────────────────────────────────────
 
-  async function fetchAll() {
+  /** @param silent When true, skips setting loading/refreshing flags (used by background polling). */
+  async function fetchAll(silent = false) {
     try {
-      if (initialized.value) {
-        refreshing.value = true
-      } else {
-        loading.value = true
+      if (!silent) {
+        if (initialized.value) {
+          refreshing.value = true
+        } else {
+          loading.value = true
+        }
       }
       error.value = null
       const { year, month } = selectedMonth.value
@@ -94,8 +97,10 @@ export const useFinanceStore = defineStore('finance', () => {
     } catch (err: any) {
       error.value = err?.message || 'Failed to load data'
     } finally {
-      loading.value = false
-      refreshing.value = false
+      if (!silent) {
+        loading.value = false
+        refreshing.value = false
+      }
     }
   }
 
@@ -202,6 +207,24 @@ export const useFinanceStore = defineStore('finance', () => {
     await refreshBudgets()
   }
 
+  async function editBudget(
+    id: string,
+    name: string,
+    amount: string,
+    color?: string,
+    icon?: string | null,
+    year?: number,
+    month?: number
+  ) {
+    await updateBudget(id, name, amount, color, icon, year, month)
+    await refreshBudgets()
+  }
+
+  async function removeBudget(id: string) {
+    await deleteBudget(id)
+    budgets.value = budgets.value.filter((b: any) => b.id !== id)
+  }
+
   return {
     selectedMonth,
     availableMonths,
@@ -230,6 +253,8 @@ export const useFinanceStore = defineStore('finance', () => {
     addExpense,
     removeExpense,
     updateExpense,
-    addBudget
+    addBudget,
+    editBudget,
+    removeBudget,
   }
 })

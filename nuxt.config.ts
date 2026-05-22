@@ -17,7 +17,7 @@ export default defineNuxtConfig({
         { rel: 'apple-touch-startup-image', href: '/BudgifyWithLabel.png' },
       ],
       meta: [
-        { name: 'theme-color', content: '#ffffff' },
+        { name: 'theme-color', content: '#22c55e' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
@@ -34,8 +34,8 @@ export default defineNuxtConfig({
       id: '/',
       start_url: '/',
       scope: '/',
-      theme_color: '#ffffff',
-      background_color: '#ffffff',
+      theme_color: '#22c55e',
+      background_color: '#22c55e',
       display: 'standalone',
       orientation: 'portrait',
       icons: [

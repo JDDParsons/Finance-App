@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useBudgetsApi } from '~/composables/api/useBudgetsApi'
 
 const props = defineProps<{
     budgetId: string
@@ -17,7 +16,6 @@ const emit = defineEmits<{
 }>()
 
 const store = useFinanceStore()
-const { updateBudget, deleteBudget } = useBudgetsApi()
 
 const name = ref(props.budgetName ?? '')
 const amount = ref(props.budgetAmount ?? 0)
@@ -45,7 +43,7 @@ async function handleUpdateBudget() {
         try {
             loading.value = true
             error.value = null
-            await updateBudget(props.budgetId || '', name.value, amount.value.toString(), color.value, icon.value ?? undefined, store.selectedMonth.year, store.selectedMonth.month)
+            await store.editBudget(props.budgetId || '', name.value, amount.value.toString(), color.value, icon.value ?? undefined, store.selectedMonth.year, store.selectedMonth.month)
             emit('update')
         } catch (err: any) {
             error.value = err?.message || 'Error updating budget'
@@ -61,7 +59,7 @@ async function handleDeleteBudget() {
         try {
             deleting.value = true
             error.value = null
-            await deleteBudget(props.budgetId)
+            await store.removeBudget(props.budgetId)
             emit('delete')
         } catch (err: any) {
             const isFkViolation = err?.code === '23503' || err?.message?.includes('Budget_Hit')

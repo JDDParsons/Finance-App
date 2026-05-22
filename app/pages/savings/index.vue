@@ -235,10 +235,6 @@ const compoundProjection = computed(() => {
   }
 })
 
-onMounted(async () => {
-  await financeStore.ensureLoaded()
-  await savingsStore.ensureLoaded()
-})
 </script>
 
 <template>
