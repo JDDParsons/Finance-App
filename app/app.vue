@@ -15,6 +15,7 @@ useHead(() => ({
 }))
 
 const isLoading = ref(true)
+const loadError = ref(false)
 
 const isAuthenticated = computed(() => route.path !== '/')
 const showMonthShortcut = computed(() => false)
@@ -22,12 +23,17 @@ const showProfileShortcut = computed(() => false)
 
 async function loadAndStart() {
   isLoading.value = true
+  loadError.value = false
   try {
     await appData.load()
-  } finally {
     document.documentElement.classList.add('app-loaded')
     isLoading.value = false
     appData.startPolling()
+  } catch {
+    // Keep the splash visible as an error screen; don't start polling on failure.
+    document.documentElement.classList.add('app-loaded')
+    loadError.value = true
+    isLoading.value = false
   }
 }
 
@@ -54,15 +60,34 @@ watch(() => route.path, async (newPath, oldPath) => {
   <UApp class="overflow-x-hidden">
     <Transition leave-active-class="transition-opacity duration-500 ease-in-out" leave-to-class="opacity-0">
       <div
-        v-if="isLoading"
+        v-if="isLoading || loadError"
         class="fixed inset-0 z-[100] flex flex-col items-center pt-safe bg-linear-to-b from-green-500 to-emerald-600"
       >
-        <div class="pt-25">
+        <!-- Normal loading state -->
+        <div v-if="!loadError" class="pt-25">
           <img
             :src="`${runtimeConfig.app.baseURL}BudgifyWithLabel.png`"
             alt="Budgify"
             class="h-90 brightness-0 invert"
           />
+        </div>
+
+        <!-- Error state: stay on splash, offer retry -->
+        <div v-else class="flex flex-col items-center gap-4 px-8 pt-25">
+          <img
+            :src="`${runtimeConfig.app.baseURL}BudgifyWithLabel.png`"
+            alt="Budgify"
+            class="h-60 brightness-0 invert"
+          />
+          <p class="mt-4 text-sm text-white/90 text-center">
+            Couldn't load your data. Please check your connection.
+          </p>
+          <button
+            class="mt-1 rounded-full bg-white/20 px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/30 active:bg-white/40"
+            @click="loadAndStart"
+          >
+            Try again
+          </button>
         </div>
       </div>
     </Transition>
