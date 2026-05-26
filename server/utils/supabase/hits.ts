@@ -11,7 +11,7 @@ export async function createBudgetHit(
   budgetId: string | null,
   date: string,
   amount: string,
-  note: string,
+  entity: string,
   accountId: string | null = null
 ) {
   const { data, error } = await getClient(supabase)
@@ -20,7 +20,7 @@ export async function createBudgetHit(
       budget_id: budgetId,
       date,
       amount: parseFloat(amount),
-      note,
+      entity,
       type: 'Expense',
       account_id: accountId,
       user_id: userId,
@@ -71,7 +71,7 @@ export async function updateBudgetHit(
   budgetId: string | null,
   date: string,
   amount: string,
-  note: string,
+  entity: string,
   accountId: string | null = null
 ) {
   const { data, error } = await getClient(supabase)
@@ -80,7 +80,7 @@ export async function updateBudgetHit(
       budget_id: budgetId,
       date,
       amount: parseFloat(amount),
-      note,
+      entity,
       account_id: accountId,
     })
     .eq('id', id)
@@ -109,7 +109,7 @@ export async function insertIncome(
   householdId: string,
   amount: number,
   date: string,
-  note: string,
+  entity: string,
   accountId: string | null = null
 ) {
   const { data, error } = await getClient(supabase)
@@ -117,7 +117,7 @@ export async function insertIncome(
     .insert({
       amount,
       date,
-      note,
+      entity,
       type: 'Income',
       budget_id: null,
       account_id: accountId,
@@ -143,11 +143,11 @@ export async function deleteIncome(supabase: SupabaseClient, id: string) {
 export async function getDistinctEntitiesByBudget(supabase: SupabaseClient, budgetId: string): Promise<string[]> {
   const { data, error } = await getClient(supabase)
     .from('Budget_Hit')
-    .select('note')
+    .select('entity')
     .eq('budget_id', budgetId)
     .eq('type', 'Expense')
-    .not('note', 'is', null)
-    .neq('note', '')
+    .not('entity', 'is', null)
+    .neq('entity', '')
     .order('date', { ascending: false })
 
   if (error) throw error
@@ -155,10 +155,10 @@ export async function getDistinctEntitiesByBudget(supabase: SupabaseClient, budg
   const seen = new Set<string>()
   const results: string[] = []
   for (const row of (data || [])) {
-    const note = row.note?.trim()
-    if (note && !seen.has(note)) {
-      seen.add(note)
-      results.push(note)
+    const entity = row.entity?.trim()
+    if (entity && !seen.has(entity)) {
+      seen.add(entity)
+      results.push(entity)
     }
   }
   return results

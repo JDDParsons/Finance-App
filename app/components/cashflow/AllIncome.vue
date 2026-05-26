@@ -40,7 +40,7 @@ async function handleDelete(id: string) {
         :id="row.id"
         :amount="row.amount"
         :date="row.date"
-        :note="row.note"
+        :entity="row.entity"
         :account-name="row.account_id ? accountMap.get(row.account_id) ?? null : null"
         @delete="handleDelete"
       />

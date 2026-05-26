@@ -10,17 +10,17 @@ const { show: showOverlay } = useSuccessOverlay()
 const { monthTitle } = useSelectedMonthTitle()
 
 
-// Note suggestions for expense form
-const expenseNoteSuggestions = computed((): string[] => {
+// Entity suggestions for expense form
+const expenseEntitySuggestions = computed((): string[] => {
   if (noBudget.value || !selectedBudgetId.value) return []
   const seen = new Set<string>()
   const results: string[] = []
   const allHits = [...(store.budgetHits as any[]), ...(store.prevMonthBudgetHits as any[])]
   for (const h of allHits) {
-    const n = (h.note as string | null | undefined)?.trim()
-    if (h.budget_id === selectedBudgetId.value && n && !seen.has(n)) {
-      seen.add(n)
-      results.push(n)
+    const entity = (h.entity as string | null | undefined)?.trim()
+    if (h.budget_id === selectedBudgetId.value && entity && !seen.has(entity)) {
+      seen.add(entity)
+      results.push(entity)
     }
   }
   return results.slice(0, 8)
@@ -35,13 +35,13 @@ const slideoverLoading = ref(false)
 // Income form
 const incomeAmount = ref('')
 const incomeDate = ref(new Date().toISOString().split('T')[0])
-const incomeNote = ref('')
+const incomeEntity = ref('')
 const incomeAccountId = ref<string | null>(null)
 
 // Expense form
 const expenseAmount = ref('')
 const expenseDate = ref(new Date().toLocaleDateString('en-CA'))
-const expenseNote = ref('')
+const expenseEntity = ref('')
 const selectedBudgetId = ref('')
 const noBudget = ref(false)
 const expenseAccountId = ref<string | null>(null)
@@ -65,11 +65,11 @@ function closeSlideover() {
 function resetForms() {
   incomeAmount.value = ''
   incomeDate.value = new Date().toISOString().split('T')[0]
-  incomeNote.value = ''
+  incomeEntity.value = ''
   incomeAccountId.value = store.defaultIncomeAccount?.id ?? null
   expenseAmount.value = ''
   expenseDate.value = new Date().toLocaleDateString('en-CA')
-  expenseNote.value = ''
+  expenseEntity.value = ''
   selectedBudgetId.value = ''
   noBudget.value = false
   expenseAccountId.value = store.defaultExpenseAccount?.id ?? null
@@ -90,7 +90,7 @@ async function saveIncome() {
   }
   try {
     slideoverLoading.value = true
-    await store.addIncome(parseFloat(incomeAmount.value), incomeDate.value, incomeNote.value, incomeAccountId.value)
+    await store.addIncome(parseFloat(incomeAmount.value), incomeDate.value, incomeEntity.value, incomeAccountId.value)
     closeSlideover()
     showOverlay()
   } catch (err: any) {
@@ -107,7 +107,7 @@ async function saveExpense() {
   try {
     slideoverLoading.value = true
     const budgetIdToSubmit = noBudget.value ? null : selectedBudgetId.value
-    await store.addExpense(budgetIdToSubmit, expenseDate.value, expenseAmount.value, expenseNote.value, expenseAccountId.value)
+    await store.addExpense(budgetIdToSubmit, expenseDate.value, expenseAmount.value, expenseEntity.value, expenseAccountId.value)
     closeSlideover()
     showOverlay()
   } catch (err: any) {
@@ -175,10 +175,10 @@ async function saveExpense() {
                 />
               </UFormField>
 
-              <UFormField label="Note">
+              <UFormField label="Payer">
                 <UInput
-                  v-model="incomeNote"
-                  placeholder="Leave a note..."
+                  v-model="incomeEntity"
+                  placeholder="Enter a payer..."
                   type="text"
                   size="xl"
                 />
@@ -226,24 +226,24 @@ async function saveExpense() {
 
               <UCheckbox v-model="noBudget" label="No budget" />
 
-              <UFormField label="Note">
+              <UFormField label="Payee">
                 <UInput
-                  v-model="expenseNote"
-                  placeholder="Leave a note..."
+                  v-model="expenseEntity"
+                  placeholder="Enter a payee..."
                   type="text"
                   size="xl"
                 />
               </UFormField>
 
-              <!-- Note suggestions -->
-              <div v-if="expenseNoteSuggestions.length" class="flex flex-wrap gap-2">
-                <p class="w-full text-xs text-gray-400 mb-1">Previous notes:</p>
+              <!-- Entity suggestions -->
+              <div v-if="expenseEntitySuggestions.length" class="flex flex-wrap gap-2">
+                <p class="w-full text-xs text-gray-400 mb-1">Previous payees:</p>
                 <button
-                  v-for="suggestion in expenseNoteSuggestions"
+                  v-for="suggestion in expenseEntitySuggestions"
                   :key="suggestion"
                   type="button"
                   class="px-3 py-1 text-sm rounded-full border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:border-primary-400 dark:hover:border-primary-500 transition-colors cursor-pointer"
-                  @click="expenseNote = suggestion"
+                  @click="expenseEntity = suggestion"
                 >
                   {{ suggestion }}
                 </button>

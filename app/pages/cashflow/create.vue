@@ -27,7 +27,6 @@ function finishStepTransition() {
 
 const transactionType = ref<'expense' | 'income'>('expense')
 const selectedBudgetId = ref('')
-const chosenBudgetName = ref<string | null>(null)
 const noBudget = ref(false)
 const date = ref(new Date().toLocaleDateString('en-CA'))
 const amount = ref('')
@@ -65,7 +64,6 @@ function handleBudgetSelect(selection: { budgetId: string | null; budgetName: st
   transactionType.value = selection.type
   selectedBudgetId.value = selection.budgetId ?? ''
   noBudget.value = selection.noBudget
-  chosenBudgetName.value = selection.budgetName
   entity.value = ''
   selectedEntity.value = null
   notes.value = ''

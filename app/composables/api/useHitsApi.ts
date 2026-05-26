@@ -6,17 +6,17 @@ export function useHitsApi() {
   }
 
   function getBudgetEntities(budgetId: string) {
-    return apiFetch<string[]>(`/api/hits/notes?budgetId=${budgetId}`)
+    return apiFetch<string[]>(`/api/hits/entities?budgetId=${budgetId}`)
   }
 
   function getIncomeByMonth(year: number, month: number) {
     return apiFetch<any[]>(`/api/income/by-month?year=${year}&month=${month}`)
   }
 
-  function insertIncome(amount: number, date: string, note: string, accountId: string | null = null) {
+  function insertIncome(amount: number, date: string, entity: string, accountId: string | null = null) {
     return apiFetch<any>('/api/income', {
       method: 'POST',
-      body: { amount, date, note, accountId },
+      body: { amount, date, entity, accountId },
     })
   }
 
@@ -28,12 +28,12 @@ export function useHitsApi() {
     budgetId: string | null,
     date: string,
     amount: string,
-    note: string,
+    entity: string,
     accountId: string | null = null
   ) {
     return apiFetch<any>('/api/hits', {
       method: 'POST',
-      body: { budgetId, date, amount, note, accountId },
+      body: { budgetId, date, amount, entity, accountId },
     })
   }
 
@@ -46,12 +46,12 @@ export function useHitsApi() {
     budgetId: string | null,
     date: string,
     amount: string,
-    note: string,
+    entity: string,
     accountId: string | null = null
   ) {
     return apiFetch<any>(`/api/hits/${id}`, {
       method: 'PUT',
-      body: { budgetId, date, amount, note, accountId },
+      body: { budgetId, date, amount, entity, accountId },
     })
   }
 

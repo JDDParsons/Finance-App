@@ -175,8 +175,8 @@ export const useFinanceStore = defineStore('finance', () => {
 
   // ── income ────────────────────────────────────────────────────────────────
 
-  async function addIncome(amount: number, date: string, note: string, accountId: string | null = null) {
-    const row = await insertIncome(amount, date, note, accountId)
+  async function addIncome(amount: number, date: string, entity: string, accountId: string | null = null) {
+    const row = await insertIncome(amount, date, entity, accountId)
     income.value = [row, ...income.value].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     )
@@ -189,8 +189,8 @@ export const useFinanceStore = defineStore('finance', () => {
 
   // ── expenses ──────────────────────────────────────────────────────────────
 
-  async function addExpense(budgetId: string | null, date: string, amount: string, note: string, accountId: string | null = null) {
-    const hit = await createBudgetHit(budgetId, date, amount, note, accountId)
+  async function addExpense(budgetId: string | null, date: string, amount: string, entity: string, accountId: string | null = null) {
+    const hit = await createBudgetHit(budgetId, date, amount, entity, accountId)
     budgetHits.value = [hit, ...budgetHits.value]
     budgets.value = enrichBudgets(budgets.value, budgetHits.value)
   }
@@ -201,10 +201,10 @@ export const useFinanceStore = defineStore('finance', () => {
     budgets.value = enrichBudgets(budgets.value, budgetHits.value)
   }
 
-  async function updateExpense(id: string, budgetId: string | null, date: string, amount: string, note: string, accountId?: string | null) {
+  async function updateExpense(id: string, budgetId: string | null, date: string, amount: string, entity: string, accountId?: string | null) {
     const existing = budgetHits.value.find((h: any) => h.id === id)
     const resolvedAccountId = accountId === undefined ? (existing?.account_id ?? null) : accountId
-    const hit = await updateBudgetHit(id, budgetId, date, amount, note, resolvedAccountId)
+    const hit = await updateBudgetHit(id, budgetId, date, amount, entity, resolvedAccountId)
     budgetHits.value = budgetHits.value.map(h => h.id === id ? hit : h)
     budgets.value = enrichBudgets(budgets.value, budgetHits.value)
   }

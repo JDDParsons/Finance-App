@@ -5,7 +5,7 @@ const props = defineProps<{
     expenseId: string
     expenseAmount?: number
     expenseDate?: string
-    expenseNote?: string | null
+    expenseEntity?: string | null
     expenseBudgetId?: string | null
     expenseAccountId?: string | null
 }>()
@@ -21,7 +21,7 @@ const { budgetIcon } = useBudgetIcon()
 
 const amount = ref(props.expenseAmount ?? 0)
 const date = ref(props.expenseDate ? props.expenseDate.slice(0, 10) : new Date().toLocaleDateString('en-CA'))
-const note = ref(props.expenseNote ?? '')
+const entity = ref(props.expenseEntity ?? '')
 const noBudget = ref(!props.expenseBudgetId)
 const selectedBudgetId = ref(props.expenseBudgetId ?? '')
 const choosingBudget = ref(false)
@@ -75,7 +75,7 @@ async function handleUpdate() {
         loading.value = true
         error.value = null
         const budgetIdToSubmit = noBudget.value ? null : (selectedBudgetId.value || null)
-        await store.updateExpense(props.expenseId, budgetIdToSubmit, date.value, amount.value.toString(), note.value, selectedAccountId.value === '__none__' ? null : selectedAccountId.value)
+        await store.updateExpense(props.expenseId, budgetIdToSubmit, date.value, amount.value.toString(), entity.value, selectedAccountId.value === '__none__' ? null : selectedAccountId.value)
         emit('update')
     } catch (err: any) {
         error.value = err?.message || 'Error updating expense'
@@ -174,12 +174,12 @@ async function handleDelete() {
                 />
             </UFormField>
 
-            <UFormField label="Note">
+            <UFormField label="Payee">
                 <UInput
-                    v-model="note"
+                    v-model="entity"
                     highlight
                     color="info"
-                    placeholder="Leave a note..."
+                    placeholder="Enter a payee..."
                     type="text"
                     size="xl"
                 />
