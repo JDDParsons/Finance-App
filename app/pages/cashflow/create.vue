@@ -12,16 +12,15 @@ const router = useRouter()
 const { budgetIcon } = useBudgetIcon()
 const { show: showOverlay } = useSuccessOverlay()
 
-const step = ref<'choose-budget' | 'form'>('choose-budget')
+const step = ref<'choose-budget' | 'choose-entity' | 'enter-amount'>('choose-budget')
 const transactionType = ref<'expense' | 'income'>('expense')
 const selectedBudgetId = ref('')
 const chosenBudgetName = ref<string | null>(null)
 const noBudget = ref(false)
 const date = ref(new Date().toLocaleDateString('en-CA'))
 const amount = ref('')
-const note = ref('')
-const appliedNoteSuggestion = ref<string | null>(null)
-const noteSuggestionsOpen = ref(false)
+const entity = ref('')
+const selectedEntity = ref<string | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 const accountId = ref<string | null>(null)
@@ -57,41 +56,16 @@ const expensePillBudget = computed(() =>
   store.budgets.find((budget: any) => budget.id === activeBudgetId.value) ?? null
 )
 
-const noteSuggestions = computed((): string[] => {
+const allEntitySuggestions = computed((): string[] => {
   if (!activeBudgetId.value) return []
-  const query = note.value.trim().toLowerCase()
-  if (!query) return []
-  if (appliedNoteSuggestion.value === note.value) return []
-
-  const seen = new Set<string>()
-  const results: string[] = []
-  const allHits = [...(store.budgetHits as any[]), ...(store.prevMonthBudgetHits as any[])]
-
-  for (const hit of allHits) {
-    const hitNote = hit.note?.trim()
-    if (hit.budget_id === activeBudgetId.value && hitNote && hitNote.toLowerCase().includes(query) && !seen.has(hitNote)) {
-      seen.add(hitNote)
-      results.push(hitNote)
-    }
-  }
-
-  return results.slice(0, 8)
+  return store.budgetAllEntities.get(activeBudgetId.value) ?? []
 })
 
-watch(note, (newValue) => {
-  if (appliedNoteSuggestion.value && newValue !== appliedNoteSuggestion.value) {
-    appliedNoteSuggestion.value = null
-  }
-
-  if (!newValue.trim()) {
-    noteSuggestionsOpen.value = false
-  }
-})
-
-watch(noteSuggestions, (suggestions) => {
-  if (!suggestions.length) {
-    noteSuggestionsOpen.value = false
-  }
+const filteredEntitySuggestions = computed((): string[] => {
+  if (selectedEntity.value) return []
+  const query = entity.value.trim().toLowerCase()
+  if (!query) return allEntitySuggestions.value
+  return allEntitySuggestions.value.filter(s => s.toLowerCase().includes(query))
 })
 
 function handleBudgetSelect(selection: { budgetId: string | null; budgetName: string | null; noBudget: boolean; type: 'expense' | 'income' }) {
@@ -99,30 +73,44 @@ function handleBudgetSelect(selection: { budgetId: string | null; budgetName: st
   selectedBudgetId.value = selection.budgetId ?? ''
   noBudget.value = selection.noBudget
   chosenBudgetName.value = selection.budgetName
-  step.value = 'form'
+  entity.value = ''
+  selectedEntity.value = null
+  step.value = 'choose-entity'
   accountId.value = selection.type === 'income'
     ? (store.defaultIncomeAccount?.id ?? null)
     : (store.defaultExpenseAccount?.id ?? null)
-}
-
-function handleNoteFocus() {
-  if (noteSuggestions.value.length) {
-    noteSuggestionsOpen.value = true
+  if (selection.budgetId) {
+    store.fetchBudgetEntities(selection.budgetId)
   }
 }
 
-function applyNoteSuggestion(suggestion: string) {
-  note.value = suggestion
-  appliedNoteSuggestion.value = suggestion
-  noteSuggestionsOpen.value = false
+function applyEntitySuggestion(suggestion: string) {
+  entity.value = suggestion
+  selectedEntity.value = suggestion
+}
+
+function clearEntity() {
+  entity.value = ''
+  selectedEntity.value = null
+}
+
+function proceedToAmount() {
+  step.value = 'enter-amount'
+}
+
+function changeBudget() {
+  step.value = 'choose-budget'
 }
 
 function goBack() {
-  if (step.value === 'form') {
+  if (step.value === 'enter-amount') {
+    step.value = 'choose-entity'
+    return
+  }
+  if (step.value === 'choose-entity') {
     step.value = 'choose-budget'
     return
   }
-
   router.back()
 }
 
@@ -153,10 +141,10 @@ async function handleSubmit() {
     error.value = null
 
     if (isIncome.value) {
-      await store.addIncome(parseFloat(amount.value), date.value, note.value, accountId.value)
+      await store.addIncome(parseFloat(amount.value), date.value, entity.value, accountId.value)
     } else {
       const budgetIdToSubmit = noBudget.value ? null : selectedBudgetId.value
-      await store.addExpense(budgetIdToSubmit, date.value, amount.value, note.value, accountId.value)
+      await store.addExpense(budgetIdToSubmit, date.value, amount.value, entity.value, accountId.value)
     }
 
     await store.fetchAll()
@@ -188,7 +176,8 @@ async function handleSubmit() {
         </UButton>
       </div>
 
-      <div class="flex h-full min-h-0 w-full flex-col">
+      <div class="flex flex-1 min-h-0 w-full flex-col">
+        <!-- Step 1: Choose budget -->
         <template v-if="step === 'choose-budget'">
           <div class="p-4">
             <div class="mb-5">
@@ -203,6 +192,76 @@ async function handleSubmit() {
           </div>
         </template>
 
+        <!-- Step 2: Choose entity -->
+        <template v-else-if="step === 'choose-entity'">
+          <div class="flex flex-1 flex-col p-4">
+            <div class="mb-5">
+              <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+                {{ isIncome ? 'Add a Payer' : 'Add a Payee' }} <span class="text-base font-normal text-gray-400 dark:text-gray-500">(Optional)</span>
+              </h2>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {{ isIncome ? 'Who paid you?' : 'Who did you pay?' }}
+              </p>
+            </div>
+
+            <!-- Pill display when an entity is selected -->
+            <div
+              v-if="selectedEntity"
+              class="flex h-11 items-center gap-2 rounded-md border border-gray-300 px-3 dark:border-gray-700"
+            >
+              <span class="rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-sm text-green-700 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-300">
+                {{ selectedEntity }}
+              </span>
+              <button type="button" class="ml-auto cursor-pointer" @click="clearEntity">
+                <UIcon name="heroicons:x-circle" class="size-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" />
+              </button>
+            </div>
+
+            <!-- Text input when no entity is selected -->
+            <UInput
+              v-else
+              v-model="entity"
+              autofocus
+              variant="soft"
+              color="neutral"
+              :placeholder="isIncome ? 'Enter a payer...' : 'Enter a payee...'"
+              type="text"
+              size="xl"
+              class="w-full"
+            >
+              <template v-if="entity" #trailing>
+                <button type="button" class="cursor-pointer" @click="clearEntity">
+                  <UIcon name="heroicons:x-circle" class="size-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" />
+                </button>
+              </template>
+            </UInput>
+
+            <div v-if="filteredEntitySuggestions.length" class="mt-5 flex flex-wrap gap-2">
+              <button
+                v-for="suggestion in filteredEntitySuggestions"
+                :key="suggestion"
+                type="button"
+                class="rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-sm text-green-700 transition-colors cursor-pointer hover:border-green-300 hover:bg-green-100 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-300 dark:hover:bg-green-900/50"
+                @click="applyEntitySuggestion(suggestion)"
+              >
+                {{ suggestion }}
+              </button>
+            </div>
+
+            <div class="mt-auto pt-4">
+              <UButton
+                color="primary"
+                variant="solid"
+                class="h-12 w-full text-base font-semibold"
+                @click="proceedToAmount"
+              >
+                Continue
+              </UButton>
+            </div>
+          </div>
+        </template>
+
+        <!-- Step 3: Enter amount -->
         <template v-else>
           <div class="flex h-full min-h-0 flex-col">
             <div v-if="error" class="mb-4">
@@ -210,58 +269,18 @@ async function handleSubmit() {
             </div>
 
             <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-800">
-                <UPopover v-if="!isIncome" v-model:open="noteSuggestionsOpen">
-                  <UInput
-                    v-model="note"
-                    variant="ghost"
-                    color="neutral"
-                    placeholder="Enter a note...."
-                    type="text"
-                    size="xl"
-                    class="w-full"
-                    :ui="{ base: 'px-0 text-lg', trailing: 'hidden', leading: 'hidden' }"
-                    @focus="handleNoteFocus"
-                    @click="handleNoteFocus"
-                  />
-
-                  <template #content>
-                    <div class="max-w-sm p-2">
-                      <div class="flex flex-wrap gap-2">
-                        <button
-                          v-for="suggestion in noteSuggestions"
-                          :key="suggestion"
-                          type="button"
-                          class="rounded-full border border-green-200 bg-green-50 px-3 py-1 text-sm text-green-700 transition-colors cursor-pointer hover:border-green-300 hover:bg-green-100 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-300 dark:hover:bg-green-900/50"
-                          @click="applyNoteSuggestion(suggestion)"
-                        >
-                          {{ suggestion }}
-                        </button>
-                      </div>
-                    </div>
-                  </template>
-                </UPopover>
-
-                <UInput
-                  v-else
-                  v-model="note"
-                  variant="ghost"
-                  color="neutral"
-                  placeholder="Enter a note...."
-                  type="text"
-                  size="xl"
-                  class="w-full"
-                  :ui="{ base: 'px-0 text-lg', trailing: 'hidden', leading: 'hidden' }"
-                />
+              <div v-if="entity" class="flex px-4 pt-3">
+                <span class="rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-sm text-green-700 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-300">
+                  {{ entity }}
+                </span>
               </div>
-
               <AmountNumberPad v-model="amount" class="min-h-0 flex-1">
                 <template #controls>
                   <div class="flex flex-wrap items-center justify-center gap-3">
                     <button
                       type="button"
                       class="inline-flex cursor-pointer items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-sm text-gray-600 transition-colors hover:border-gray-300 dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-600"
-                      @click="goBack"
+                      @click="changeBudget"
                       :aria-label="typePillAriaLabel"
                     >
                       <div
@@ -301,7 +320,7 @@ async function handleSubmit() {
                   <UButton
                     color="primary"
                     variant="solid"
-                    class="h-12 w-full justify-center rounded-full bg-gradient-to-r from-green-400 to-emerald-500 text-base font-semibold text-white shadow-lg shadow-green-500/30 transition-all duration-200 hover:from-green-500 hover:to-emerald-600 hover:shadow-green-500/50 active:scale-[0.98]"
+                    class="h-12 w-full bg-gradient-to-r from-green-400 to-emerald-500 text-base font-semibold text-white shadow-lg shadow-green-500/30 transition-all duration-200 hover:from-green-500 hover:to-emerald-600 hover:shadow-green-500/50 active:scale-[0.98]"
                     @click="handleSubmit"
                     :disabled="loading"
                     :loading="loading"

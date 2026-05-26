@@ -5,6 +5,10 @@ export function useHitsApi() {
     return apiFetch<any[]>(`/api/hits/by-month?year=${year}&month=${month}`)
   }
 
+  function getBudgetEntities(budgetId: string) {
+    return apiFetch<string[]>(`/api/hits/notes?budgetId=${budgetId}`)
+  }
+
   function getIncomeByMonth(year: number, month: number) {
     return apiFetch<any[]>(`/api/income/by-month?year=${year}&month=${month}`)
   }
@@ -58,6 +62,7 @@ export function useHitsApi() {
 
   return {
     getBudgetHitsByMonth,
+    getBudgetEntities,
     getIncomeByMonth,
     insertIncome,
     deleteIncome,
