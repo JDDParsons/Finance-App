@@ -11,6 +11,7 @@ export const useFinanceStore = defineStore('finance', () => {
   } = useBudgetsApi()
   const {
     getBudgetHitsByMonth, getIncomeByMonth,
+    getBudgetEntities,
     insertIncome, deleteIncome,
     createBudgetHit, deleteBudgetHit, updateBudgetHit,
     getUserProfiles,
@@ -30,6 +31,7 @@ export const useFinanceStore = defineStore('finance', () => {
   const error = ref<string | null>(null)
   const initialized = ref(false)
   const userProfiles = ref<Map<string, { firstName: string | null; avatarLink: string | null }>>(new Map())
+  const budgetAllEntities = ref<Map<string, string[]>>(new Map())
 
   const defaultExpenseAccount = computed(() =>
     accounts.value.find((a: any) => a.is_default_for_expenses) ?? null
@@ -164,6 +166,13 @@ export const useFinanceStore = defineStore('finance', () => {
     }
   }
 
+  // ── entity suggestions ────────────────────────────────────────────────────
+
+  async function fetchBudgetEntities(budgetId: string) {
+    const entities = await getBudgetEntities(budgetId)
+    budgetAllEntities.value = new Map(budgetAllEntities.value).set(budgetId, entities)
+  }
+
   // ── income ────────────────────────────────────────────────────────────────
 
   async function addIncome(amount: number, date: string, note: string, accountId: string | null = null) {
@@ -233,6 +242,7 @@ export const useFinanceStore = defineStore('finance', () => {
     budgets,
     budgetHits,
     prevMonthBudgetHits,
+    budgetAllEntities,
     income,
     accounts,
     userProfiles,
@@ -245,6 +255,7 @@ export const useFinanceStore = defineStore('finance', () => {
     fetchAll,
     ensureLoaded,
     refreshBudgets,
+    fetchBudgetEntities,
     setMonth,
     prevMonth,
     nextMonth,

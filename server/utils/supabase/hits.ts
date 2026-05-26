@@ -140,6 +140,30 @@ export async function deleteIncome(supabase: SupabaseClient, id: string) {
   if (error) throw error
 }
 
+export async function getDistinctEntitiesByBudget(supabase: SupabaseClient, budgetId: string): Promise<string[]> {
+  const { data, error } = await getClient(supabase)
+    .from('Budget_Hit')
+    .select('note')
+    .eq('budget_id', budgetId)
+    .eq('type', 'Expense')
+    .not('note', 'is', null)
+    .neq('note', '')
+    .order('date', { ascending: false })
+
+  if (error) throw error
+
+  const seen = new Set<string>()
+  const results: string[] = []
+  for (const row of (data || [])) {
+    const note = row.note?.trim()
+    if (note && !seen.has(note)) {
+      seen.add(note)
+      results.push(note)
+    }
+  }
+  return results
+}
+
 export async function getBudgetHitsByMonth(supabase: SupabaseClient, year: number, month: number) {
   const nextMonth = month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 }
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`
