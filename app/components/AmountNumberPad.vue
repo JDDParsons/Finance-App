@@ -108,9 +108,6 @@ onBeforeUnmount(() => {
         <slot name="controls" />
       </div>
 
-      <div v-if="$slots.actions" class="px-1 pb-1">
-        <slot name="actions" />
-      </div>
     </div>
 
     <div class="mt-auto grid grid-cols-3 gap-1 border-t border-gray-200 px-3 pt-1 pb-1 dark:border-gray-800">
@@ -137,6 +134,10 @@ onBeforeUnmount(() => {
           </button>
         </template>
       </template>
+    </div>
+
+    <div v-if="$slots.actions" class="shrink-0 border-t border-gray-100 dark:border-gray-800">
+      <slot name="actions" />
     </div>
   </div>
 </template>
