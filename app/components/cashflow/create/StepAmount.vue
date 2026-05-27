@@ -194,7 +194,7 @@ function handleNotesSave(nextNotes: string) {
         <UButton
           color="primary"
           variant="ghost"
-          class="mx-auto flex h-15 w-90 justify-center rounded-full 
+          class="mx-auto flex h-[3.75rem] w-[22.5rem] justify-center rounded-full 
           border-2 border-green-500 bg-linear-to-r from-green-400 to-emerald-500 
           dark:border-emerald-500/50 dark:from-green-500/80 dark:to-emerald-400/30
           text-center text-base font-semibold text-white 
