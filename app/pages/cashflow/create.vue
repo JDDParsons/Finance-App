@@ -119,7 +119,7 @@ async function handleSubmit() {
 
 <template>
   <div class="bg-white dark:bg-gray-950">
-    <div class="mx-auto flex h-[calc(107.5svh-env(safe-area-inset-top))] max-w-2xl flex-col bg-white dark:bg-gray-950">
+    <div class="mx-auto flex h-[calc(107.5svh_-_env(safe-area-inset-top))] max-w-2xl flex-col bg-white dark:bg-gray-950">
       <div 
         class="border-b-4 bg-green-50 border-b-green-300 dark:bg-green-900/40 dark:border-green-900 px-2 py-2 pt-safe sm:px-4"
         style="margin-top: calc(-1 * env(safe-area-inset-top));"
