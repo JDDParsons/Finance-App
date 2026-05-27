@@ -18,7 +18,7 @@ function focusField() {
     requestAnimationFrame(() => {
       const textarea = fieldRef.value?.querySelector('textarea')
       if (!(textarea instanceof HTMLTextAreaElement)) return
-      textarea.focus()
+      textarea.focus({ preventScroll: true })
     })
   })
 }

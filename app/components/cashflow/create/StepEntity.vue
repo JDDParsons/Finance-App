@@ -53,7 +53,7 @@ function focusField() {
     requestAnimationFrame(() => {
       const input = fieldRef.value?.querySelector('input')
       if (!(input instanceof HTMLInputElement)) return
-      input.focus()
+      input.focus({ preventScroll: true })
     })
   })
 }

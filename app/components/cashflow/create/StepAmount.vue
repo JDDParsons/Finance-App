@@ -94,15 +94,15 @@ function handleNotesSave(nextNotes: string) {
     <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div class="flex min-h-0 flex-1 flex-col justify-end">
         <div class="px-4 py-24 text-center">
-          <div class="absolute top-4 left-4 flex max-w-[calc(100%-2rem)] flex-wrap gap-2">
+          <div class="absolute top-4 left-4 flex w-[calc(100%-2rem)] items-start gap-2 overflow-hidden">
             <button
               v-if="entityLabel"
               type="button"
-              class="cursor-pointer rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-sm text-green-700 transition-colors hover:border-green-300 hover:bg-green-100 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-300 dark:hover:bg-green-900/50"
+              class="inline-flex min-w-0 max-w-[45%] shrink cursor-pointer items-center rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-sm text-green-700 transition-colors hover:border-green-300 hover:bg-green-100 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-300 dark:hover:bg-green-900/50"
               :aria-label="isIncome ? 'Edit payer' : 'Edit payee'"
               @click="openEntityModal"
             >
-              {{ entityLabel }}
+              <span class="truncate">{{ entityLabel }}</span>
             </button>
             <UButton
               v-else
@@ -110,7 +110,7 @@ function handleNotesSave(nextNotes: string) {
               variant="soft"
               size="sm"
               icon="heroicons:user"
-              class="rounded-full"
+              class="shrink-0 rounded-full"
               :aria-label="entityButtonLabel"
               @click="openEntityModal"
             >
@@ -120,7 +120,7 @@ function handleNotesSave(nextNotes: string) {
             <button
               v-if="notesPreview"
               type="button"
-              class="inline-flex max-w-60 cursor-pointer items-center gap-2 rounded-full border border-gray-200 bg-white/90 px-3 py-1.5 text-left text-sm text-gray-600 transition-colors hover:border-gray-300 hover:bg-white dark:border-gray-700 dark:bg-gray-900/90 dark:text-gray-300 dark:hover:border-gray-600"
+              class="inline-flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-full border border-gray-200 bg-white/90 px-3 py-1.5 text-left text-sm text-gray-600 transition-colors hover:border-gray-300 hover:bg-white dark:border-gray-700 dark:bg-gray-900/90 dark:text-gray-300 dark:hover:border-gray-600"
               :aria-label="notesButtonLabel"
               @click="openNotesModal"
             >
@@ -133,7 +133,7 @@ function handleNotesSave(nextNotes: string) {
               variant="soft"
               size="sm"
               icon="heroicons:document-text"
-              class="rounded-full"
+              class="shrink-0 rounded-full"
               :aria-label="notesButtonLabel"
               @click="openNotesModal"
             >
