@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
 
 useHead({ title: 'Create Transaction | R&J Finance' })
