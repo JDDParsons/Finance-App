@@ -122,6 +122,7 @@ async function handleSubmit() {
           color="secondary"
           variant="soft"
           icon="heroicons:arrow-left"
+          aria-label="Back"
           @click="goBack"
         >
         </UButton>
