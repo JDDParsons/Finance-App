@@ -94,7 +94,7 @@ function handleNotesSave(nextNotes: string) {
     <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div class="flex min-h-0 flex-1 flex-col justify-end">
         <div class="px-4 py-24 text-center">
-          <div class="absolute top-4 left-4 flex w-[calc(100%-2rem)] items-start gap-2 overflow-hidden">
+        <div class="absolute top-4 left-4 flex w-[calc(100%_-_2rem)] items-start gap-2 overflow-hidden">
             <button
               v-if="entityLabel"
               type="button"
