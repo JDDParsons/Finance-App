@@ -1,31 +1,49 @@
 <script setup lang="ts">
 const props = defineProps<{
+  open: boolean
   isIncome: boolean
+  entity: string
+  selectedEntity: string | null
   suggestions: string[]
-  shouldAutofocus?: boolean
 }>()
 
-const entity = defineModel<string>('entity', { default: '' })
-const selectedEntity = defineModel<string | null>('selectedEntity', { default: null })
-
-const emit = defineEmits<{ continue: [] }>()
+const emit = defineEmits<{
+  save: [payload: { entity: string; selectedEntity: string | null }]
+  cancel: []
+}>()
 const fieldRef = ref<HTMLElement | null>(null)
+const draftEntity = ref('')
+const draftSelectedEntity = ref<string | null>(null)
 
 const filteredSuggestions = computed((): string[] => {
-  if (selectedEntity.value) return []
-  const query = entity.value.trim().toLowerCase()
+  if (draftSelectedEntity.value) return []
+  const query = draftEntity.value.trim().toLowerCase()
   if (!query) return props.suggestions
   return props.suggestions.filter(s => s.toLowerCase().includes(query))
 })
 
 function applySuggestion(suggestion: string) {
-  entity.value = suggestion
-  selectedEntity.value = suggestion
+  draftEntity.value = suggestion
+  draftSelectedEntity.value = suggestion
 }
 
 function clearEntity() {
-  entity.value = ''
-  selectedEntity.value = null
+  draftEntity.value = ''
+  draftSelectedEntity.value = null
+  focusField()
+}
+
+function syncDrafts() {
+  draftEntity.value = props.entity
+  draftSelectedEntity.value = props.selectedEntity
+}
+
+function handleSave() {
+  const normalizedEntity = draftEntity.value.trim()
+  emit('save', {
+    entity: normalizedEntity,
+    selectedEntity: normalizedEntity || null,
+  })
 }
 
 function focusField() {
@@ -40,42 +58,33 @@ function focusField() {
   })
 }
 
-watch(() => props.shouldAutofocus, (shouldAutofocus) => {
-  if (!shouldAutofocus || selectedEntity.value) return
-  focusField()
+watch(() => props.open, (open) => {
+  if (!open) return
+  syncDrafts()
+  if (!draftSelectedEntity.value) {
+    focusField()
+  }
 }, { immediate: true })
 </script>
 
 <template>
-  <div class="absolute inset-0 flex flex-col">
-    <div class="shrink-0 px-4 pt-4 pb-0">
-      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
-        {{ isIncome ? 'Add a Payer' : 'Add a Payee' }}
-        <span class="text-base font-normal text-gray-400 dark:text-gray-500">(Optional)</span>
-      </h2>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        {{ isIncome ? 'Who paid you?' : 'Who did you pay?' }}
-      </p>
-    </div>
-
-    <div class="flex-1 min-h-0 overflow-y-auto px-4 py-4">
-      <!-- Pill display when entity is selected -->
+  <div class="p-4 pt-0">
+    <div class="min-h-0">
       <div
-        v-if="selectedEntity"
+        v-if="draftSelectedEntity"
         class="flex h-11 items-center gap-2 rounded-md border border-gray-300 px-3 dark:border-gray-700"
       >
         <span class="rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-sm text-green-700 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-300">
-          {{ selectedEntity }}
+          {{ draftSelectedEntity }}
         </span>
         <button type="button" class="ml-auto cursor-pointer" @click="clearEntity">
           <UIcon name="heroicons:x-circle" class="size-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" />
         </button>
       </div>
 
-      <!-- Text input when no entity is selected -->
       <div v-else ref="fieldRef">
         <UInput
-          v-model="entity"
+          v-model="draftEntity"
           variant="soft"
           color="neutral"
           :placeholder="isIncome ? 'Enter a payer...' : 'Enter a payee...'"
@@ -83,7 +92,7 @@ watch(() => props.shouldAutofocus, (shouldAutofocus) => {
           size="xl"
           class="w-full"
         >
-          <template v-if="entity" #trailing>
+          <template v-if="draftEntity" #trailing>
             <button type="button" class="cursor-pointer" @click="clearEntity">
               <UIcon name="heroicons:x-circle" class="size-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" />
             </button>
@@ -104,21 +113,13 @@ watch(() => props.shouldAutofocus, (shouldAutofocus) => {
       </div>
     </div>
 
-      <UButton
-        variant="ghost"
-        color="neutral"
-        size="xl"
-        class="w-75 h-15 mb-4 mx-auto border 
-        border-b-[3px] 
-        bg-linear-to-r from-green-200 to-emerald-300 border-emerald-500 
-        dark:from-green-500/60 dark:to-emerald-300/20 dark:border-emerald-500/50
-        shadow-md dark:shadow-gray-700 
-        justify-center rounded-full text-center text-base font-semibold 
-        transition-all duration-100 ease-in-out
-        active:brightness-110 active:border-emerald-700 active:shadow-green-500/50 active:scale-[0.98]"
-        @click="emit('continue')"
-      >
-        Continue
+    <div class="mt-6 flex justify-end gap-2">
+      <UButton color="neutral" variant="ghost" @click="emit('cancel')">
+        Cancel
       </UButton>
+      <UButton color="primary" @click="handleSave">
+        Save
+      </UButton>
+    </div>
   </div>
 </template>
