@@ -42,7 +42,7 @@ function handleSave() {
   const normalizedEntity = draftEntity.value.trim()
   emit('save', {
     entity: normalizedEntity,
-    selectedEntity: normalizedEntity || null,
+    selectedEntity: draftSelectedEntity.value ? normalizedEntity : null,
   })
 }
 
