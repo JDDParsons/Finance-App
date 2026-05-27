@@ -44,6 +44,15 @@ const typePillAriaLabel = computed(() =>
     : (expensePillBudget.value ? `Change budget from ${expensePillBudget.value.name}` : 'Choose budget')
 )
 
+const displayAmount = computed(() => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(parseFloat(amount.value || '0'))
+})
+
 const submitLabel = computed(() => isIncome.value ? 'Submit income' : 'Submit expense')
 </script>
 
@@ -60,8 +69,14 @@ const submitLabel = computed(() => isIncome.value ? 'Submit income' : 'Submit ex
         </span>
       </div>
 
-      <AmountNumberPad v-model="amount" class="min-h-0 flex-1">
-        <template #controls>
+      <div class="flex min-h-0 flex-1 flex-col justify-end">
+        <div class="px-4 py-24 text-center">
+          <p class="text-7xl font-light tracking-tight text-gray-900 dark:text-white sm:text-8xl">
+            {{ displayAmount }}
+          </p>
+        </div>
+
+        <div class="px-4 pb-4">
           <div class="flex flex-wrap items-center justify-center gap-3">
             <button
               type="button"
@@ -100,21 +115,30 @@ const submitLabel = computed(() => isIncome.value ? 'Submit income' : 'Submit ex
             <DateTagPicker v-model="date" />
             <AccountTagPicker v-model="accountId" :accounts="store.accounts" />
           </div>
-        </template>
+        </div>
+      </div>
 
-        <template #actions>
-          <UButton
-            color="primary"
-            variant="solid"
-            class="create-flow-action-button w-full justify-center rounded-none bg-gradient-to-r from-green-400 to-emerald-500 text-center text-base font-semibold text-white shadow-lg shadow-green-500/30 transition-all duration-200 hover:from-green-500 hover:to-emerald-600 hover:shadow-green-500/50 active:scale-[0.98]"
-            :disabled="loading"
-            :loading="loading"
-            @click="emit('submit')"
-          >
-            {{ submitLabel }}
-          </UButton>
-        </template>
-      </AmountNumberPad>
+      <AmountNumberPad v-model="amount" />
+
+      <div class="shrink-0 bg-green-50 px-4 pb-4 dark:bg-green-900/40">
+        <UButton
+          color="primary"
+          variant="ghost"
+          class="mx-auto flex h-15 w-90 justify-center rounded-full 
+          border-2 border-green-500 bg-linear-to-r from-green-400 to-emerald-500 
+          dark:border-emerald-500/50 dark:from-green-500/80 dark:to-emerald-400/30
+          text-center text-base font-semibold text-white 
+          shadow-lg shadow-green-500/30 
+          transition-all duration-200 
+          hover:from-green-500 hover:to-emerald-600 hover:shadow-green-500/50 
+          active:scale-[0.95] active:brightness-110"
+          :disabled="loading"
+          :loading="loading"
+          @click="emit('submit')"
+        >
+          {{ submitLabel }}
+        </UButton>
+      </div>
     </div>
   </div>
 </template>

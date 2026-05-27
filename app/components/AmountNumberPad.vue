@@ -27,19 +27,9 @@ watch(() => props.modelValue, (val) => {
   }
 }, { immediate: true })
 
-const centsValue = computed(() => parseInt(digitsStr.value || '0', 10))
-
-const displayAmount = computed(() => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(centsValue.value / 100)
-})
-
 function emitValue() {
-  emit('update:modelValue', centsValue.value > 0 ? (centsValue.value / 100).toFixed(2) : '')
+  const centsValue = parseInt(digitsStr.value || '0', 10)
+  emit('update:modelValue', centsValue > 0 ? (centsValue / 100).toFixed(2) : '')
 }
 
 function appendDigit(digit: number) {
@@ -111,26 +101,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex h-full min-h-0 flex-col">
-    <div class="flex flex-1 min-h-0 flex-col justify-end">
-      <div class="px-4 py-24 text-center">
-        <p class="text-7xl font-light tracking-tight text-gray-900 dark:text-white sm:text-8xl">
-          {{ displayAmount }}
-        </p>
-      </div>
-
-      <div class="px-4 pb-4">
-        <slot name="controls" />
-      </div>
-
-    </div>
-
-    <div class="mt-auto grid grid-cols-3 gap-1 border-gray-200 px-3 pt-2 pb-2 dark:border-gray-800 bg-blue-50 dark:bg-blue-900/10 border-t-blue-200 dark:border-t-blue-900 border-t-4">
+  <div class="shrink-0 grid grid-cols-3 gap-1 border-t-4 border-gray-200 border-t-green-300 bg-green-50 px-3 pt-2 pb-2 dark:border-gray-800 dark:border-t-green-900 dark:bg-green-900/40">
       <template v-for="row in keypadRows" :key="row.join('-')">
         <template v-for="key in row" :key="String(key)">
           <button
             type="button"
-            class="flex h-18 items-center justify-center shadow-md border-2 transition-colors duration-150 active:scale-[0.98] cursor-pointer rounded-2xl border-gray-200 bg-gray-50 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
+            class="flex h-18 items-center justify-center shadow-sm border transition-colors duration-150 active:scale-[0.98] cursor-pointer rounded-2xl border-gray-200 bg-gray-50 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
             :class="[
               flashedKey === key
                 ? 'border-green-300 bg-green-100 text-gray-900 dark:border-green-600 dark:bg-green-800/50 dark:text-white'
@@ -150,10 +126,5 @@ onBeforeUnmount(() => {
           </button>
         </template>
       </template>
-    </div>
-
-    <div v-if="$slots.actions" class="shrink-0 border-t border-gray-100 dark:border-gray-800">
-      <slot name="actions" />
-    </div>
   </div>
 </template>

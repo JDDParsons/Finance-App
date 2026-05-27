@@ -56,15 +56,6 @@ html:not(.app-loaded) body {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
-@utility pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-@utility create-flow-action-button {
-  min-height: calc(4.5rem + env(safe-area-inset-bottom, 0px));
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
 /* Extend sticky UHeader to cover the status bar area.
    - margin-top cancels the body padding-top so the header sits flush at y=0
    - --ui-header-height grows to include the safe area (box-sizing: border-box, so total height = safe area + 4rem)

@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
 
-useHead({ title: 'Create Transaction | R&J Finance' })
+ // app/pages/cashflow/create.vue
+ useHead({ title: 'Create Transaction | Budgify',
+  meta: [
+     { name: 'theme-color', content: '#f0fdf4' }, // or your exact green
+   ]
+ })
 
 const store = useFinanceStore()
 const router = useRouter()
@@ -117,10 +122,15 @@ async function handleSubmit() {
 <template>
   <div class="bg-white dark:bg-gray-950">
     <div class="mx-auto flex min-h-[calc(100dvh-env(safe-area-inset-top))] max-w-2xl flex-col bg-white dark:bg-gray-950">
-      <div class="border-b-4 bg-blue-50 border-b-blue-200 dark:bg-blue-900/10 dark:border-b-blue-900 px-2 py-2 sm:px-4">
+      <div 
+        class="border-b-4 bg-green-50 border-b-green-300 dark:bg-green-900/40 dark:border-green-900 px-2 py-2 pt-safe sm:px-4"
+        style="margin-top: calc(-1 * env(safe-area-inset-top));"
+      >
         <UButton
-          color="secondary"
-          variant="soft"
+          class="mt-1"
+          color="primary"
+          variant="ghost"
+          size="xl"
           icon="heroicons:arrow-left"
           aria-label="Back"
           @click="goBack"

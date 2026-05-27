@@ -48,15 +48,22 @@ watch(() => props.shouldAutofocus, (shouldAutofocus) => {
       </div>
     </div>
 
-    <div class="shrink-0 border-t border-gray-100 dark:border-gray-800">
       <UButton
-        variant="outline"
-        class="bg-green-300 dark:bg-green-700 create-flow-action-button w-full justify-center rounded-none text-center text-base font-semibold"
+        variant="ghost"
+        color="neutral"
+        size="xl"
+        class="w-75 h-15 mb-4 mx-auto border 
+        border-b-[3px] 
+        bg-linear-to-r from-green-200 to-emerald-300 border-emerald-500 
+        dark:from-green-500/60 dark:to-emerald-300/20 dark:border-emerald-500/50
+        shadow-md dark:shadow-gray-700 
+        justify-center rounded-full text-center text-base font-semibold 
+        transition-all duration-100 ease-in-out
+        active:brightness-110 active:border-emerald-700 active:shadow-lg active:scale-[0.98]"
         @click="emit('continue')"
       >
         Continue
       </UButton>
-    </div>
   </div>
 </template>
 
