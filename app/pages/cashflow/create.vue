@@ -70,7 +70,7 @@ function handleBudgetSelect(selection: { budgetId: string | null; budgetName: st
   accountId.value = selection.type === 'income'
     ? (store.defaultIncomeAccount?.id ?? null)
     : (store.defaultExpenseAccount?.id ?? null)
-  if (selection.budgetId) {
+  if (selection.budgetId && !store.budgetAllEntities.has(selection.budgetId)) {
     store.fetchBudgetEntities(selection.budgetId)
   }
   setStep('choose-entity')
@@ -117,15 +117,16 @@ async function handleSubmit() {
 <template>
   <div class="bg-white dark:bg-gray-950">
     <div class="mx-auto flex min-h-[calc(100dvh-env(safe-area-inset-top))] max-w-2xl flex-col bg-white dark:bg-gray-950">
-      <div class="border-b border-gray-200 px-2 py-2 dark:border-gray-800 sm:px-4">
+      <div class="border-b-4 bg-blue-50 border-b-blue-200 dark:bg-blue-900/10 dark:border-b-blue-900 px-2 py-2 sm:px-4">
         <UButton
-          color="neutral"
-          variant="ghost"
+          color="secondary"
+          variant="soft"
           icon="heroicons:arrow-left"
+          aria-label="Back"
           @click="goBack"
         >
-          Back
         </UButton>
+        
       </div>
 
       <div class="relative flex-1 min-h-0 overflow-hidden">

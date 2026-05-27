@@ -43,16 +43,15 @@ watch(() => props.shouldAutofocus, (shouldAutofocus) => {
           color="neutral"
           placeholder="e.g. Receipt #1234, split with Sarah..."
           :rows="5"
-          class="w-full"
+          class="note-textarea w-full"
         />
       </div>
     </div>
 
     <div class="shrink-0 border-t border-gray-100 dark:border-gray-800">
       <UButton
-        color="primary"
-        variant="solid"
-        class="h-14 w-full justify-center rounded-none text-center text-base font-semibold"
+        variant="outline"
+        class="bg-green-300 dark:bg-green-700 create-flow-action-button w-full justify-center rounded-none text-center text-base font-semibold"
         @click="emit('continue')"
       >
         Continue
@@ -60,3 +59,9 @@ watch(() => props.shouldAutofocus, (shouldAutofocus) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.note-textarea :deep(textarea) {
+  font-size: 16px;
+}
+</style>

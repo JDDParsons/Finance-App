@@ -11,7 +11,7 @@ export const useFinanceStore = defineStore('finance', () => {
   } = useBudgetsApi()
   const {
     getBudgetHitsByMonth, getIncomeByMonth,
-    getBudgetEntities,
+    getBudgetEntities, getBudgetEntitiesByBudgetIds,
     insertIncome, deleteIncome,
     createBudgetHit, deleteBudgetHit, updateBudgetHit,
     getUserProfiles,
@@ -60,6 +60,35 @@ export const useFinanceStore = defineStore('finance', () => {
     })
   }
 
+  function normalizeEntities(entities: string[]) {
+    const seen = new Set<string>()
+    const normalized: string[] = []
+
+    for (const value of entities) {
+      const entity = value.trim()
+      if (!entity || seen.has(entity)) continue
+      seen.add(entity)
+      normalized.push(entity)
+    }
+
+    return normalized
+  }
+
+  function createBudgetEntityMap(budgetIds: string[], entitiesByBudget: Record<string, string[]>) {
+    return new Map(
+      budgetIds.map(budgetId => [budgetId, normalizeEntities(entitiesByBudget[budgetId] ?? [])])
+    )
+  }
+
+  function reconcileBudgetEntityMap(rawBudgets: any[]) {
+    return new Map(
+      rawBudgets
+        .map((budget: any) => budget?.id)
+        .filter(Boolean)
+        .map((budgetId: string) => [budgetId, budgetAllEntities.value.get(budgetId) ?? []])
+    )
+  }
+
   // ── fetch ─────────────────────────────────────────────────────────────────
 
   /** @param silent When true, skips setting loading/refreshing flags on this store and any dependent store fetches. */
@@ -89,13 +118,21 @@ export const useFinanceStore = defineStore('finance', () => {
       prevMonthBudgetHits.value = prevHits
       income.value = inc
       budgets.value = enrichBudgets(rawBudgets, hits)
+      const budgetIds = rawBudgets
+        .map((budget: any) => budget?.id)
+        .filter(Boolean)
       initialized.value = true
-      // Load user profiles for all unique user_ids in this month's hits
       const uniqueUserIds = [...new Set((hits as any[]).map((h: any) => h.user_id).filter(Boolean))] as string[]
-      const profiles = await getUserProfiles(uniqueUserIds)
+      const [profiles, entitiesByBudget] = await Promise.all([
+        getUserProfiles(uniqueUserIds),
+        budgetIds.length
+          ? getBudgetEntitiesByBudgetIds(budgetIds)
+          : Promise.resolve({} as Record<string, string[]>),
+      ])
       const profileMap = new Map<string, { firstName: string | null; avatarLink: string | null }>()
       for (const p of profiles) profileMap.set(p.id, { firstName: p.first_name, avatarLink: p.avatar_link })
       userProfiles.value = profileMap
+      budgetAllEntities.value = createBudgetEntityMap(budgetIds, entitiesByBudget)
     } catch (err: any) {
       error.value = err?.message || 'Failed to load data'
     } finally {
@@ -115,6 +152,7 @@ export const useFinanceStore = defineStore('finance', () => {
     const [rawBudgets, hits] = await Promise.all([getBudgetsByMonth(year, month), getBudgetHitsByMonth(year, month)])
     budgetHits.value = hits
     budgets.value = enrichBudgets(rawBudgets, hits)
+    budgetAllEntities.value = reconcileBudgetEntityMap(rawBudgets)
   }
 
   // ── month navigation ──────────────────────────────────────────────────────
@@ -169,8 +207,11 @@ export const useFinanceStore = defineStore('finance', () => {
   // ── entity suggestions ────────────────────────────────────────────────────
 
   async function fetchBudgetEntities(budgetId: string) {
-    const entities = await getBudgetEntities(budgetId)
-    budgetAllEntities.value = new Map(budgetAllEntities.value).set(budgetId, entities)
+    const entitiesByBudget = await getBudgetEntities(budgetId)
+    budgetAllEntities.value = new Map(budgetAllEntities.value).set(
+      budgetId,
+      normalizeEntities(entitiesByBudget[budgetId] ?? [])
+    )
   }
 
   // ── income ────────────────────────────────────────────────────────────────
@@ -233,6 +274,9 @@ export const useFinanceStore = defineStore('finance', () => {
   async function removeBudget(id: string) {
     await deleteBudget(id)
     budgets.value = budgets.value.filter((b: any) => b.id !== id)
+    const nextBudgetEntities = new Map(budgetAllEntities.value)
+    nextBudgetEntities.delete(id)
+    budgetAllEntities.value = nextBudgetEntities
   }
 
   return {
