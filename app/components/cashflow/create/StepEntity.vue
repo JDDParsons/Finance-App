@@ -106,9 +106,8 @@ watch(() => props.shouldAutofocus, (shouldAutofocus) => {
 
     <div class="shrink-0 border-t border-gray-100 dark:border-gray-800">
       <UButton
-        color="primary"
-        variant="solid"
-        class="h-14 w-full justify-center rounded-none text-center text-base font-semibold"
+        variant="outline"
+        class="bg-green-300 dark:bg-green-700 create-flow-action-button w-full justify-center rounded-none text-center text-base font-semibold"
         @click="emit('continue')"
       >
         Continue

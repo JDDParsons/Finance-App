@@ -9,6 +9,11 @@ export function useHitsApi() {
     return apiFetch<string[]>(`/api/hits/entities?budgetId=${budgetId}`)
   }
 
+  function getBudgetEntitiesByBudgetIds(budgetIds: string[]) {
+    const param = encodeURIComponent(budgetIds.join(','))
+    return apiFetch<Record<string, string[]>>(`/api/hits/entities?budgetIds=${param}`)
+  }
+
   function getIncomeByMonth(year: number, month: number) {
     return apiFetch<any[]>(`/api/income/by-month?year=${year}&month=${month}`)
   }
@@ -65,6 +70,7 @@ export function useHitsApi() {
   return {
     getBudgetHitsByMonth,
     getBudgetEntities,
+    getBudgetEntitiesByBudgetIds,
     getIncomeByMonth,
     insertIncome,
     deleteIncome,

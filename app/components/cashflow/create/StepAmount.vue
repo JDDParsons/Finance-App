@@ -106,7 +106,7 @@ const submitLabel = computed(() => isIncome.value ? 'Submit income' : 'Submit ex
           <UButton
             color="primary"
             variant="solid"
-            class="h-14 w-full justify-center rounded-none bg-gradient-to-r from-green-400 to-emerald-500 text-center text-base font-semibold text-white shadow-lg shadow-green-500/30 transition-all duration-200 hover:from-green-500 hover:to-emerald-600 hover:shadow-green-500/50 active:scale-[0.98]"
+            class="create-flow-action-button w-full justify-center rounded-none bg-gradient-to-r from-green-400 to-emerald-500 text-center text-base font-semibold text-white shadow-lg shadow-green-500/30 transition-all duration-200 hover:from-green-500 hover:to-emerald-600 hover:shadow-green-500/50 active:scale-[0.98]"
             :disabled="loading"
             :loading="loading"
             @click="emit('submit')"

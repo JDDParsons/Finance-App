@@ -151,10 +151,35 @@ export async function deleteIncome(supabase: SupabaseClient, id: string) {
   if (error) throw error
 }
 
+function collectDistinctEntities(rows: Array<{ budget_id?: string | null; entity?: string | null }>) {
+  const seenByBudget = new Map<string, Set<string>>()
+  const entitiesByBudget = new Map<string, string[]>()
+
+  for (const row of rows) {
+    const budgetId = row.budget_id ?? null
+    const entity = row.entity?.trim()
+
+    if (!budgetId || !entity) continue
+
+    if (!seenByBudget.has(budgetId)) {
+      seenByBudget.set(budgetId, new Set())
+      entitiesByBudget.set(budgetId, [])
+    }
+
+    const seen = seenByBudget.get(budgetId)
+    if (!seen || seen.has(entity)) continue
+
+    seen.add(entity)
+    entitiesByBudget.get(budgetId)?.push(entity)
+  }
+
+  return entitiesByBudget
+}
+
 export async function getDistinctEntitiesByBudget(supabase: SupabaseClient, budgetId: string): Promise<string[]> {
   const { data, error } = await getClient(supabase)
     .from('Budget_Hit')
-    .select('entity')
+    .select('budget_id, entity')
     .eq('budget_id', budgetId)
     .eq('type', 'Expense')
     .not('entity', 'is', null)
@@ -163,16 +188,31 @@ export async function getDistinctEntitiesByBudget(supabase: SupabaseClient, budg
 
   if (error) throw error
 
-  const seen = new Set<string>()
-  const results: string[] = []
-  for (const row of (data || [])) {
-    const entity = row.entity?.trim()
-    if (entity && !seen.has(entity)) {
-      seen.add(entity)
-      results.push(entity)
-    }
-  }
-  return results
+  return collectDistinctEntities(data || []).get(budgetId) ?? []
+}
+
+export async function getDistinctEntitiesByBudgets(
+  supabase: SupabaseClient,
+  budgetIds: string[]
+): Promise<Record<string, string[]>> {
+  const normalizedBudgetIds = [...new Set(budgetIds.map(id => id.trim()).filter(Boolean))]
+  if (!normalizedBudgetIds.length) return {}
+
+  const { data, error } = await getClient(supabase)
+    .from('Budget_Hit')
+    .select('budget_id, entity')
+    .in('budget_id', normalizedBudgetIds)
+    .eq('type', 'Expense')
+    .not('entity', 'is', null)
+    .neq('entity', '')
+    .order('date', { ascending: false })
+
+  if (error) throw error
+
+  const distinctEntities = collectDistinctEntities(data || [])
+  return Object.fromEntries(
+    normalizedBudgetIds.map(budgetId => [budgetId, distinctEntities.get(budgetId) ?? []])
+  )
 }
 
 export async function getBudgetHitsByMonth(supabase: SupabaseClient, year: number, month: number) {
