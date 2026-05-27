@@ -13,10 +13,10 @@ export function useHitsApi() {
     return apiFetch<any[]>(`/api/income/by-month?year=${year}&month=${month}`)
   }
 
-  function insertIncome(amount: number, date: string, entity: string, accountId: string | null = null) {
+  function insertIncome(amount: number, date: string, entity: string, accountId: string | null = null, notes: string | null = null) {
     return apiFetch<any>('/api/income', {
       method: 'POST',
-      body: { amount, date, entity, accountId },
+      body: { amount, date, entity, accountId, notes },
     })
   }
 
@@ -29,11 +29,12 @@ export function useHitsApi() {
     date: string,
     amount: string,
     entity: string,
-    accountId: string | null = null
+    accountId: string | null = null,
+    notes: string | null = null
   ) {
     return apiFetch<any>('/api/hits', {
       method: 'POST',
-      body: { budgetId, date, amount, entity, accountId },
+      body: { budgetId, date, amount, entity, accountId, notes },
     })
   }
 
@@ -47,11 +48,12 @@ export function useHitsApi() {
     date: string,
     amount: string,
     entity: string,
-    accountId: string | null = null
+    accountId: string | null = null,
+    notes?: string | null
   ) {
     return apiFetch<any>(`/api/hits/${id}`, {
       method: 'PUT',
-      body: { budgetId, date, amount, entity, accountId },
+      body: { budgetId, date, amount, entity, accountId, notes },
     })
   }
 

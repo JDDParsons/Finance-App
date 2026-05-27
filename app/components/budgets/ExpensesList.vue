@@ -187,6 +187,7 @@ const tableColumns = [
                     :expense-amount="selectedHit.amount"
                     :expense-date="selectedHit.date"
                     :expense-entity="selectedHit.entity"
+                    :expense-notes="selectedHit.notes"
                     :expense-budget-id="selectedHit.budget_id"
                     @update="handleEditHitClose"
                     @cancel="handleEditHitClose"

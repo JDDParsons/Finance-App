@@ -96,10 +96,10 @@ async function handleSubmit() {
     error.value = null
 
     if (isIncome.value) {
-      await store.addIncome(parseFloat(amount.value), date.value, entity.value, accountId.value)
+      await store.addIncome(parseFloat(amount.value), date.value, entity.value, accountId.value, notes.value)
     } else {
       const budgetIdToSubmit = noBudget.value ? null : selectedBudgetId.value
-      await store.addExpense(budgetIdToSubmit, date.value, amount.value, entity.value, accountId.value)
+      await store.addExpense(budgetIdToSubmit, date.value, amount.value, entity.value, accountId.value, notes.value)
     }
 
     await store.fetchAll()

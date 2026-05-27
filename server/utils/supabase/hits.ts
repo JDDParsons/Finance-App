@@ -12,7 +12,8 @@ export async function createBudgetHit(
   date: string,
   amount: string,
   entity: string,
-  accountId: string | null = null
+  accountId: string | null = null,
+  notes: string | null = null
 ) {
   const { data, error } = await getClient(supabase)
     .from('Budget_Hit')
@@ -21,6 +22,7 @@ export async function createBudgetHit(
       date,
       amount: parseFloat(amount),
       entity,
+      notes,
       type: 'Expense',
       account_id: accountId,
       user_id: userId,
@@ -72,17 +74,24 @@ export async function updateBudgetHit(
   date: string,
   amount: string,
   entity: string,
-  accountId: string | null = null
+  accountId: string | null = null,
+  notes?: string | null
 ) {
+  const updatePayload: Record<string, unknown> = {
+    budget_id: budgetId,
+    date,
+    amount: parseFloat(amount),
+    entity,
+    account_id: accountId,
+  }
+
+  if (typeof notes !== 'undefined') {
+    updatePayload.notes = notes
+  }
+
   const { data, error } = await getClient(supabase)
     .from('Budget_Hit')
-    .update({
-      budget_id: budgetId,
-      date,
-      amount: parseFloat(amount),
-      entity,
-      account_id: accountId,
-    })
+    .update(updatePayload)
     .eq('id', id)
     .select()
     .single()
@@ -110,7 +119,8 @@ export async function insertIncome(
   amount: number,
   date: string,
   entity: string,
-  accountId: string | null = null
+  accountId: string | null = null,
+  notes: string | null = null
 ) {
   const { data, error } = await getClient(supabase)
     .from('Budget_Hit')
@@ -118,6 +128,7 @@ export async function insertIncome(
       amount,
       date,
       entity,
+      notes,
       type: 'Income',
       budget_id: null,
       account_id: accountId,
