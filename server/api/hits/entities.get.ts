@@ -7,13 +7,10 @@ export default defineEventHandler(async (event) => {
     .map(id => id.trim())
     .filter(Boolean)
 
-  if (budgetIds.length) {
-    return getDistinctEntitiesByBudgets(supabase, budgetIds)
-  }
-
-  if (!budgetId) {
+  const requestedBudgetIds = budgetIds.length ? budgetIds : budgetId ? [budgetId] : []
+  if (!requestedBudgetIds.length) {
     throw createError({ statusCode: 400, message: 'budgetId or budgetIds query param is required' })
   }
 
-  return getDistinctEntitiesByBudget(supabase, budgetId)
+  return getDistinctEntitiesByBudgets(supabase, requestedBudgetIds)
 })

@@ -207,8 +207,11 @@ export const useFinanceStore = defineStore('finance', () => {
   // ── entity suggestions ────────────────────────────────────────────────────
 
   async function fetchBudgetEntities(budgetId: string) {
-    const entities = await getBudgetEntities(budgetId)
-    budgetAllEntities.value = new Map(budgetAllEntities.value).set(budgetId, normalizeEntities(entities))
+    const entitiesByBudget = await getBudgetEntities(budgetId)
+    budgetAllEntities.value = new Map(budgetAllEntities.value).set(
+      budgetId,
+      normalizeEntities(entitiesByBudget[budgetId] ?? [])
+    )
   }
 
   // ── income ────────────────────────────────────────────────────────────────

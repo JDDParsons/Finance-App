@@ -1,17 +1,19 @@
 import { apiFetch } from '~/composables/useApiToken'
 
 export function useHitsApi() {
+  type BudgetEntitiesByBudget = Record<string, string[]>
+
   function getBudgetHitsByMonth(year: number, month: number) {
     return apiFetch<any[]>(`/api/hits/by-month?year=${year}&month=${month}`)
   }
 
   function getBudgetEntities(budgetId: string) {
-    return apiFetch<string[]>(`/api/hits/entities?budgetId=${budgetId}`)
+    return apiFetch<BudgetEntitiesByBudget>(`/api/hits/entities?budgetId=${budgetId}`)
   }
 
   function getBudgetEntitiesByBudgetIds(budgetIds: string[]) {
     const param = encodeURIComponent(budgetIds.join(','))
-    return apiFetch<Record<string, string[]>>(`/api/hits/entities?budgetIds=${param}`)
+    return apiFetch<BudgetEntitiesByBudget>(`/api/hits/entities?budgetIds=${param}`)
   }
 
   function getIncomeByMonth(year: number, month: number) {
