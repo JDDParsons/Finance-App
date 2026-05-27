@@ -7,7 +7,8 @@ const props = defineProps<{
   id: string
   amount: number | null
   date: string | null
-  note?: string | null
+  entity?: string | null
+  notes?: string | null
   budgetName?: string | null
   budgetColor?: string | null
   budgetIcon?: string | null
@@ -67,8 +68,8 @@ const borderColor = computed(() => props.budgetColor || '#E5E7EB')
         </template>
       </div>
 
-      <!-- Note -->
-      <span v-if="note" class="text-sm text-gray-600 dark:text-gray-300">{{ note }}</span>
+      <span v-if="entity" class="text-sm text-gray-600 dark:text-gray-300">{{ entity }}</span>
+      <span v-if="notes" class="text-xs text-gray-400 dark:text-gray-500">{{ notes }}</span>
 
       <!-- Bottom row: account + user info -->
       <div v-if="accountName !== null && accountName !== undefined || userFirstName" class="flex items-center gap-2 flex-wrap">

@@ -3,7 +3,7 @@ const props = defineProps<{
   id: string
   amount: number | null
   date: string | null
-  note?: string | null
+  entity?: string | null
   accountName?: string | null
 }>()
 
@@ -43,7 +43,7 @@ function isFuture(val: string | null) {
           <UBadge v-if="isFuture(date)" color="neutral" variant="subtle" class="ml-auto">Scheduled</UBadge>
         </div>
         <span class="text-sm text-gray-500">{{ formatDate(date) }}</span>
-        <span v-if="note" class="text-sm text-gray-600 dark:text-gray-300">{{ note }}</span>
+        <span v-if="entity" class="text-sm text-gray-600 dark:text-gray-300">{{ entity }}</span>
         <span v-if="accountName" class="text-xs text-gray-400">{{ accountName }}</span>
       </div>
       <UButton

@@ -154,7 +154,8 @@ CREATE TABLE IF NOT EXISTS "finance-app"."Budget_Hit" (
     "user_id" "uuid",
     "budget_id" "uuid",
     "date" "date",
-    "note" "text",
+    "entity" "text",
+    "notes" "text",
     "type" "text",
     "account_id" "uuid",
     "household_id" "uuid"
@@ -886,5 +887,3 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 
 
 drop extension if exists "pg_net";
-
-

@@ -125,7 +125,7 @@ const isBreakdownOpen = ref(true)
             <UIcon name="heroicons:question-mark-circle" class="w-4 h-4 text-yellow-400" />
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-xs font-medium text-gray-800 dark:text-gray-100 truncate">{{ h.note || 'No description' }}</p>
+            <p class="text-xs font-medium text-gray-800 dark:text-gray-100 truncate">{{ h.entity || 'No payee' }}</p>
             <p class="text-xs text-gray-400 dark:text-gray-500">{{ h.date }}</p>
           </div>
           <span class="text-sm font-medium shrink-0 text-gray-400 dark:text-gray-500">

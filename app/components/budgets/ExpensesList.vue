@@ -85,7 +85,7 @@ function formatCurrency(value: number | null) {
 const tableColumns = [
     { accessorKey: 'date',    header: 'Date',    id: 'date'    },
     { accessorKey: 'amount',  header: 'Amount',  id: 'amount'  },
-    { accessorKey: 'note',    header: 'Note',    id: 'note'    },
+    { accessorKey: 'entity',  header: 'Payee',   id: 'entity'  },
     { accessorKey: 'account', header: 'Account', id: 'account' },
     { id: 'actions',          header: ''                       },
 ]
@@ -119,7 +119,7 @@ const tableColumns = [
                         :id="hit.id"
                         :amount="hit.amount"
                         :date="hit.date"
-                        :note="hit.note"
+                        :entity="hit.entity"
                         :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
                         :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
                         :user-first-name="hit.user_id ? store.userProfiles.get(hit.user_id)?.firstName ?? null : null"
@@ -140,7 +140,7 @@ const tableColumns = [
             >
                 <template #date-cell="{ row }">{{ formatDate(row.original.date) }}</template>
                 <template #amount-cell="{ row }">{{ formatCurrency(row.original.amount) }}</template>
-                <template #note-cell="{ row }">{{ row.original.note || '-' }}</template>
+                <template #entity-cell="{ row }">{{ row.original.entity || '-' }}</template>
                 <template #account-cell="{ row }">
                     {{ row.original.account_id ? accountMap.get(row.original.account_id) ?? '-' : '-' }}
                 </template>
@@ -186,7 +186,8 @@ const tableColumns = [
                     :expense-id="selectedHit.id"
                     :expense-amount="selectedHit.amount"
                     :expense-date="selectedHit.date"
-                    :expense-note="selectedHit.note"
+                    :expense-entity="selectedHit.entity"
+                    :expense-notes="selectedHit.notes"
                     :expense-budget-id="selectedHit.budget_id"
                     @update="handleEditHitClose"
                     @cancel="handleEditHitClose"
@@ -196,4 +197,3 @@ const tableColumns = [
         </template>
     </UModal>
 </template>
-

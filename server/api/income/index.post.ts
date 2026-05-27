@@ -3,6 +3,6 @@ export default defineEventHandler(async (event) => {
   const householdId = await resolveHouseholdId(supabase, user.id)
   const body = await readBody(event)
 
-  const { amount, date, note, accountId } = body
-  return insertIncome(supabase, user.id, householdId, amount, date, note, accountId ?? null)
+  const { amount, date, entity, accountId, notes } = body
+  return insertIncome(supabase, user.id, householdId, amount, date, entity, accountId ?? null, notes ?? null)
 })
