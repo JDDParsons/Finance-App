@@ -1,27 +1,24 @@
-name: Deploy Supabase Migrations
+name: Check Supabase Migrations
 on:
-  push:
+  pull_request:
     branches:
       - main
 jobs:
-  deploy:
+  dry-run:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Clone the repository code into the runner
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      # Step 2: Use the official Supabase CLI action to run migrations
-      - name: Run Supabase Migrations
+      - name: Install Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: 1.133.3
 
-      # Step 3: Execute the migration command against production
-      - name: Link and Push to Remote DB
+      - name: Dry Run Migrations
         run: |
           supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
-          supabase db push
+          supabase db push --dry-run
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
