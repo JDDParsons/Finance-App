@@ -12,7 +12,7 @@ export const useFinanceStore = defineStore('finance', () => {
   const {
     getBudgetHitsByMonth, getIncomeByMonth,
     getBudgetEntities, getBudgetEntitiesByBudgetIds,
-    insertIncome, deleteIncome,
+    insertIncome, deleteIncome, updateIncome: apiUpdateIncome,
     createBudgetHit, deleteBudgetHit, updateBudgetHit,
     getUserProfiles,
   } = useHitsApi()
@@ -228,6 +228,16 @@ export const useFinanceStore = defineStore('finance', () => {
     income.value = income.value.filter(r => r.id !== id)
   }
 
+  async function updateIncome(id: string, amount: number, date: string, entity: string, accountId?: string | null, notes?: string | null) {
+    const existing = income.value.find((r: any) => r.id === id)
+    const resolvedAccountId = accountId === undefined ? (existing?.account_id ?? null) : accountId
+    const resolvedNotes = notes === undefined ? (existing?.notes ?? null) : notes
+    const row = await apiUpdateIncome(id, amount, date, entity, resolvedAccountId, resolvedNotes)
+    income.value = income.value.map(r => r.id === id ? row : r).sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    )
+  }
+
   // ── expenses ──────────────────────────────────────────────────────────────
 
   async function addExpense(budgetId: string | null, date: string, amount: string, entity: string, accountId: string | null = null, notes: string | null = null) {
@@ -306,6 +316,7 @@ export const useFinanceStore = defineStore('finance', () => {
     nextMonth,
     addIncome,
     removeIncome,
+    updateIncome,
     addExpense,
     removeExpense,
     updateExpense,

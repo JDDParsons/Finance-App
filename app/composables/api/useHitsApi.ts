@@ -31,6 +31,20 @@ export function useHitsApi() {
     return apiFetch<any>(`/api/income/${id}`, { method: 'DELETE' })
   }
 
+  function updateIncome(
+    id: string,
+    amount: number,
+    date: string,
+    entity: string,
+    accountId: string | null = null,
+    notes?: string | null
+  ) {
+    return apiFetch<any>(`/api/income/${id}`, {
+      method: 'PUT',
+      body: { amount, date, entity, accountId, notes },
+    })
+  }
+
   function createBudgetHit(
     budgetId: string | null,
     date: string,
@@ -76,6 +90,7 @@ export function useHitsApi() {
     getIncomeByMonth,
     insertIncome,
     deleteIncome,
+    updateIncome,
     createBudgetHit,
     deleteBudgetHit,
     updateBudgetHit,

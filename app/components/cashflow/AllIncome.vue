@@ -16,6 +16,30 @@ async function handleDelete(id: string) {
     alert('Error deleting income: ' + (err?.message || 'Unknown error'))
   }
 }
+
+const selectedIncome = ref<any>(null)
+const isEditingIncome = ref(false)
+
+function handleEdit(id: string) {
+  selectedIncome.value = incomeRows.value.find((r: any) => r.id === id) ?? null
+  if (selectedIncome.value) isEditingIncome.value = true
+}
+
+function handleEditClose() {
+  isEditingIncome.value = false
+  selectedIncome.value = null
+}
+
+async function handleModalDelete() {
+  if (!selectedIncome.value) return
+  if (!confirm('Are you sure you want to delete this income record? This action cannot be undone.')) return
+  try {
+    await store.removeIncome(selectedIncome.value.id)
+    handleEditClose()
+  } catch (err: any) {
+    alert(err?.message || 'Failed to delete income')
+  }
+}
 </script>
 
 <template>
@@ -43,7 +67,37 @@ async function handleDelete(id: string) {
         :entity="row.entity"
         :account-name="row.account_id ? accountMap.get(row.account_id) ?? null : null"
         @delete="handleDelete"
+        @edit="handleEdit"
       />
     </div>
   </div>
+
+  <UModal v-if="selectedIncome" v-model:open="isEditingIncome" @update:open="(val) => { if (!val) handleEditClose() }">
+    <template #content>
+      <UCard>
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h2 class="text-2xl font-bold">Edit Income</h2>
+            <UButton
+              icon="heroicons-solid:trash"
+              color="error"
+              variant="ghost"
+              size="sm"
+              @click="handleModalDelete"
+            />
+          </div>
+        </template>
+        <IncomeEdit
+          :income-id="selectedIncome.id"
+          :income-amount="selectedIncome.amount"
+          :income-date="selectedIncome.date"
+          :income-entity="selectedIncome.entity"
+          :income-account-id="selectedIncome.account_id ?? null"
+          @update="handleEditClose"
+          @cancel="handleEditClose"
+          @delete="handleEditClose"
+        />
+      </UCard>
+    </template>
+  </UModal>
 </template>

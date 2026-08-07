@@ -142,6 +142,37 @@ export async function insertIncome(
   return data
 }
 
+export async function updateIncome(
+  supabase: SupabaseClient,
+  id: string,
+  amount: number,
+  date: string,
+  entity: string,
+  accountId: string | null = null,
+  notes?: string | null
+) {
+  const updatePayload: Record<string, unknown> = {
+    amount,
+    date,
+    entity,
+    account_id: accountId,
+  }
+
+  if (typeof notes !== 'undefined') {
+    updatePayload.notes = notes
+  }
+
+  const { data, error } = await getClient(supabase)
+    .from('Budget_Hit')
+    .update(updatePayload)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 export async function deleteIncome(supabase: SupabaseClient, id: string) {
   const { error } = await getClient(supabase)
     .from('Budget_Hit')
