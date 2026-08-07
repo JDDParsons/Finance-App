@@ -16,7 +16,7 @@ jobs:
       - name: Run Supabase Migrations
         uses: supabase/setup-cli@v1
         with:
-          version: 1.133.3
+          version: 2.95.1
 
       # Step 3: Execute the migration command against production
       - name: Link and Push to Remote DB
