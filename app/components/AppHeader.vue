@@ -24,7 +24,11 @@ const profileInitial = computed(() => {
 </script>
 
 <template>
-  <UHeader :toggle="false">
+  <UHeader
+    :toggle="false"
+    class="lg:-ml-56 lg:w-[calc(100%+14rem)]"
+    :ui="{ root: 'bg-gradient-to-r from-gray-100/50 to-gray-50/50 backdrop-blur', container: 'max-w-none lg:pl-6' }"
+  >
     <template #left>
       <div class="flex items-center gap-2.5">
         <img src="/BudgifyWithLabel.png" alt="" class="h-14 w-14 rounded-lg shrink-0" />
