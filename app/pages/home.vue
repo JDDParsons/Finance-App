@@ -241,7 +241,6 @@ const chartOptions = {
   <div class="min-h-screen">
     <AppHeader title="Summary" />
 
-    <UContainer>
         <template v-if="store.loading || hasData">
         <div
           class="transition-opacity duration-300"
@@ -308,6 +307,5 @@ const chartOptions = {
             </div>
         </div>
 
-    </UContainer>
   </div>
 </template>
