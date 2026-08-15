@@ -1,7 +1,7 @@
 <template>
   <nav class="fixed top-(--ui-header-height) left-0 bottom-0 w-56 border-r border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 flex flex-col z-50">
 
-    <div class="flex flex-col flex-1 gap-1 px-3 pt-8 bg-gray-50">
+    <div class="flex flex-col flex-1 gap-1 px-3 pt-8">
       <NuxtLink
         v-for="item in navigation"
         :key="item.label"

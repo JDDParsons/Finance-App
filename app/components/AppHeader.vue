@@ -27,7 +27,7 @@ const profileInitial = computed(() => {
   <UHeader
     :toggle="false"
     class="lg:-ml-56 lg:w-[calc(100%+14rem)]"
-    :ui="{ root: 'bg-gradient-to-r from-gray-100/50 to-gray-50/50 backdrop-blur', container: 'max-w-none lg:pl-6' }"
+    :ui="{ container: 'max-w-none lg:pl-6' }"
   >
     <template #left>
       <div class="flex items-center gap-2.5">

@@ -4,6 +4,28 @@ import { useBudgetIcon } from '~/composables/useBudgetIcon'
 
 type TransactionType = 'expense' | 'income'
 
+type TransactionRow = {
+  id: string
+  date: string | null
+  type: TransactionType
+  amount: number | null
+  entity?: string | null
+  budget_id?: string | null
+  account_id?: string | null
+  notes?: string | null
+  kind: 'transaction'
+  [key: string]: any
+}
+
+type DateGroupRow = {
+  id: string
+  kind: 'date-group'
+  date: string
+  subRows: TransactionRow[]
+}
+
+type TableRow = TransactionRow | DateGroupRow
+
 const store = useFinanceStore()
 const { budgetIcon } = useBudgetIcon()
 
@@ -28,10 +50,12 @@ const transactions = computed(() => {
   const expenseRows = store.budgetHits.map((hit: any) => ({
     ...hit,
     type: 'expense' as TransactionType,
+    kind: 'transaction' as const,
   }))
   const incomeRows = store.income.map((row: any) => ({
     ...row,
     type: 'income' as TransactionType,
+    kind: 'transaction' as const,
   }))
 
   return [...expenseRows, ...incomeRows].sort((a: any, b: any) => {
@@ -41,10 +65,52 @@ const transactions = computed(() => {
   })
 })
 
+const groupedTransactions = computed<DateGroupRow[]>(() => {
+  const groups = new Map<string, TransactionRow[]>()
+
+  for (const transaction of transactions.value) {
+    const date = (transaction.date ?? '').slice(0, 10)
+    const rows = groups.get(date) ?? []
+    rows.push(transaction)
+    groups.set(date, rows)
+  }
+
+  return Array.from(groups, ([date, subRows]) => ({
+    id: `date-${date || 'unknown'}`,
+    kind: 'date-group' as const,
+    date,
+    subRows,
+  }))
+})
+
+const collapsedDates = ref(new Set<string>())
+
+const tableRows = computed<TableRow[]>(() =>
+  groupedTransactions.value.flatMap(group => [
+    group,
+    ...(collapsedDates.value.has(group.date) ? [] : group.subRows),
+  ])
+)
+
+function isDateGroup(row: TableRow): row is DateGroupRow {
+  return row.kind === 'date-group'
+}
+
+function isDateExpanded(date: string) {
+  return !collapsedDates.value.has(date)
+}
+
+function toggleDate(date: string) {
+  const next = new Set(collapsedDates.value)
+  if (next.has(date)) next.delete(date)
+  else next.add(date)
+  collapsedDates.value = next
+}
+
 function formatDate(dateString: string | null) {
   if (!dateString) return '-'
   return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC',
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC',
   })
 }
 
@@ -54,21 +120,41 @@ function formatCurrency(value: number | null) {
 }
 
 const tableColumns = [
-  { accessorKey: 'date',   header: 'Date',   id: 'date'   },
+  {
+    accessorKey: 'amount',
+    header: 'Amount',
+    id: 'amount',
+    meta: {
+      style: {
+        td: (cell: any) => {
+          const row = cell.row.original as TableRow
+          if (isDateGroup(row)) return { borderLeft: '4px solid #4b5563' }
+          if (row.type === 'income') return { borderLeft: '4px solid #86efac' }
+          if (!row.budget_id) return {}
+
+          const color = budgetColorMap.value.get(row.budget_id)
+          return color ? { borderLeft: `4px solid ${color}` } : {}
+        },
+      },
+    },
+  },
   { accessorKey: 'type',   header: 'Type',   id: 'type'   },
-  { accessorKey: 'amount', header: 'Amount', id: 'amount' },
-  { accessorKey: 'entity', header: 'Payee',  id: 'entity' },
   { accessorKey: 'budget', header: 'Budget', id: 'budget' },
-  { accessorKey: 'account',header: 'Account',id: 'account'},
+  { accessorKey: 'entity', header: 'Payer/Payee', id: 'entity' },
   { accessorKey: 'notes',  header: 'Notes',  id: 'notes'  },
-  { id: 'actions', header: '' },
+  { accessorKey: 'account',header: 'Account',id: 'account'},
 ]
 
 const selectedTransaction = ref<any>(null)
 const isEditingTransaction = ref(false)
 
 function handleRowClick(row: any) {
-  selectedTransaction.value = row
+  if (isDateGroup(row.original)) {
+    toggleDate(row.original.date)
+    return
+  }
+
+  selectedTransaction.value = row.original
   isEditingTransaction.value = true
 }
 
@@ -99,7 +185,7 @@ async function handleModalDelete() {
 </script>
 
 <template>
-  <div class="w-full">
+  <div class="w-full pr-4 sm:pr-6">
     <div v-if="store.loading" class="flex justify-center py-12">
       <UIcon name="heroicons-solid:arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
     </div>
@@ -112,15 +198,42 @@ async function handleModalDelete() {
 
     <UTable
       v-else
-      :data="transactions"
+      :data="tableRows"
       :columns="tableColumns"
+      :get-row-id="(row: TableRow) => isDateGroup(row) ? row.id : `${row.type}-${row.id}`"
+      :meta="{
+        class: {
+          tr: (row: any) => isDateGroup(row.original)
+            ? 'bg-gray-100/80 dark:bg-gray-800/70 hover:bg-gray-200/80 dark:hover:bg-gray-800'
+            : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+        }
+      }"
+      :ui="{ td: 'py-2', th: 'py-2.5' }"
       class="cursor-pointer"
-      @select="(_e: Event, row: any) => handleRowClick(row.original)"
+      @select="(_e: Event, row: any) => handleRowClick(row)"
     >
-      <template #date-cell="{ row }">{{ formatDate(row.original.date) }}</template>
+      <template #amount-cell="{ row }">
+        <div v-if="isDateGroup(row.original)" class="flex items-center w-30 gap-2 font-semibold text-sm whitespace-nowrap">
+          <span>{{ formatDate(row.original.date) }}</span>
+          <UButton
+            :icon="isDateExpanded(row.original.date) ? 'heroicons:chevron-down-20-solid' : 'heroicons:chevron-right-20-solid'"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            :aria-label="isDateExpanded(row.original.date) ? 'Collapse date' : 'Expand date'"
+            @click.stop="toggleDate(row.original.date)"
+          />
+        </div>
+        <span v-else>
+          {{ formatCurrency(row.original.amount) }}
+        </span>
+      </template>
 
       <template #type-cell="{ row }">
+        <span v-if="isDateGroup(row.original)" class="text-sm text-gray-500 dark:text-gray-400">
+        </span>
         <UBadge
+          v-else
           :color="row.original.type === 'income' ? 'success' : 'warning'"
           variant="subtle"
         >
@@ -128,12 +241,12 @@ async function handleModalDelete() {
         </UBadge>
       </template>
 
-      <template #amount-cell="{ row }">{{ formatCurrency(row.original.amount) }}</template>
-
-      <template #entity-cell="{ row }">{{ row.original.entity || '-' }}</template>
+      <template #entity-cell="{ row }">
+        <span v-if="!isDateGroup(row.original)">{{ row.original.entity || '-' }}</span>
+      </template>
 
       <template #budget-cell="{ row }">
-        <div v-if="row.original.type === 'expense' && row.original.budget_id" class="flex items-center gap-1.5">
+        <div v-if="!isDateGroup(row.original) && row.original.type === 'expense' && row.original.budget_id" class="flex items-center gap-1.5">
           <div
             class="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
             :style="budgetColorMap.get(row.original.budget_id) ? { backgroundColor: budgetColorMap.get(row.original.budget_id) + '33' } : {}"
@@ -146,33 +259,26 @@ async function handleModalDelete() {
           </div>
           <span>{{ budgetMap.get(row.original.budget_id) ?? '-' }}</span>
         </div>
-        <span v-else class="text-gray-400">—</span>
+        <span v-else-if="!isDateGroup(row.original)" class="text-gray-400">—</span>
       </template>
 
       <template #account-cell="{ row }">
-        {{ row.original.account_id ? accountMap.get(row.original.account_id) ?? '-' : '-' }}
+        <template v-if="!isDateGroup(row.original)">
+          {{ row.original.account_id ? accountMap.get(row.original.account_id) ?? '-' : '-' }}
+        </template>
       </template>
 
       <template #notes-cell="{ row }">
         <span
-          v-if="row.original.notes"
+          v-if="!isDateGroup(row.original) && row.original.notes"
           class="block max-w-[200px] truncate text-gray-500 dark:text-gray-400"
           :title="row.original.notes"
         >
           {{ row.original.notes }}
         </span>
-        <span v-else class="text-gray-400">—</span>
+        <span v-else-if="!isDateGroup(row.original)" class="text-gray-400">—</span>
       </template>
 
-      <template #actions-cell="{ row }">
-        <UButton
-          icon="heroicons-solid:trash"
-          color="error"
-          variant="ghost"
-          size="xs"
-          @click.stop="handleDelete(row.original)"
-        />
-      </template>
     </UTable>
 
     <UModal v-if="selectedTransaction" v-model:open="isEditingTransaction" @update:open="(val) => { if (!val) handleEditClose() }">
