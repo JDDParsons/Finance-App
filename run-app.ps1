@@ -291,6 +291,8 @@ try {
     Open-DevelopmentTools
 
     Write-Host 'Development environment is ready.' -ForegroundColor Green
+    Write-Host "Use '.\stop-app.ps1' to stop Nuxt and Supabase." -ForegroundColor DarkGray
+    Write-Host "Use '.\stop-app.ps1 -StopDocker' to stop them and Docker Desktop." -ForegroundColor DarkGray
     Write-Host "Use '.\run-app.ps1 -Rebuild' after dependency or Dockerfile changes." -ForegroundColor DarkGray
     Write-Host "Use '.\run-app.ps1 -RestartSupabase' to safely restart Supabase and apply config changes." -ForegroundColor DarkGray
 } finally {
