@@ -10,7 +10,7 @@ const activeTab = ref('expenses')
     <AppHeader title="Cashflow" />
 
     <!-- Mobile/tablet: tabs -->
-    <div class="px-4 pb-24 lg:pb-6 lg:hidden">
+    <div class="pb-24 lg:pb-6 lg:hidden">
       <UTabs
         v-model="activeTab"
         color="primary"
@@ -20,10 +20,14 @@ const activeTab = ref('expenses')
         ]"
       >
         <template #income>
-          <CashflowAllIncome />
+          <div class="px-4">
+            <CashflowAllIncome />
+          </div>
         </template>
         <template #expenses>
-          <CashflowAllExpenses />
+          <div class="px-4">
+            <CashflowAllExpenses />
+          </div>
         </template>
       </UTabs>
     </div>

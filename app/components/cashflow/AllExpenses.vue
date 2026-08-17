@@ -32,87 +32,66 @@ function toDateKey(value: string | null | undefined) {
   return value.slice(0, 10)
 }
 
-function formatDateSubheader(date: Date) {
+function dateFromKey(dateKey: string) {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
+function localDateKey(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function formatDateSubheader(dateKey: string) {
   return new Intl.DateTimeFormat('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric'
-  }).format(date)
+  }).format(dateFromKey(dateKey))
 }
 
-function formatDateRange(start: Date, end: Date) {
-  return `${formatDateSubheader(start)} - ${formatDateSubheader(end)}`
-}
+const dailyExpenseSections = computed(() => {
+  const groups = new Map<string, any[]>()
 
-const sevenDayExpenseSections = computed(() => {
+  for (const expense of expenses.value) {
+    const dateKey = toDateKey(expense.date)
+    if (!dateKey) continue
+
+    const items = groups.get(dateKey) ?? []
+    items.push(expense)
+    groups.set(dateKey, items)
+  }
+
   const today = new Date()
   today.setHours(0, 0, 0, 0)
+  const todayKey = localDateKey(today)
 
-  const trailingDays = Array.from({ length: 7 }, (_, index) => {
-    const day = new Date(today)
-    day.setDate(today.getDate() - index)
-    return day
-  })
+  const yesterday = new Date(today)
+  yesterday.setDate(today.getDate() - 1)
+  const yesterdayKey = localDateKey(yesterday)
 
-  return trailingDays
-    .map((day, index) => {
-      const dateKey = day.toISOString().slice(0, 10)
-      const dayExpenses = expenses.value.filter((hit: any) => toDateKey(hit.date) === dateKey)
-
-      let title = day.toLocaleDateString('en-US', { weekday: 'long' })
-      if (index === 0) title = 'Today'
-      if (index === 1) title = 'Yesterday'
+  return Array.from(groups.entries())
+    .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
+    .map(([dateKey, items]) => {
+      let title = dateFromKey(dateKey).toLocaleDateString('en-US', { weekday: 'long' })
+      if (dateKey === todayKey) title = 'Today'
+      if (dateKey === yesterdayKey) title = 'Yesterday'
 
       return {
         key: dateKey,
         title,
-        dateLabel: formatDateSubheader(day),
-        items: dayExpenses
+        dateLabel: formatDateSubheader(dateKey),
+        items
       }
     })
-    .filter(section => section.items.length > 0)
-})
-
-const overWeekAgoSection = computed(() => {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
-  const sevenDayStart = new Date(today)
-  sevenDayStart.setDate(today.getDate() - 6)
-
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
-  const olderRangeEnd = new Date(sevenDayStart)
-  olderRangeEnd.setDate(sevenDayStart.getDate() - 1)
-
-  if (olderRangeEnd < monthStart) return null
-
-  const items = expenses.value.filter((hit: any) => {
-    const key = toDateKey(hit.date)
-    return key >= monthStart.toISOString().slice(0, 10) && key <= olderRangeEnd.toISOString().slice(0, 10)
-  })
-
-  if (items.length === 0) return null
-
-  return {
-    key: 'over-week-ago',
-    title: 'Over a week ago',
-    dateLabel: formatDateRange(monthStart, olderRangeEnd),
-    items
-  }
 })
 
 const now = new Date()
 const isCurrentMonth = computed(() =>
   store.selectedMonth.year === now.getFullYear() &&
   store.selectedMonth.month === now.getMonth() + 1
-)
-
-const sortedExpenses = computed(() =>
-  [...expenses.value].sort((a: any, b: any) => {
-    const da = toDateKey(a.date)
-    const db = toDateKey(b.date)
-    return da < db ? 1 : da > db ? -1 : 0
-  })
 )
 
 const selectedExpense = ref<any>(null)
@@ -162,65 +141,15 @@ async function handleModalDelete() {
     </div>
 
     <div v-else class="flex flex-col gap-3">
-      <template v-if="isCurrentMonth">
-        <CashflowSevenDayExpenses :expenses="expenses" />
-        <div class="flex flex-col gap-4">
-          <section v-for="section in sevenDayExpenseSections" :key="section.key" class="flex flex-col gap-2">
-            <div>
-              <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ section.title }}</h3>
-              <p class="text-xs text-gray-500">{{ section.dateLabel }}</p>
-            </div>
-            <ExpenseCard
-              v-for="hit in section.items"
-              :key="hit.id"
-              :id="hit.id"
-              :amount="hit.amount"
-              :date="hit.date"
-              :entity="hit.entity"
-              :notes="hit.notes"
-              :budget-name="budgetMap.get(hit.budget_id)"
-              :budget-color="hit.budget_id ? budgetColorMap.get(hit.budget_id) ?? null : null"
-              :budget-icon="hit.budget_id ? budgetIconMap.get(hit.budget_id) ?? null : null"
-              :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
-              :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
-              :user-first-name="hit.user_id ? store.userProfiles.get(hit.user_id)?.firstName ?? null : null"
-              :user-avatar-link="hit.user_id ? store.userProfiles.get(hit.user_id)?.avatarLink ?? null : null"
-              @delete="handleDelete"
-              @edit="handleEdit"
-            />
-          </section>
-
-          <section v-if="overWeekAgoSection" :key="overWeekAgoSection.key" class="flex flex-col gap-2">
-            <div>
-              <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ overWeekAgoSection.title }}</h3>
-              <p class="text-xs text-gray-500">{{ overWeekAgoSection.dateLabel }}</p>
-            </div>
-            <ExpenseCard
-              v-for="hit in overWeekAgoSection.items"
-              :key="hit.id"
-              :id="hit.id"
-              :amount="hit.amount"
-              :date="hit.date"
-              :entity="hit.entity"
-              :notes="hit.notes"
-              :budget-name="budgetMap.get(hit.budget_id)"
-              :budget-color="hit.budget_id ? budgetColorMap.get(hit.budget_id) ?? null : null"
-              :budget-icon="hit.budget_id ? budgetIconMap.get(hit.budget_id) ?? null : null"
-              :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
-              :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
-              :user-first-name="hit.user_id ? store.userProfiles.get(hit.user_id)?.firstName ?? null : null"
-              :user-avatar-link="hit.user_id ? store.userProfiles.get(hit.user_id)?.avatarLink ?? null : null"
-              @delete="handleDelete"
-              @edit="handleEdit"
-            />
-          </section>
-        </div>
-      </template>
-
-      <template v-else>
-        <div class="flex flex-col gap-2">
+      <CashflowSevenDayExpenses v-if="isCurrentMonth" :expenses="expenses" />
+      <div class="flex flex-col gap-4">
+        <section v-for="section in dailyExpenseSections" :key="section.key" class="flex flex-col gap-2">
+          <div>
+            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ section.title }}</h3>
+            <p class="text-xs text-gray-500">{{ section.dateLabel }}</p>
+          </div>
           <ExpenseCard
-            v-for="hit in sortedExpenses"
+            v-for="hit in section.items"
             :key="hit.id"
             :id="hit.id"
             :amount="hit.amount"
@@ -237,8 +166,8 @@ async function handleModalDelete() {
             @delete="handleDelete"
             @edit="handleEdit"
           />
-        </div>
-      </template>
+        </section>
+      </div>
     </div>
   </div>
 
