@@ -7,11 +7,6 @@ export function useHitsApi() {
     return apiFetch<any[]>(`/api/hits/by-month?year=${year}&month=${month}`)
   }
 
-  function getBudgetHitsByBudget(budgetId: string, startDate: string, endDate: string) {
-    const params = new URLSearchParams({ startDate, endDate })
-    return apiFetch<any[]>(`/api/hits/by-budget/${encodeURIComponent(budgetId)}?${params}`)
-  }
-
   function getBudgetEntities(budgetId: string) {
     return apiFetch<BudgetEntitiesByBudget>(`/api/hits/entities?budgetId=${budgetId}`)
   }
@@ -90,7 +85,6 @@ export function useHitsApi() {
 
   return {
     getBudgetHitsByMonth,
-    getBudgetHitsByBudget,
     getBudgetEntities,
     getBudgetEntitiesByBudgetIds,
     getIncomeByMonth,

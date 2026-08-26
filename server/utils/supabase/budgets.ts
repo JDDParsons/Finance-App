@@ -121,17 +121,40 @@ export async function getBudgetsByMonth(
   month: number
 ) {
   const formattedDate = `${year}-${String(month).padStart(2, '0')}-01`
+  const historyStartDate = new Date(Date.UTC(year, month - 12, 1)).toISOString().split('T')[0]
+  const historyEndDate = new Date(Date.UTC(year, month, 1)).toISOString().split('T')[0]
   const now = new Date()
   const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1)
 
-  const [{ data: allBudgets, error: budgetsError }, { data: periods, error: periodsError }] =
+  const [
+    { data: allBudgets, error: budgetsError },
+    { data: periods, error: periodsError },
+    { data: historicalHits, error: historicalHitsError },
+  ] =
     await Promise.all([
       getClient(supabase).from('Budgets').select('*').order('created_at', { ascending: false }),
       getClient(supabase).from('Budget_Period').select('*').eq('date', formattedDate),
+      getClient(supabase)
+        .from('Budget_Hit')
+        .select('budget_id, date, amount')
+        .eq('household_id', householdId)
+        .eq('type', 'Expense')
+        .gte('date', historyStartDate)
+        .lt('date', historyEndDate),
     ])
 
   if (budgetsError) throw budgetsError
   if (periodsError) throw periodsError
+  if (historicalHitsError) throw historicalHitsError
+
+  const monthlySpendingByBudget = new Map<string, Map<string, number>>()
+  for (const hit of historicalHits || []) {
+    if (!hit.budget_id || !hit.date) continue
+    const monthKey = String(hit.date).slice(0, 7)
+    const monthlySpending = monthlySpendingByBudget.get(hit.budget_id) ?? new Map<string, number>()
+    monthlySpending.set(monthKey, (monthlySpending.get(monthKey) || 0) + (Number(hit.amount) || 0))
+    monthlySpendingByBudget.set(hit.budget_id, monthlySpending)
+  }
 
   const periodMap = new Map((periods || []).map((p: any) => [p.budget_id, p]))
   const result: any[] = []
@@ -150,7 +173,11 @@ export async function getBudgetsByMonth(
     }
 
     if (period) {
-      result.push({ ...b, currentPeriod: period })
+      const monthlySpending = monthlySpendingByBudget.get(b.id)
+      const averageMonthlySpending = monthlySpending?.size
+        ? [...monthlySpending.values()].reduce((sum, total) => sum + total, 0) / monthlySpending.size
+        : null
+      result.push({ ...b, currentPeriod: period, averageMonthlySpending })
     }
   }
 

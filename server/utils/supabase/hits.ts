@@ -46,22 +46,12 @@ export async function getBudgetHits(supabase: SupabaseClient) {
   return hits || []
 }
 
-export async function getBudgetHitsByBudgetId(
-  supabase: SupabaseClient,
-  budgetId: string,
-  startDate?: string,
-  endDate?: string
-) {
-  let query = getClient(supabase)
+export async function getBudgetHitsByBudgetId(supabase: SupabaseClient, budgetId: string) {
+  const { data: hits, error } = await getClient(supabase)
     .from('Budget_Hit')
     .select('*')
     .eq('budget_id', budgetId)
     .eq('type', 'Expense')
-
-  if (startDate) query = query.gte('date', startDate)
-  if (endDate) query = query.lt('date', endDate)
-
-  const { data: hits, error } = await query
     .order('date', { ascending: false })
 
   if (error) throw error
