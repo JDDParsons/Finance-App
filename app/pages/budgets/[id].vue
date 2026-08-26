@@ -137,9 +137,11 @@ function handleExpenseUpdate() {
                             <span>Spending average</span>
                             <UTooltip
                                 v-model:open="spendingAverageTooltipOpen"
-                                text="Average monthly spending over the selected month and previous 11 months, excluding months with no expenses."
+                                text="12-month average, excluding empty months."
                                 :delay-duration="0"
-                                arrow
+                                :content="{ side: 'right' }"
+                                :arrow="{ width: 12, height: 6 }"
+                                :ui="{ arrow: 'fill-default stroke-[var(--ui-border)]' }"
                             >
                                 <UButton
                                     icon="heroicons:information-circle"
@@ -159,9 +161,11 @@ function handleExpenseUpdate() {
                             <span>YTD balance</span>
                             <UTooltip
                                 v-model:open="ytdBalanceTooltipOpen"
-                                text="Total budgeted minus total spent for this budget from January through the current month."
+                                text="Budgeted minus spent this year."
                                 :delay-duration="0"
-                                arrow
+                                :content="{ side: 'left' }"
+                                :arrow="{ width: 12, height: 6 }"
+                                :ui="{ arrow: 'fill-default stroke-[var(--ui-border)]' }"
                             >
                                 <UButton
                                     icon="heroicons:information-circle"
