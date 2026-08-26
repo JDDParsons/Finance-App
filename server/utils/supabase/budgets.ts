@@ -149,7 +149,7 @@ export async function getBudgetsByMonth(
         .lt('date', spendingEndDate),
       getClient(supabase)
         .from('Budget_Period')
-        .select('budget_id, amount')
+        .select('budget_id, date, amount')
         .eq('household_id', householdId)
         .gte('date', ytdStartDate)
         .lt('date', ytdEndDate),
@@ -181,13 +181,13 @@ export async function getBudgetsByMonth(
     }
   }
 
-  const ytdAllocatedByBudget = new Map<string, number>()
+  const ytdAllocationsByBudget = new Map<string, Map<string, number>>()
   for (const period of ytdPeriods || []) {
-    if (!period.budget_id) continue
-    ytdAllocatedByBudget.set(
-      period.budget_id,
-      (ytdAllocatedByBudget.get(period.budget_id) || 0) + (Number(period.amount) || 0)
-    )
+    if (!period.budget_id || !period.date) continue
+    const monthKey = String(period.date).slice(0, 7)
+    const monthlyAllocations = ytdAllocationsByBudget.get(period.budget_id) ?? new Map<string, number>()
+    monthlyAllocations.set(monthKey, Number(period.amount) || 0)
+    ytdAllocationsByBudget.set(period.budget_id, monthlyAllocations)
     ytdBudgetIds.add(period.budget_id)
   }
 
@@ -212,9 +212,11 @@ export async function getBudgetsByMonth(
       const averageMonthlySpending = monthlySpending?.size
         ? [...monthlySpending.values()].reduce((sum, total) => sum + total, 0) / monthlySpending.size
         : null
-      const ytdBalance = ytdBudgetIds.has(b.id)
-        ? (ytdAllocatedByBudget.get(b.id) || 0) - (ytdSpendingByBudget.get(b.id) || 0)
-        : null
+      const ytdAllocations = ytdAllocationsByBudget.get(b.id)
+      const ytdAllocated = ytdAllocations
+        ? [...ytdAllocations.values()].reduce((sum, amount) => sum + amount, 0)
+        : 0
+      const ytdBalance = ytdBudgetIds.has(b.id) ? ytdAllocated - (ytdSpendingByBudget.get(b.id) || 0) : null
       result.push({ ...b, currentPeriod: period, averageMonthlySpending, ytdBalance })
     }
   }
