@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useHitsApi } from '~/composables/api/useHitsApi'
 import { useFinanceStore } from '~/stores/finance'
 
 const route = useRoute()
