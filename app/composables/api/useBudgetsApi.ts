@@ -31,8 +31,8 @@ export function useBudgetsApi() {
     })
   }
 
-  function deleteBudget(id: string) {
-    return apiFetch<any>(`/api/budgets/${id}`, { method: 'DELETE' })
+  function deleteBudget(id: string, year: number, month: number) {
+    return apiFetch<{ budgetDeleted: boolean }>(`/api/budgets/${id}?year=${year}&month=${month}`, { method: 'DELETE' })
   }
 
   return { getBudgetsByMonth, getAvailableBudgetMonths, createBudget, updateBudget, deleteBudget }

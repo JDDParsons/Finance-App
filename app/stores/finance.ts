@@ -282,11 +282,14 @@ export const useFinanceStore = defineStore('finance', () => {
   }
 
   async function removeBudget(id: string) {
-    await deleteBudget(id)
+    const { year, month } = selectedMonth.value
+    const { budgetDeleted } = await deleteBudget(id, year, month)
     budgets.value = budgets.value.filter((b: any) => b.id !== id)
-    const nextBudgetEntities = new Map(budgetAllEntities.value)
-    nextBudgetEntities.delete(id)
-    budgetAllEntities.value = nextBudgetEntities
+    if (budgetDeleted) {
+      const nextBudgetEntities = new Map(budgetAllEntities.value)
+      nextBudgetEntities.delete(id)
+      budgetAllEntities.value = nextBudgetEntities
+    }
   }
 
   return {

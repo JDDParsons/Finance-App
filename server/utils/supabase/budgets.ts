@@ -283,11 +283,20 @@ export async function updateBudget(
   return { data, periodData }
 }
 
-export async function deleteBudget(supabase: SupabaseClient, id: string) {
-  const { error } = await getClient(supabase)
-    .from('Budgets')
-    .delete()
-    .eq('id', id)
+export async function deleteBudgetPeriod(
+  supabase: SupabaseClient,
+  id: string,
+  year: number,
+  month: number
+) {
+  const targetPeriodDate = `${year}-${String(month).padStart(2, '0')}-01`
+  const { data, error } = await getClient(supabase)
+    .rpc('delete_budget_period', {
+      target_budget_id: id,
+      target_period_date: targetPeriodDate,
+    })
 
   if (error) throw error
+
+  return { budgetDeleted: data?.[0]?.budget_deleted === true }
 }
