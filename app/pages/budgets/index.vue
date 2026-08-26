@@ -35,9 +35,14 @@ const budgetColor = ref('#6366f1')
 const budgetIconChoice = ref<string | null>(null)
 const createLoading = ref(false)
 const budgetNameError = ref<string | null>(null)
+const amountError = ref<string | null>(null)
 
 watch(budgetName, () => {
     budgetNameError.value = null
+})
+
+watch(amount, () => {
+    amountError.value = null
 })
 
 
@@ -46,8 +51,8 @@ function validateBudgetForm() {
         alert('Please enter a budget name')
         return false
     }
-    if (!amount.value) {
-        alert('Please enter an amount')
+    if (!amount.value || !Number.isFinite(Number(amount.value)) || Number(amount.value) <= 0) {
+        amountError.value = 'Amount must be greater than 0.'
         return false
     }
     return true
@@ -58,6 +63,7 @@ async function handleCreateBudget() {
         try {
             createLoading.value = true
             budgetNameError.value = null
+            amountError.value = null
             await store.addBudget(budgetName.value, amount.value, budgetColor.value, budgetIconChoice.value)
             budgetName.value = ''
             amount.value = ''
@@ -81,6 +87,7 @@ function closeSlideover() {
     budgetColor.value = '#6366f1'
     budgetIconChoice.value = null
     budgetNameError.value = null
+    amountError.value = null
 }
 
 function goToBudget(budgetId: string) {
@@ -159,7 +166,7 @@ function goToBudget(budgetId: string) {
                                 />
                             </UFormField>
 
-                            <UFormField label="Amount" required>
+                            <UFormField label="Amount" :error="amountError" required>
                                 <UInput
                                     v-model="amount"
                                     placeholder="0.00"

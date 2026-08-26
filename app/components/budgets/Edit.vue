@@ -27,9 +27,14 @@ const loading = ref(false)
 const deleting = ref(false)
 const error = ref<string | null>(null)
 const nameError = ref<string | null>(null)
+const amountError = ref<string | null>(null)
 
 watch(name, () => {
     nameError.value = null
+})
+
+watch(amount, () => {
+    amountError.value = null
 })
 
 function validateForm() {
@@ -37,8 +42,8 @@ function validateForm() {
         alert('Please enter a budget name')
         return false
     }
-    if (!amount.value) {
-        alert('Please enter an amount')
+    if (!amount.value || !Number.isFinite(Number(amount.value)) || Number(amount.value) <= 0) {
+        amountError.value = 'Amount must be greater than 0.'
         return false
     }
     return true
@@ -50,6 +55,7 @@ async function handleUpdateBudget() {
             loading.value = true
             error.value = null
             nameError.value = null
+            amountError.value = null
             await store.editBudget(props.budgetId || '', name.value, amount.value.toString(), color.value, icon.value ?? undefined, store.selectedMonth.year, store.selectedMonth.month)
             emit('update')
         } catch (err: any) {
@@ -110,7 +116,7 @@ defineExpose({ handleDeleteBudget })
                 />
             </UFormField>
 
-            <UFormField label="Amount" required>
+            <UFormField label="Amount" :error="amountError" required>
                 <UInput
                     v-model="amount"
                     placeholder="0.00"
