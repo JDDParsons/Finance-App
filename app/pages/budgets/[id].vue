@@ -49,6 +49,8 @@ useHead(computed(() => ({ title: budget.value ? `${budget.value.name} | R&J Fina
 
 const isEditModalOpen = ref(false)
 const editRef = ref<any>(null)
+const spendingAverageTooltipOpen = ref(false)
+const ytdBalanceTooltipOpen = ref(false)
 
 function formatCurrency(value: number | null | undefined) {
     if (value === null || value === undefined) return '-'
@@ -133,7 +135,12 @@ function handleExpenseUpdate() {
                     <div v-if="hasAverageMonthlySpending">
                         <div class="mb-1 flex items-center justify-center gap-1 whitespace-nowrap text-xs text-gray-500">
                             <span>Spending average</span>
-                            <UTooltip text="Average monthly spending over the selected month and previous 11 months, excluding months with no expenses.">
+                            <UTooltip
+                                v-model:open="spendingAverageTooltipOpen"
+                                text="Average monthly spending over the selected month and previous 11 months, excluding months with no expenses."
+                                :delay-duration="0"
+                                arrow
+                            >
                                 <UButton
                                     icon="heroicons:information-circle"
                                     color="neutral"
@@ -141,6 +148,7 @@ function handleExpenseUpdate() {
                                     size="xs"
                                     class="min-h-0 p-0 text-gray-400"
                                     aria-label="About spending average"
+                                    @click.stop="spendingAverageTooltipOpen = !spendingAverageTooltipOpen"
                                 />
                             </UTooltip>
                         </div>
@@ -149,7 +157,12 @@ function handleExpenseUpdate() {
                     <div v-if="hasYtdBalance" :class="{ 'col-start-2': !hasAverageMonthlySpending }">
                         <div class="mb-1 flex items-center justify-center gap-1 whitespace-nowrap text-xs text-gray-500">
                             <span>YTD balance</span>
-                            <UTooltip text="Total budgeted minus total spent for this budget from January through the current month.">
+                            <UTooltip
+                                v-model:open="ytdBalanceTooltipOpen"
+                                text="Total budgeted minus total spent for this budget from January through the current month."
+                                :delay-duration="0"
+                                arrow
+                            >
                                 <UButton
                                     icon="heroicons:information-circle"
                                     color="neutral"
@@ -157,6 +170,7 @@ function handleExpenseUpdate() {
                                     size="xs"
                                     class="min-h-0 p-0 text-gray-400"
                                     aria-label="About YTD balance"
+                                    @click.stop="ytdBalanceTooltipOpen = !ytdBalanceTooltipOpen"
                                 />
                             </UTooltip>
                         </div>
