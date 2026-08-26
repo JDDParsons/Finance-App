@@ -5,6 +5,7 @@ const route = useRoute()
 const router = useRouter()
 const store = useFinanceStore()
 const { budgetIcon } = useBudgetIcon()
+const { getBudgetHitsByBudget } = useHitsApi()
 
 const budgetId = route.params.id as string
 
@@ -37,6 +38,51 @@ useHead(computed(() => ({ title: budget.value ? `${budget.value.name} | R&J Fina
 
 const isEditModalOpen = ref(false)
 const editRef = ref<any>(null)
+const averageMonthlySpending = ref<number | null>(null)
+const averageSpendingLoading = ref(false)
+
+function formatDate(year: number, month: number, day: number) {
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+function trailingTwelveMonthRange(year: number, month: number) {
+    const start = new Date(year, month - 12, 1)
+    const end = new Date(year, month, 1)
+    return {
+        startDate: formatDate(start.getFullYear(), start.getMonth() + 1, start.getDate()),
+        endDate: formatDate(end.getFullYear(), end.getMonth() + 1, end.getDate()),
+    }
+}
+
+async function fetchAverageMonthlySpending() {
+    averageSpendingLoading.value = true
+    try {
+        const { year, month } = store.selectedMonth
+        const { startDate, endDate } = trailingTwelveMonthRange(year, month)
+        const hits = await getBudgetHitsByBudget(budgetId, startDate, endDate)
+        const monthlyTotals = new Map<string, number>()
+
+        for (const hit of hits) {
+            if (!hit?.date) continue
+            const monthKey = String(hit.date).slice(0, 7)
+            monthlyTotals.set(monthKey, (monthlyTotals.get(monthKey) || 0) + (Number(hit.amount) || 0))
+        }
+
+        averageMonthlySpending.value = monthlyTotals.size
+            ? [...monthlyTotals.values()].reduce((sum, total) => sum + total, 0) / monthlyTotals.size
+            : null
+    } catch {
+        averageMonthlySpending.value = null
+    } finally {
+        averageSpendingLoading.value = false
+    }
+}
+
+watch(
+    () => [store.selectedMonth.year, store.selectedMonth.month],
+    fetchAverageMonthlySpending,
+    { immediate: true }
+)
 
 function formatCurrency(value: number | null | undefined) {
     if (value === null || value === undefined) return '-'
@@ -53,8 +99,8 @@ function handleEditDone() {
     store.fetchAll()
 }
 
-function handleExpenseUpdate() {
-    store.fetchAll()
+async function handleExpenseUpdate() {
+    await Promise.all([store.fetchAll(), fetchAverageMonthlySpending()])
 }
 </script>
 
@@ -94,7 +140,7 @@ function handleExpenseUpdate() {
         <template v-else>
             <!-- Top: Budget summary card -->
             <UCard class="mb-2 shadow overflow-hidden" :style="budget.color ? { backgroundColor: `${budget.color}22`, borderColor: `${budget.color}55`, borderTop: `3px solid ${budget.color}` } : {}">
-                <div class="grid grid-cols-3 gap-4 text-center mb-4">
+                <div class="grid grid-cols-2 gap-4 text-center mb-4 sm:grid-cols-4">
                     <div>
                         <p class="text-xs text-gray-500 mb-1">Allocated</p>
                         <p class="text-lg font-semibold">{{ formatCurrency(budget.currentPeriod?.amount) }}</p>
@@ -107,6 +153,13 @@ function handleExpenseUpdate() {
                         <p class="text-xs text-gray-500 mb-1">Remaining</p>
                         <p class="text-lg font-semibold" :style="{ color: progressBarColor }">
                             {{ formatCurrency(budget.totalRemainingAmount) }}
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 mb-1">Average spending per month</p>
+                        <USkeleton v-if="averageSpendingLoading" class="mx-auto h-7 w-20" />
+                        <p v-else class="text-lg font-semibold">
+                            {{ averageMonthlySpending === null ? '—' : formatCurrency(averageMonthlySpending) }}
                         </p>
                     </div>
                 </div>
