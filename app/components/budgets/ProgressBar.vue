@@ -15,27 +15,21 @@ const barWidth = computed(() => {
     return Math.min(spentPercentage.value, 100)
 })
 
-const gradient = computed(() => {
-    if (spentPercentage.value > 200) return 'linear-gradient(to right, #f97316, #ef4444)'
-    if (spentPercentage.value > 100) return 'linear-gradient(to right, #eab308, #f97316)'
-    return 'linear-gradient(to right, #22c55e, #eab308)'
+const barColor = computed(() => {
+    if (spentPercentage.value > 200) return '#ef4444'
+    if (spentPercentage.value > 100) return '#eab308'
+    return '#22c55e'
 })
 
 const trackStyle = computed(() => {
-    if (spentPercentage.value > 200) {
-        return { backgroundImage: 'linear-gradient(to right, #eab308, #f97316)' }
-    }
-    if (spentPercentage.value > 100) {
-        return { backgroundImage: 'linear-gradient(to right, #22c55e, #eab308)' }
-    }
+    if (spentPercentage.value > 200) return { backgroundColor: '#eab308' }
+    if (spentPercentage.value > 100) return { backgroundColor: '#22c55e' }
     return {}
 })
 
 const fillStyle = computed(() => ({
     width: `${barWidth.value}%`,
-    backgroundImage: gradient.value,
-    backgroundSize: barWidth.value > 0 ? `${10000 / barWidth.value}% 100%` : '100% 100%',
-    boxShadow: '0 0 3px 0.3px rgb(34 197 94 / 45%)'
+    backgroundColor: barColor.value
 }))
 </script>
 
