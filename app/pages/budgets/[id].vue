@@ -9,6 +9,18 @@ const { budgetIcon } = useBudgetIcon()
 const budgetId = route.params.id as string
 
 const budget = computed(() => store.budgets.find((b: any) => b.id === budgetId))
+const hasAverageMonthlySpending = computed(() =>
+    budget.value?.averageMonthlySpending !== null && budget.value?.averageMonthlySpending !== undefined
+)
+const hasYtdBalance = computed(() =>
+    budget.value?.ytdBalance !== null && budget.value?.ytdBalance !== undefined
+)
+const ytdBalanceColor = computed(() => {
+    const balance = Number(budget.value?.ytdBalance) || 0
+    if (balance > 0) return '#22c55e'
+    if (balance < 0) return '#ef4444'
+    return '#6b7280'
+})
 const progressBarColor = computed(() => {
     const amount = Number(budget.value?.currentPeriod?.amount) || 0
     const spent = Number(budget.value?.totalHitAmount) || 0
@@ -37,6 +49,8 @@ useHead(computed(() => ({ title: budget.value ? `${budget.value.name} | R&J Fina
 
 const isEditModalOpen = ref(false)
 const editRef = ref<any>(null)
+const spendingAverageTooltipOpen = ref(false)
+const ytdBalanceTooltipOpen = ref(false)
 
 function formatCurrency(value: number | null | undefined) {
     if (value === null || value === undefined) return '-'
@@ -117,6 +131,66 @@ function handleExpenseUpdate() {
                 <p class="text-xs text-right mt-1" :style="{ color: progressBarColor }">
                     {{ budget.progress?.toFixed(1) ?? '0.0' }}% used
                 </p>
+                <div v-if="hasAverageMonthlySpending || hasYtdBalance" class="mt-4 grid grid-cols-2 gap-4 text-center">
+                    <div v-if="hasAverageMonthlySpending">
+                        <div class="mb-1 flex items-center justify-center gap-1 whitespace-nowrap text-xs text-gray-500">
+                            <span>Spending average</span>
+                            <UTooltip
+                                v-model:open="spendingAverageTooltipOpen"
+                                text="12-month average, excluding empty months."
+                                :delay-duration="0"
+                                :content="{ side: 'right', collisionPadding: 12 }"
+                                :arrow="{ width: 12, height: 6 }"
+                                :ui="{
+                                    content: 'h-auto max-w-40 py-1.5',
+                                    text: 'whitespace-normal text-center',
+                                    arrow: 'fill-default stroke-[var(--ui-border)]'
+                                }"
+                            >
+                                <UButton
+                                    icon="heroicons:information-circle"
+                                    color="neutral"
+                                    variant="link"
+                                    size="xs"
+                                    class="min-h-0 p-0 text-gray-400"
+                                    aria-label="About spending average"
+                                    @click.stop="spendingAverageTooltipOpen = !spendingAverageTooltipOpen"
+                                />
+                            </UTooltip>
+                        </div>
+                        <p class="text-lg font-semibold">{{ formatCurrency(budget.averageMonthlySpending) }}</p>
+                    </div>
+                    <div v-if="hasYtdBalance" :class="{ 'col-start-2': !hasAverageMonthlySpending }">
+                        <div class="mb-1 flex items-center justify-center gap-1 whitespace-nowrap text-xs text-gray-500">
+                            <span>YTD balance</span>
+                            <UTooltip
+                                v-model:open="ytdBalanceTooltipOpen"
+                                text="Budgeted minus spent this year."
+                                :delay-duration="0"
+                                :content="{ side: 'left', collisionPadding: 12 }"
+                                :arrow="{ width: 12, height: 6 }"
+                                :ui="{
+                                    content: 'h-auto max-w-40 py-1.5',
+                                    text: 'whitespace-normal text-center',
+                                    arrow: 'fill-default stroke-[var(--ui-border)]'
+                                }"
+                            >
+                                <UButton
+                                    icon="heroicons:information-circle"
+                                    color="neutral"
+                                    variant="link"
+                                    size="xs"
+                                    class="min-h-0 p-0 text-gray-400"
+                                    aria-label="About YTD balance"
+                                    @click.stop="ytdBalanceTooltipOpen = !ytdBalanceTooltipOpen"
+                                />
+                            </UTooltip>
+                        </div>
+                        <p class="text-lg font-semibold" :style="{ color: ytdBalanceColor }">
+                            {{ formatCurrency(budget.ytdBalance) }}
+                        </p>
+                    </div>
+                </div>
             </UCard>
 
             <!-- Form + List stacked -->
