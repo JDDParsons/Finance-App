@@ -131,11 +131,35 @@ function handleExpenseUpdate() {
                 </p>
                 <div v-if="hasAverageMonthlySpending || hasYtdBalance" class="mt-4 grid grid-cols-2 gap-4 text-center">
                     <div v-if="hasAverageMonthlySpending">
-                        <p class="text-xs text-gray-500 mb-1">Average spending per month</p>
+                        <div class="mb-1 flex items-center justify-center gap-1 whitespace-nowrap text-xs text-gray-500">
+                            <span>Spending average</span>
+                            <UTooltip text="Average monthly spending over the selected month and previous 11 months, excluding months with no expenses.">
+                                <UButton
+                                    icon="heroicons:information-circle"
+                                    color="neutral"
+                                    variant="link"
+                                    size="xs"
+                                    class="min-h-0 p-0 text-gray-400"
+                                    aria-label="About spending average"
+                                />
+                            </UTooltip>
+                        </div>
                         <p class="text-lg font-semibold">{{ formatCurrency(budget.averageMonthlySpending) }}</p>
                     </div>
                     <div v-if="hasYtdBalance" :class="{ 'col-start-2': !hasAverageMonthlySpending }">
-                        <p class="text-xs text-gray-500 mb-1">YTD balance</p>
+                        <div class="mb-1 flex items-center justify-center gap-1 whitespace-nowrap text-xs text-gray-500">
+                            <span>YTD balance</span>
+                            <UTooltip text="Total budgeted minus total spent for this budget from January through the current month.">
+                                <UButton
+                                    icon="heroicons:information-circle"
+                                    color="neutral"
+                                    variant="link"
+                                    size="xs"
+                                    class="min-h-0 p-0 text-gray-400"
+                                    aria-label="About YTD balance"
+                                />
+                            </UTooltip>
+                        </div>
                         <p class="text-lg font-semibold" :style="{ color: ytdBalanceColor }">
                             {{ formatCurrency(budget.ytdBalance) }}
                         </p>
