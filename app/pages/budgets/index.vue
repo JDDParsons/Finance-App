@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useSelectedMonthTitle } from '~/composables/useSelectedMonthTitle'
 import { useFinanceStore } from '~/stores/finance'
+import { isDuplicateBudgetNameError } from '~/utils/budgetErrors'
 
 useHead({ title: 'Budgets | R&J Finance' })
 
@@ -33,6 +34,11 @@ const amount = ref('')
 const budgetColor = ref('#6366f1')
 const budgetIconChoice = ref<string | null>(null)
 const createLoading = ref(false)
+const budgetNameError = ref<string | null>(null)
+
+watch(budgetName, () => {
+    budgetNameError.value = null
+})
 
 
 function validateBudgetForm() {
@@ -51,12 +57,17 @@ async function handleCreateBudget() {
     if (validateBudgetForm()) {
         try {
             createLoading.value = true
+            budgetNameError.value = null
             await store.addBudget(budgetName.value, amount.value, budgetColor.value, budgetIconChoice.value)
             budgetName.value = ''
             amount.value = ''
             isSlideoverOpen.value = false
         } catch (error: any) {
-            alert('Error creating budget: ' + (error?.message || 'Unknown error'))
+            if (isDuplicateBudgetNameError(error)) {
+                budgetNameError.value = 'A budget with this name already exists.'
+            } else {
+                alert('Error creating budget: ' + (error?.message || 'Unknown error'))
+            }
         } finally {
             createLoading.value = false
         }
@@ -69,6 +80,7 @@ function closeSlideover() {
     amount.value = ''
     budgetColor.value = '#6366f1'
     budgetIconChoice.value = null
+    budgetNameError.value = null
 }
 
 function goToBudget(budgetId: string) {
@@ -138,7 +150,7 @@ function goToBudget(budgetId: string) {
                         <h3 class="text-2xl font-bold mb-6">Create a new budget</h3>
                         
                         <div class="space-y-6">
-                            <UFormField label="Budget Name" required>
+                            <UFormField label="Budget Name" :error="budgetNameError" required>
                                 <UInput
                                     v-model="budgetName"
                                     placeholder="e.g., Monthly Groceries"

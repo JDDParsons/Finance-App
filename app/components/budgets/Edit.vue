@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { isDuplicateBudgetNameError } from '~/utils/budgetErrors'
 
 const props = defineProps<{
     budgetId: string
@@ -25,6 +26,11 @@ const icon = ref<string | null>(props.budgetIcon ?? null)
 const loading = ref(false)
 const deleting = ref(false)
 const error = ref<string | null>(null)
+const nameError = ref<string | null>(null)
+
+watch(name, () => {
+    nameError.value = null
+})
 
 function validateForm() {
     if (!name.value.trim()) {
@@ -43,10 +49,15 @@ async function handleUpdateBudget() {
         try {
             loading.value = true
             error.value = null
+            nameError.value = null
             await store.editBudget(props.budgetId || '', name.value, amount.value.toString(), color.value, icon.value ?? undefined, store.selectedMonth.year, store.selectedMonth.month)
             emit('update')
         } catch (err: any) {
-            error.value = err?.message || 'Error updating budget'
+            if (isDuplicateBudgetNameError(err)) {
+                nameError.value = 'A budget with this name already exists.'
+            } else {
+                error.value = err?.message || 'Error updating budget'
+            }
             console.error('Error updating budget:', err)
         } finally {
             loading.value = false
@@ -90,7 +101,7 @@ defineExpose({ handleDeleteBudget })
         </div>
 
         <div v-else class="space-y-6">
-            <UFormField label="Budget Name" required>
+            <UFormField label="Budget Name" :error="nameError" required>
                 <UInput
                     v-model="name"
                     placeholder="e.g., Monthly Groceries"
