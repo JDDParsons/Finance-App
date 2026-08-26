@@ -9,6 +9,18 @@ const { budgetIcon } = useBudgetIcon()
 const budgetId = route.params.id as string
 
 const budget = computed(() => store.budgets.find((b: any) => b.id === budgetId))
+const hasAverageMonthlySpending = computed(() =>
+    budget.value?.averageMonthlySpending !== null && budget.value?.averageMonthlySpending !== undefined
+)
+const hasYtdBalance = computed(() =>
+    budget.value?.ytdBalance !== null && budget.value?.ytdBalance !== undefined
+)
+const ytdBalanceColor = computed(() => {
+    const balance = Number(budget.value?.ytdBalance) || 0
+    if (balance > 0) return '#22c55e'
+    if (balance < 0) return '#ef4444'
+    return '#6b7280'
+})
 const progressBarColor = computed(() => {
     const amount = Number(budget.value?.currentPeriod?.amount) || 0
     const spent = Number(budget.value?.totalHitAmount) || 0
@@ -117,12 +129,17 @@ function handleExpenseUpdate() {
                 <p class="text-xs text-right mt-1" :style="{ color: progressBarColor }">
                     {{ budget.progress?.toFixed(1) ?? '0.0' }}% used
                 </p>
-                <div
-                    v-if="budget.averageMonthlySpending !== null && budget.averageMonthlySpending !== undefined"
-                    class="mt-4 text-center"
-                >
-                    <p class="text-xs text-gray-500 mb-1">Average spending per month</p>
-                    <p class="text-lg font-semibold">{{ formatCurrency(budget.averageMonthlySpending) }}</p>
+                <div v-if="hasAverageMonthlySpending || hasYtdBalance" class="mt-4 grid grid-cols-2 gap-4 text-center">
+                    <div v-if="hasAverageMonthlySpending">
+                        <p class="text-xs text-gray-500 mb-1">Average spending per month</p>
+                        <p class="text-lg font-semibold">{{ formatCurrency(budget.averageMonthlySpending) }}</p>
+                    </div>
+                    <div v-if="hasYtdBalance" :class="{ 'col-start-2': !hasAverageMonthlySpending }">
+                        <p class="text-xs text-gray-500 mb-1">YTD balance</p>
+                        <p class="text-lg font-semibold" :style="{ color: ytdBalanceColor }">
+                            {{ formatCurrency(budget.ytdBalance) }}
+                        </p>
+                    </div>
                 </div>
             </UCard>
 
