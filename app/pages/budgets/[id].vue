@@ -4,26 +4,29 @@ import { useFinanceStore } from '~/stores/finance'
 const route = useRoute()
 const router = useRouter()
 const store = useFinanceStore()
+const { budgetIcon } = useBudgetIcon()
 
 const budgetId = route.params.id as string
 
 const budget = computed(() => store.budgets.find((b: any) => b.id === budgetId))
+const budgetIconName = computed(() => {
+    if (!budget.value) return 'heroicons:wallet-solid'
+    return budget.value.icon ?? budgetIcon(budget.value.name)
+})
+
+const budgetIconStyle = computed(() => {
+    const color = budget.value?.color || '#34d399'
+    return {
+        backgroundColor: `${color}1f`,
+        color,
+        borderColor: `${color}55`,
+    }
+})
 
 useHead(computed(() => ({ title: budget.value ? `${budget.value.name} | R&J Finance` : 'Budget | R&J Finance' })))
 
 const isEditModalOpen = ref(false)
 const editRef = ref<any>(null)
-
-function progressBarColour(amount: number, totalHitAmount: number): string {
-    const percentage = Math.min((totalHitAmount / amount) * 100, 100)
-    const hue = Math.round(120 - (percentage * 1.2))
-    return `hsl(${hue}, 80%, 45%)`
-}
-
-function barColour(budgetColor: string | null | undefined, amount: number, totalHitAmount: number): string {
-    if (budgetColor) return budgetColor + 'cc'
-    return progressBarColour(amount, totalHitAmount)
-}
 
 function formatCurrency(value: number | null | undefined) {
     if (value === null || value === undefined) return '-'
@@ -58,10 +61,12 @@ function handleExpenseUpdate() {
                 aria-label="Back to budgets"
             />
             <div
-                v-if="budget?.color"
-                class="w-3 h-3 rounded-full shrink-0"
-                :style="{ backgroundColor: budget.color }"
-            />
+                v-if="budget"
+                class="flex size-10 shrink-0 items-center justify-center rounded-full border"
+                :style="budgetIconStyle"
+            >
+                <UIcon :name="budgetIconName" class="size-5" />
+            </div>
             <h1 class="text-3xl font-bold flex-1">{{ budget?.name ?? 'Budget' }}</h1>
             <UButton
                 icon="heroicons:pencil-square"
@@ -96,7 +101,6 @@ function handleExpenseUpdate() {
                 <BudgetsProgressBar
                     :value="budget.totalHitAmount"
                     :max="budget.totalHitAmount > budget.currentPeriod?.amount ? budget.totalHitAmount : budget.currentPeriod?.amount"
-                    :colour="barColour(budget.color, budget.currentPeriod?.amount, budget.totalHitAmount)"
                 />
                 <p class="text-xs text-gray-400 text-right mt-1">
                     {{ budget.progress?.toFixed(1) ?? '0.0' }}% used
