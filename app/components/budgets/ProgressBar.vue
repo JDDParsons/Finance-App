@@ -2,22 +2,46 @@
 const props = defineProps<{
     value: number
     max: number
-    colour: string
 }>()
 
-const percentage = computed(() => Math.min((props.value / props.max) * 100, 100))
+const spentPercentage = computed(() => {
+    if (props.max <= 0) return 0
+    return Math.max((props.value / props.max) * 100, 0)
+})
+
+const barWidth = computed(() => {
+    if (spentPercentage.value > 200) return Math.min(spentPercentage.value - 200, 100)
+    if (spentPercentage.value > 100) return spentPercentage.value - 100
+    return Math.min(spentPercentage.value, 100)
+})
+
+const barColor = computed(() => {
+    if (spentPercentage.value > 200) return '#ef4444'
+    if (spentPercentage.value > 100) return '#eab308'
+    return '#22c55e'
+})
+
+const trackStyle = computed(() => {
+    if (spentPercentage.value > 200) return { backgroundColor: '#eab308' }
+    if (spentPercentage.value > 100) return { backgroundColor: '#22c55e' }
+    return {}
+})
+
+const fillStyle = computed(() => ({
+    width: `${barWidth.value}%`,
+    backgroundColor: barColor.value
+}))
 </script>
 
 <template>
-    <div class="mt-1 w-full h-2 rounded-full overflow-visible bg-white dark:bg-gray-700">
+    <div
+        class="mt-1 w-full h-2 rounded-full overflow-visible bg-white dark:bg-gray-700"
+        :style="trackStyle"
+    >
         <div
-            v-if="percentage > 0"
+            v-if="barWidth > 0"
             class="h-full rounded-full transition-all duration-500"
-            :style="{
-                width: `${percentage}%`,
-                backgroundColor: props.colour,
-                boxShadow: `0 0px 3px 0.3px ${props.colour}`
-            }"
+            :style="fillStyle"
         />
     </div>
 </template>
