@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { useSelectedMonthTitle } from '~/composables/useSelectedMonthTitle'
 import { useFinanceStore } from '~/stores/finance'
-import { isDuplicateBudgetNameError } from '~/utils/budgetErrors'
+import { isDuplicateBudgetNameError, isInvalidBudgetAmountError } from '~/utils/budgetErrors'
 
 useHead({ title: 'Budgets | R&J Finance' })
 
@@ -51,10 +51,6 @@ function validateBudgetForm() {
         alert('Please enter a budget name')
         return false
     }
-    if (!amount.value || !Number.isFinite(Number(amount.value)) || Number(amount.value) <= 0) {
-        amountError.value = 'Amount must be greater than 0.'
-        return false
-    }
     return true
 }
 
@@ -71,6 +67,8 @@ async function handleCreateBudget() {
         } catch (error: any) {
             if (isDuplicateBudgetNameError(error)) {
                 budgetNameError.value = 'A budget with this name already exists.'
+            } else if (isInvalidBudgetAmountError(error)) {
+                amountError.value = 'Amount must be greater than 0.'
             } else {
                 alert('Error creating budget: ' + (error?.message || 'Unknown error'))
             }

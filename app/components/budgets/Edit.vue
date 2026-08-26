@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { isDuplicateBudgetNameError } from '~/utils/budgetErrors'
+import { isDuplicateBudgetNameError, isInvalidBudgetAmountError } from '~/utils/budgetErrors'
 
 const props = defineProps<{
     budgetId: string
@@ -42,10 +42,6 @@ function validateForm() {
         alert('Please enter a budget name')
         return false
     }
-    if (!amount.value || !Number.isFinite(Number(amount.value)) || Number(amount.value) <= 0) {
-        amountError.value = 'Amount must be greater than 0.'
-        return false
-    }
     return true
 }
 
@@ -61,6 +57,8 @@ async function handleUpdateBudget() {
         } catch (err: any) {
             if (isDuplicateBudgetNameError(err)) {
                 nameError.value = 'A budget with this name already exists.'
+            } else if (isInvalidBudgetAmountError(err)) {
+                amountError.value = 'Amount must be greater than 0.'
             } else {
                 error.value = err?.message || 'Error updating budget'
             }
