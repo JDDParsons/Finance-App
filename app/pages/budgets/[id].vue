@@ -100,7 +100,7 @@ function handleExpenseUpdate() {
                 </div>
                 <BudgetsProgressBar
                     :value="budget.totalHitAmount"
-                    :max="budget.totalHitAmount > budget.currentPeriod?.amount ? budget.totalHitAmount : budget.currentPeriod?.amount"
+                    :max="budget.currentPeriod?.amount"
                 />
                 <p class="text-xs text-gray-400 text-right mt-1">
                     {{ budget.progress?.toFixed(1) ?? '0.0' }}% used
