@@ -151,6 +151,20 @@ function Start-LocalSupabase {
     }
 }
 
+function Update-LocalDatabase {
+    param(
+        [Parameter(Mandatory)]
+        [string]$SupabaseCli
+    )
+
+    Write-Host 'Applying pending local Supabase migrations...' -ForegroundColor Cyan
+    & $SupabaseCli migration up --local
+
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Unable to apply pending local Supabase migrations. Resolve the reported database conflict and run the app again.'
+    }
+}
+
 function Write-DockerEnvironment {
     param(
         [Parameter(Mandatory)]
@@ -285,6 +299,7 @@ try {
     Wait-DockerEngine
     $supabaseCli = Get-SupabaseCliPath
     Start-LocalSupabase -SupabaseCli $supabaseCli
+    Update-LocalDatabase -SupabaseCli $supabaseCli
     Write-DockerEnvironment -SupabaseCli $supabaseCli
     Start-AppContainer
     Wait-App

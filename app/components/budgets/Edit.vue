@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { isDuplicateBudgetNameError, isInvalidBudgetAmountError } from '~/utils/budgetErrors'
 
 const props = defineProps<{
     budgetId: string
@@ -25,14 +26,20 @@ const icon = ref<string | null>(props.budgetIcon ?? null)
 const loading = ref(false)
 const deleting = ref(false)
 const error = ref<string | null>(null)
+const nameError = ref<string | null>(null)
+const amountError = ref<string | null>(null)
+
+watch(name, () => {
+    nameError.value = null
+})
+
+watch(amount, () => {
+    amountError.value = null
+})
 
 function validateForm() {
     if (!name.value.trim()) {
         alert('Please enter a budget name')
-        return false
-    }
-    if (!amount.value) {
-        alert('Please enter an amount')
         return false
     }
     return true
@@ -43,10 +50,18 @@ async function handleUpdateBudget() {
         try {
             loading.value = true
             error.value = null
+            nameError.value = null
+            amountError.value = null
             await store.editBudget(props.budgetId || '', name.value, amount.value.toString(), color.value, icon.value ?? undefined, store.selectedMonth.year, store.selectedMonth.month)
             emit('update')
         } catch (err: any) {
-            error.value = err?.message || 'Error updating budget'
+            if (isDuplicateBudgetNameError(err)) {
+                nameError.value = 'A budget with this name already exists.'
+            } else if (isInvalidBudgetAmountError(err)) {
+                amountError.value = 'Amount must be greater than 0.'
+            } else {
+                error.value = err?.message || 'Error updating budget'
+            }
             console.error('Error updating budget:', err)
         } finally {
             loading.value = false
@@ -90,7 +105,7 @@ defineExpose({ handleDeleteBudget })
         </div>
 
         <div v-else class="space-y-6">
-            <UFormField label="Budget Name" required>
+            <UFormField label="Budget Name" :error="nameError" required>
                 <UInput
                     v-model="name"
                     placeholder="e.g., Monthly Groceries"
@@ -99,7 +114,7 @@ defineExpose({ handleDeleteBudget })
                 />
             </UFormField>
 
-            <UFormField label="Amount" required>
+            <UFormField label="Amount" :error="amountError" required>
                 <UInput
                     v-model="amount"
                     placeholder="0.00"
