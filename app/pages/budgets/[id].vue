@@ -9,6 +9,16 @@ const { budgetIcon } = useBudgetIcon()
 const budgetId = route.params.id as string
 
 const budget = computed(() => store.budgets.find((b: any) => b.id === budgetId))
+const progressBarColor = computed(() => {
+    const amount = Number(budget.value?.currentPeriod?.amount) || 0
+    const spent = Number(budget.value?.totalHitAmount) || 0
+    const percentage = amount > 0 ? (spent / amount) * 100 : 0
+
+    if (percentage > 200) return '#ef4444'
+    if (percentage > 100) return '#eab308'
+    return '#22c55e'
+})
+
 const budgetIconName = computed(() => {
     if (!budget.value) return 'heroicons:wallet-solid'
     return budget.value.icon ?? budgetIcon(budget.value.name)
@@ -95,14 +105,16 @@ function handleExpenseUpdate() {
                     </div>
                     <div>
                         <p class="text-xs text-gray-500 mb-1">Remaining</p>
-                        <p class="text-lg font-semibold">{{ formatCurrency(budget.totalRemainingAmount) }}</p>
+                        <p class="text-lg font-semibold" :style="{ color: progressBarColor }">
+                            {{ formatCurrency(budget.totalRemainingAmount) }}
+                        </p>
                     </div>
                 </div>
                 <BudgetsProgressBar
                     :value="budget.totalHitAmount"
                     :max="budget.currentPeriod?.amount"
                 />
-                <p class="text-xs text-gray-400 text-right mt-1">
+                <p class="text-xs text-right mt-1" :style="{ color: progressBarColor }">
                     {{ budget.progress?.toFixed(1) ?? '0.0' }}% used
                 </p>
             </UCard>
