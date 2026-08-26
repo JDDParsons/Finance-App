@@ -139,9 +139,13 @@ function handleExpenseUpdate() {
                                 v-model:open="spendingAverageTooltipOpen"
                                 text="12-month average, excluding empty months."
                                 :delay-duration="0"
-                                :content="{ side: 'right' }"
+                                :content="{ side: 'right', collisionPadding: 12 }"
                                 :arrow="{ width: 12, height: 6 }"
-                                :ui="{ arrow: 'fill-default stroke-[var(--ui-border)]' }"
+                                :ui="{
+                                    content: 'h-auto max-w-40 py-1.5',
+                                    text: 'whitespace-normal text-center',
+                                    arrow: 'fill-default stroke-[var(--ui-border)]'
+                                }"
                             >
                                 <UButton
                                     icon="heroicons:information-circle"
@@ -163,9 +167,13 @@ function handleExpenseUpdate() {
                                 v-model:open="ytdBalanceTooltipOpen"
                                 text="Budgeted minus spent this year."
                                 :delay-duration="0"
-                                :content="{ side: 'left' }"
+                                :content="{ side: 'left', collisionPadding: 12 }"
                                 :arrow="{ width: 12, height: 6 }"
-                                :ui="{ arrow: 'fill-default stroke-[var(--ui-border)]' }"
+                                :ui="{
+                                    content: 'h-auto max-w-40 py-1.5',
+                                    text: 'whitespace-normal text-center',
+                                    arrow: 'fill-default stroke-[var(--ui-border)]'
+                                }"
                             >
                                 <UButton
                                     icon="heroicons:information-circle"
