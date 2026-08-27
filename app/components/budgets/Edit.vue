@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { isDuplicateBudgetNameError, isInvalidBudgetAmountError } from '~/utils/budgetErrors'
+import {
+    getBudgetErrorMessage,
+    isBudgetPeriodHasExpensesError,
+    isDuplicateBudgetNameError,
+    isInvalidBudgetAmountError,
+} from '~/utils/budgetErrors'
 
 const props = defineProps<{
     budgetId: string
@@ -60,7 +65,7 @@ async function handleUpdateBudget() {
             } else if (isInvalidBudgetAmountError(err)) {
                 amountError.value = 'Amount must be greater than 0.'
             } else {
-                error.value = err?.message || 'Error updating budget'
+                error.value = getBudgetErrorMessage(err, 'Error updating budget')
             }
             console.error('Error updating budget:', err)
         } finally {
@@ -77,10 +82,9 @@ async function handleDeleteBudget() {
             await store.removeBudget(props.budgetId)
             emit('delete')
         } catch (err: any) {
-            const hasPeriodHits = err?.code === 'P0001' || err?.message?.includes('budget period has expense records')
-            error.value = hasPeriodHits
+            error.value = isBudgetPeriodHasExpensesError(err)
                 ? 'This budget has expense records in the selected month and cannot be deleted for that month. Remove those expenses first, then try again.'
-                : err?.message || 'Error deleting budget'
+                : getBudgetErrorMessage(err, 'Error deleting budget')
             console.error('Error deleting budget:', err)
             deleting.value = false
         }

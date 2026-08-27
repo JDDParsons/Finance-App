@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { useSelectedMonthTitle } from '~/composables/useSelectedMonthTitle'
 import { useFinanceStore } from '~/stores/finance'
-import { isDuplicateBudgetNameError, isInvalidBudgetAmountError } from '~/utils/budgetErrors'
+import { getBudgetErrorMessage, isDuplicateBudgetNameError, isInvalidBudgetAmountError } from '~/utils/budgetErrors'
 import { useBudgetIcon } from '~/composables/useBudgetIcon'
 
 useHead({ title: 'Budgets | R&J Finance' })
@@ -88,7 +88,7 @@ async function handleCreateBudget() {
             } else if (isInvalidBudgetAmountError(error)) {
                 amountError.value = 'Amount must be greater than 0.'
             } else {
-                alert('Error creating budget: ' + (error?.message || 'Unknown error'))
+                alert('Error creating budget: ' + getBudgetErrorMessage(error, 'Unknown error'))
             }
         } finally {
             createLoading.value = false
