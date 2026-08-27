@@ -6,8 +6,8 @@ import { useAccountsStore } from './accounts'
 export const useFinanceStore = defineStore('finance', () => {
   const accountsStore = useAccountsStore()
   const {
-    getBudgetsByMonth, getAvailableBudgetMonths,
-    createBudget, updateBudget, deleteBudget,
+    getBudgetsByMonth, getAvailableBudgetMonths, getInactiveBudgets,
+    createBudget, updateBudget, deleteBudget, reactivateBudget,
   } = useBudgetsApi()
   const {
     getBudgetHitsByMonth, getIncomeByMonth,
@@ -22,6 +22,7 @@ export const useFinanceStore = defineStore('finance', () => {
 
   const availableMonths = ref<{ year: number; month: number }[]>([])
   const budgets = ref<any[]>([])
+  const inactiveBudgets = ref<any[]>([])
   const budgetHits = ref<any[]>([])
   const prevMonthBudgetHits = ref<any[]>([])
   const income = ref<any[]>([])
@@ -155,6 +156,10 @@ export const useFinanceStore = defineStore('finance', () => {
     budgetAllEntities.value = reconcileBudgetEntityMap(rawBudgets)
   }
 
+  async function fetchInactiveBudgets() {
+    inactiveBudgets.value = await getInactiveBudgets()
+  }
+
   // ── month navigation ──────────────────────────────────────────────────────
 
   function monthKey(year: number, month: number) { return year * 100 + month }
@@ -282,11 +287,20 @@ export const useFinanceStore = defineStore('finance', () => {
   }
 
   async function removeBudget(id: string) {
-    await deleteBudget(id)
+    const { year, month } = selectedMonth.value
+    const { budgetDeleted } = await deleteBudget(id, year, month)
     budgets.value = budgets.value.filter((b: any) => b.id !== id)
-    const nextBudgetEntities = new Map(budgetAllEntities.value)
-    nextBudgetEntities.delete(id)
-    budgetAllEntities.value = nextBudgetEntities
+    if (budgetDeleted) {
+      const nextBudgetEntities = new Map(budgetAllEntities.value)
+      nextBudgetEntities.delete(id)
+      budgetAllEntities.value = nextBudgetEntities
+    }
+  }
+
+  async function restoreBudget(id: string) {
+    await reactivateBudget(id)
+    inactiveBudgets.value = inactiveBudgets.value.filter((budget: any) => budget.id !== id)
+    await refreshBudgets()
   }
 
   return {
@@ -295,6 +309,7 @@ export const useFinanceStore = defineStore('finance', () => {
     hasPrev,
     hasNext,
     budgets,
+    inactiveBudgets,
     budgetHits,
     prevMonthBudgetHits,
     budgetAllEntities,
@@ -310,6 +325,7 @@ export const useFinanceStore = defineStore('finance', () => {
     fetchAll,
     ensureLoaded,
     refreshBudgets,
+    fetchInactiveBudgets,
     fetchBudgetEntities,
     setMonth,
     prevMonth,
@@ -323,5 +339,6 @@ export const useFinanceStore = defineStore('finance', () => {
     addBudget,
     editBudget,
     removeBudget,
+    restoreBudget,
   }
 })

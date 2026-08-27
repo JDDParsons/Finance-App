@@ -3,12 +3,14 @@ import { ref, computed } from 'vue'
 import { useSelectedMonthTitle } from '~/composables/useSelectedMonthTitle'
 import { useFinanceStore } from '~/stores/finance'
 import { isDuplicateBudgetNameError, isInvalidBudgetAmountError } from '~/utils/budgetErrors'
+import { useBudgetIcon } from '~/composables/useBudgetIcon'
 
 useHead({ title: 'Budgets | R&J Finance' })
 
 const store = useFinanceStore()
 const router = useRouter()
 const { monthTitle } = useSelectedMonthTitle()
+const { budgetIcon } = useBudgetIcon()
 const searchText = ref('')
 
 const displayBudgets = ref<any[]>([])
@@ -34,6 +36,9 @@ const amount = ref('')
 const budgetColor = ref('#6366f1')
 const budgetIconChoice = ref<string | null>(null)
 const createLoading = ref(false)
+const inactiveLoading = ref(false)
+const restoringBudgetId = ref<string | null>(null)
+const inactiveError = ref<string | null>(null)
 const budgetNameError = ref<string | null>(null)
 const amountError = ref<string | null>(null)
 
@@ -43,6 +48,19 @@ watch(budgetName, () => {
 
 watch(amount, () => {
     amountError.value = null
+})
+
+watch(isSlideoverOpen, async (open) => {
+    if (!open) return
+    try {
+        inactiveLoading.value = true
+        inactiveError.value = null
+        await store.fetchInactiveBudgets()
+    } catch (error: any) {
+        inactiveError.value = error?.message || 'Unable to load inactive budgets.'
+    } finally {
+        inactiveLoading.value = false
+    }
 })
 
 
@@ -78,6 +96,19 @@ async function handleCreateBudget() {
     }
 }
 
+async function handleRestoreBudget(id: string) {
+    try {
+        restoringBudgetId.value = id
+        inactiveError.value = null
+        await store.restoreBudget(id)
+        closeSlideover()
+    } catch (error: any) {
+        inactiveError.value = error?.message || 'Unable to restore this budget.'
+    } finally {
+        restoringBudgetId.value = null
+    }
+}
+
 function closeSlideover() {
     isSlideoverOpen.value = false
     budgetName.value = ''
@@ -86,10 +117,19 @@ function closeSlideover() {
     budgetIconChoice.value = null
     budgetNameError.value = null
     amountError.value = null
+    inactiveError.value = null
 }
 
 function goToBudget(budgetId: string) {
     router.push(`/budgets/${budgetId}`)
+}
+
+function formatCurrency(value: number | string | null | undefined) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+    }).format(Number(value) || 0)
 }
 
 
@@ -182,6 +222,57 @@ function goToBudget(budgetId: string) {
                                 <BudgetsChooseIcon v-model="budgetIconChoice" :color="budgetColor" />
                             </UFormField>
                         </div>
+
+                        <section class="mt-8 border-t border-gray-200 pt-6 dark:border-gray-800">
+                            <h4 class="text-lg font-semibold">Restore an inactive budget</h4>
+                            <p class="mt-1 text-sm text-gray-500">
+                                Restore a previous budget for the current month.
+                            </p>
+
+                            <div v-if="inactiveLoading" class="flex justify-center py-6">
+                                <UIcon name="heroicons-solid:arrow-path" class="size-6 animate-spin text-primary" />
+                            </div>
+
+                            <UAlert
+                                v-else-if="inactiveError"
+                                class="mt-4"
+                                color="error"
+                                variant="soft"
+                                :description="inactiveError"
+                            />
+
+                            <p v-else-if="store.inactiveBudgets.length === 0" class="mt-4 text-sm text-gray-400">
+                                No inactive budgets.
+                            </p>
+
+                            <div v-else class="mt-4 space-y-2">
+                                <button
+                                    v-for="budget in store.inactiveBudgets"
+                                    :key="budget.id"
+                                    type="button"
+                                    class="flex w-full items-center gap-3 rounded-lg border border-gray-200 p-3 text-left transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-800 dark:hover:bg-gray-900"
+                                    :disabled="restoringBudgetId !== null || createLoading"
+                                    @click="handleRestoreBudget(budget.id)"
+                                >
+                                    <span
+                                        class="flex size-10 shrink-0 items-center justify-center rounded-full"
+                                        :style="budget.color ? { backgroundColor: `${budget.color}22`, color: budget.color } : {}"
+                                    >
+                                        <UIcon :name="budget.icon ?? budgetIcon(budget.name)" class="size-5" />
+                                    </span>
+                                    <span class="min-w-0 flex-1">
+                                        <span class="block truncate font-medium">{{ budget.name }}</span>
+                                        <span class="block text-sm text-gray-500">{{ formatCurrency(budget.amount) }}</span>
+                                    </span>
+                                    <UIcon
+                                        v-if="restoringBudgetId === budget.id"
+                                        name="heroicons-solid:arrow-path"
+                                        class="size-5 animate-spin"
+                                    />
+                                    <span v-else class="text-sm font-medium text-primary">Restore</span>
+                                </button>
+                            </div>
+                        </section>
                     </div>
                     
                     <div class="p-6 border-t">
@@ -192,7 +283,7 @@ function goToBudget(budgetId: string) {
                                 class="flex-1"
                                 size="lg"
                                 :loading="createLoading"
-                                :disabled="createLoading"
+                                :disabled="createLoading || restoringBudgetId !== null"
                             >
                                 Create this budget
                             </UButton>
@@ -202,7 +293,7 @@ function goToBudget(budgetId: string) {
                                 @click="closeSlideover"
                                 class="flex-1"
                                 size="lg"
-                                :disabled="createLoading"
+                                :disabled="createLoading || restoringBudgetId !== null"
                             >
                                 Close
                             </UButton>

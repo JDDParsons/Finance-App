@@ -9,6 +9,10 @@ export function useBudgetsApi() {
     return apiFetch<any[]>('/api/budgets/months')
   }
 
+  function getInactiveBudgets() {
+    return apiFetch<any[]>('/api/budgets/inactive')
+  }
+
   function createBudget(name: string, amount: string, color?: string, icon?: string | null) {
     return apiFetch<any>('/api/budgets', {
       method: 'POST',
@@ -31,9 +35,21 @@ export function useBudgetsApi() {
     })
   }
 
-  function deleteBudget(id: string) {
-    return apiFetch<any>(`/api/budgets/${id}`, { method: 'DELETE' })
+  function deleteBudget(id: string, year: number, month: number) {
+    return apiFetch<{ budgetDeleted: boolean }>(`/api/budgets/${id}?year=${year}&month=${month}`, { method: 'DELETE' })
   }
 
-  return { getBudgetsByMonth, getAvailableBudgetMonths, createBudget, updateBudget, deleteBudget }
+  function reactivateBudget(id: string) {
+    return apiFetch<{ success: boolean }>(`/api/budgets/${id}/reactivate`, { method: 'POST' })
+  }
+
+  return {
+    getBudgetsByMonth,
+    getAvailableBudgetMonths,
+    getInactiveBudgets,
+    createBudget,
+    updateBudget,
+    deleteBudget,
+    reactivateBudget,
+  }
 }

@@ -55,6 +55,7 @@ export async function getBudgets(supabase: SupabaseClient, householdId: string) 
   const { data: budgets, error } = await getClient(supabase)
     .from('Budgets')
     .select('*')
+    .eq('inactive', false)
     .order('created_at', { ascending: false })
 
   if (error) throw error
@@ -91,6 +92,18 @@ export async function getBudgets(supabase: SupabaseClient, householdId: string) 
   }
 
   return budgets || []
+}
+
+export async function getInactiveBudgets(supabase: SupabaseClient, householdId: string) {
+  const { data, error } = await getClient(supabase)
+    .from('Budgets')
+    .select('*')
+    .eq('household_id', householdId)
+    .eq('inactive', true)
+    .order('name', { ascending: true })
+
+  if (error) throw error
+  return data || []
 }
 
 export async function getAvailableBudgetMonths(supabase: SupabaseClient): Promise<{ year: number; month: number }[]> {
@@ -135,7 +148,7 @@ export async function getBudgetsByMonth(
     { data: allBudgets, error: budgetsError },
     { data: periods, error: periodsError },
     { data: spendingHits, error: spendingHitsError },
-    { data: ytdPeriods, error: ytdPeriodsError },
+    { data: allocationPeriods, error: allocationPeriodsError },
   ] =
     await Promise.all([
       getClient(supabase).from('Budgets').select('*').order('created_at', { ascending: false }),
@@ -151,14 +164,14 @@ export async function getBudgetsByMonth(
         .from('Budget_Period')
         .select('budget_id, date, amount')
         .eq('household_id', householdId)
-        .gte('date', ytdStartDate)
-        .lt('date', ytdEndDate),
+        .gte('date', spendingStartDate)
+        .lt('date', spendingEndDate),
     ])
 
   if (budgetsError) throw budgetsError
   if (periodsError) throw periodsError
   if (spendingHitsError) throw spendingHitsError
-  if (ytdPeriodsError) throw ytdPeriodsError
+  if (allocationPeriodsError) throw allocationPeriodsError
 
   const monthlySpendingByBudget = new Map<string, Map<string, number>>()
   const ytdSpendingByBudget = new Map<string, number>()
@@ -181,14 +194,25 @@ export async function getBudgetsByMonth(
     }
   }
 
+  const historyPeriodMonthsByBudget = new Map<string, Set<string>>()
   const ytdAllocationsByBudget = new Map<string, Map<string, number>>()
-  for (const period of ytdPeriods || []) {
+  for (const period of allocationPeriods || []) {
     if (!period.budget_id || !period.date) continue
-    const monthKey = String(period.date).slice(0, 7)
-    const monthlyAllocations = ytdAllocationsByBudget.get(period.budget_id) ?? new Map<string, number>()
-    monthlyAllocations.set(monthKey, Number(period.amount) || 0)
-    ytdAllocationsByBudget.set(period.budget_id, monthlyAllocations)
-    ytdBudgetIds.add(period.budget_id)
+    const periodDate = String(period.date)
+    const monthKey = periodDate.slice(0, 7)
+
+    if (periodDate >= historyStartDate && periodDate < historyEndDate) {
+      const historyMonths = historyPeriodMonthsByBudget.get(period.budget_id) ?? new Set<string>()
+      historyMonths.add(monthKey)
+      historyPeriodMonthsByBudget.set(period.budget_id, historyMonths)
+    }
+
+    if (periodDate >= ytdStartDate && periodDate < ytdEndDate) {
+      const monthlyAllocations = ytdAllocationsByBudget.get(period.budget_id) ?? new Map<string, number>()
+      monthlyAllocations.set(monthKey, Number(period.amount) || 0)
+      ytdAllocationsByBudget.set(period.budget_id, monthlyAllocations)
+      ytdBudgetIds.add(period.budget_id)
+    }
   }
 
   const periodMap = new Map((periods || []).map((p: any) => [p.budget_id, p]))
@@ -197,7 +221,7 @@ export async function getBudgetsByMonth(
   for (const b of allBudgets || []) {
     let period = periodMap.get(b.id) || null
 
-    if (!period && isCurrentMonth) {
+    if (!period && isCurrentMonth && !b.inactive) {
       const { data: newPeriod, error: newPeriodError } = await getClient(supabase)
         .from('Budget_Period')
         .insert({ budget_id: b.id, date: formattedDate, amount: b.amount, user_id: b.user_id, household_id: householdId })
@@ -209,8 +233,10 @@ export async function getBudgetsByMonth(
 
     if (period) {
       const monthlySpending = monthlySpendingByBudget.get(b.id)
-      const averageMonthlySpending = monthlySpending?.size
-        ? [...monthlySpending.values()].reduce((sum, total) => sum + total, 0) / monthlySpending.size
+      const historyPeriodMonths = historyPeriodMonthsByBudget.get(b.id)
+      const averageMonthlySpending = historyPeriodMonths?.size
+        ? [...historyPeriodMonths].reduce((sum, monthKey) => sum + (monthlySpending?.get(monthKey) || 0), 0)
+          / historyPeriodMonths.size
         : null
       const ytdAllocations = ytdAllocationsByBudget.get(b.id)
       const ytdAllocated = ytdAllocations
@@ -283,11 +309,27 @@ export async function updateBudget(
   return { data, periodData }
 }
 
-export async function deleteBudget(supabase: SupabaseClient, id: string) {
+export async function deleteBudgetPeriod(
+  supabase: SupabaseClient,
+  id: string,
+  year: number,
+  month: number
+) {
+  const targetPeriodDate = `${year}-${String(month).padStart(2, '0')}-01`
+  const { data, error } = await getClient(supabase)
+    .rpc('delete_budget_period', {
+      target_budget_id: id,
+      target_period_date: targetPeriodDate,
+    })
+
+  if (error) throw error
+
+  return { budgetDeleted: data?.[0]?.budget_deleted === true }
+}
+
+export async function reactivateBudget(supabase: SupabaseClient, id: string) {
   const { error } = await getClient(supabase)
-    .from('Budgets')
-    .delete()
-    .eq('id', id)
+    .rpc('reactivate_budget', { target_budget_id: id })
 
   if (error) throw error
 }

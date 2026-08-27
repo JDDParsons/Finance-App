@@ -9,6 +9,7 @@
 -- household_id:         a1b2c3d4-1234-5678-abcd-000000000002
 -- account_chequing_id:  a1b2c3d4-1234-5678-abcd-000000000003
 -- account_visa_id:      a1b2c3d4-1234-5678-abcd-000000000004
+-- budget ids:           a1b2c3d4-1234-5678-abcd-000000001001 through 1006
 
 -- ---------------------------------------------------------------
 -- 1. Auth user (no password — magic link / OTP flow)
@@ -61,18 +62,23 @@ ON CONFLICT (id) DO NOTHING;
 -- 3. Household member
 -- ---------------------------------------------------------------
 INSERT INTO public."Household_Member" (household_id, user_id, created_at)
-VALUES (
+SELECT
   'a1b2c3d4-1234-5678-abcd-000000000002',
   'a1b2c3d4-1234-5678-abcd-000000000001',
   now()
-) ON CONFLICT DO NOTHING;
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM public."Household_Member"
+  WHERE household_id = 'a1b2c3d4-1234-5678-abcd-000000000002'
+    AND user_id = 'a1b2c3d4-1234-5678-abcd-000000000001'
+);
 
 -- ---------------------------------------------------------------
 -- 4. Profile
 -- ---------------------------------------------------------------
 INSERT INTO public."Profile" (id, user_id, household_id, first_name, last_name, email, created_at)
 VALUES (
-  gen_random_uuid(),
+  'a1b2c3d4-1234-5678-abcd-000000000006',
   'a1b2c3d4-1234-5678-abcd-000000000001',
   'a1b2c3d4-1234-5678-abcd-000000000002',
   'Test',
@@ -115,9 +121,169 @@ ON CONFLICT (id) DO NOTHING;
 -- ---------------------------------------------------------------
 INSERT INTO "finance-app"."Budgets" (id, name, amount, household_id, user_id, color, icon, inactive, created_at)
 VALUES
-  (gen_random_uuid(), 'Groceries',     600,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#4CAF50', '🛒', false, now()),
-  (gen_random_uuid(), 'Dining Out',    300,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#FF9800', '🍽️', false, now()),
-  (gen_random_uuid(), 'Gas',           200,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#2196F3', '⛽', false, now()),
-  (gen_random_uuid(), 'Utilities',     150,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#9C27B0', '💡', false, now()),
-  (gen_random_uuid(), 'Entertainment', 100,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#E91E63', '🎬', false, now())
+  ('a1b2c3d4-1234-5678-abcd-000000001001', 'Groceries',     600,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#4CAF50', '🛒', false, now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001002', 'Dining Out',    300,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#FF9800', '🍽️', false, now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001003', 'Gas',           200,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#2196F3', '⛽', false, now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001004', 'Utilities',     150,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#9C27B0', '💡', false, now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001005', 'Entertainment', 100,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#E91E63', '🎬', false, now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001006', 'Rent',         1200,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#607D8B', '🏠', false, now())
+ON CONFLICT (id) DO NOTHING;
+
+-- ---------------------------------------------------------------
+-- 7. Monthly budget periods (January through August 2026)
+-- ---------------------------------------------------------------
+INSERT INTO "finance-app"."Budget_Period" (
+  id, budget_id, date, amount, user_id, household_id, created_at
+)
+SELECT
+  md5('period-' || budget.id::text || '-' || month_start::date::text)::uuid,
+  budget.id,
+  month_start::date,
+  budget.amount,
+  budget.user_id,
+  budget.household_id,
+  now()
+FROM "finance-app"."Budgets" AS budget
+CROSS JOIN generate_series('2026-01-01'::date, '2026-08-01'::date, interval '1 month') AS month_start
+WHERE budget.id IN (
+  'a1b2c3d4-1234-5678-abcd-000000001001',
+  'a1b2c3d4-1234-5678-abcd-000000001002',
+  'a1b2c3d4-1234-5678-abcd-000000001003',
+  'a1b2c3d4-1234-5678-abcd-000000001004',
+  'a1b2c3d4-1234-5678-abcd-000000001005',
+  'a1b2c3d4-1234-5678-abcd-000000001006'
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- ---------------------------------------------------------------
+-- 8. Bi-weekly income ($1,500 from January 7 through August 19)
+-- ---------------------------------------------------------------
+INSERT INTO "finance-app"."Budget_Hit" (
+  id, amount, user_id, budget_id, date, entity, notes, type,
+  account_id, household_id, created_at
+)
+SELECT
+  md5('income-' || pay_date::date::text)::uuid,
+  1500,
+  'a1b2c3d4-1234-5678-abcd-000000000001',
+  NULL,
+  pay_date::date,
+  'Payroll',
+  'Bi-weekly pay',
+  'Income',
+  'a1b2c3d4-1234-5678-abcd-000000000003',
+  'a1b2c3d4-1234-5678-abcd-000000000002',
+  now()
+FROM generate_series('2026-01-07'::date, '2026-08-19'::date, interval '14 days') AS pay_date
+ON CONFLICT (id) DO NOTHING;
+
+-- ---------------------------------------------------------------
+-- 9. Monthly rent payments
+-- ---------------------------------------------------------------
+INSERT INTO "finance-app"."Budget_Hit" (
+  id, amount, user_id, budget_id, date, entity, notes, type,
+  account_id, household_id, created_at
+)
+SELECT
+  md5('rent-' || month_start::date::text)::uuid,
+  1200,
+  'a1b2c3d4-1234-5678-abcd-000000000001',
+  'a1b2c3d4-1234-5678-abcd-000000001006',
+  month_start::date,
+  'Landlord',
+  'Monthly rent',
+  'Expense',
+  'a1b2c3d4-1234-5678-abcd-000000000003',
+  'a1b2c3d4-1234-5678-abcd-000000000002',
+  now()
+FROM generate_series('2026-01-01'::date, '2026-08-01'::date, interval '1 month') AS month_start
+ON CONFLICT (id) DO NOTHING;
+
+-- ---------------------------------------------------------------
+-- 10. Representative spending for the remaining budgets
+-- ---------------------------------------------------------------
+WITH months AS (
+  SELECT month_start::date, extract(month FROM month_start)::integer AS month_number
+  FROM generate_series('2026-01-01'::date, '2026-08-01'::date, interval '1 month') AS month_start
+), sample_expenses AS (
+  SELECT
+    'a1b2c3d4-1234-5678-abcd-000000001001'::uuid AS budget_id,
+    month_start + (purchase.day_of_month - 1) AS expense_date,
+    purchase.entity,
+    purchase.base_amount + ((month_number * purchase.day_of_month) % 17) AS amount
+  FROM months
+  CROSS JOIN (VALUES
+    (3,  'FreshCo', 82),
+    (10, 'No Frills', 96),
+    (17, 'Costco', 128),
+    (24, 'Metro', 74)
+  ) AS purchase(day_of_month, entity, base_amount)
+
+  UNION ALL
+
+  SELECT
+    'a1b2c3d4-1234-5678-abcd-000000001002'::uuid,
+    month_start + (purchase.day_of_month - 1),
+    purchase.entity,
+    purchase.base_amount + ((month_number * purchase.day_of_month) % 13)
+  FROM months
+  CROSS JOIN (VALUES
+    (5,  'Local Cafe', 24),
+    (14, 'Thai Kitchen', 58),
+    (26, 'Pizza Place', 42)
+  ) AS purchase(day_of_month, entity, base_amount)
+
+  UNION ALL
+
+  SELECT
+    'a1b2c3d4-1234-5678-abcd-000000001003'::uuid,
+    month_start + (purchase.day_of_month - 1),
+    purchase.entity,
+    purchase.base_amount + ((month_number * purchase.day_of_month) % 9)
+  FROM months
+  CROSS JOIN (VALUES
+    (8,  'Petro-Canada', 62),
+    (22, 'Esso', 68)
+  ) AS purchase(day_of_month, entity, base_amount)
+
+  UNION ALL
+
+  SELECT
+    'a1b2c3d4-1234-5678-abcd-000000001004'::uuid,
+    month_start + 11,
+    CASE WHEN month_number % 2 = 0 THEN 'Toronto Hydro' ELSE 'Enbridge Gas' END,
+    CASE WHEN month_number IN (1, 2, 7, 8) THEN 142 ELSE 108 END
+  FROM months
+
+  UNION ALL
+
+  SELECT
+    'a1b2c3d4-1234-5678-abcd-000000001005'::uuid,
+    month_start + (purchase.day_of_month - 1),
+    purchase.entity,
+    purchase.base_amount + ((month_number * purchase.day_of_month) % 8)
+  FROM months
+  CROSS JOIN (VALUES
+    (6,  'Netflix', 23),
+    (19, 'Cineplex', 34)
+  ) AS purchase(day_of_month, entity, base_amount)
+  WHERE month_number IN (1, 2, 4, 5, 7, 8) OR purchase.entity = 'Netflix'
+)
+INSERT INTO "finance-app"."Budget_Hit" (
+  id, amount, user_id, budget_id, date, entity, notes, type,
+  account_id, household_id, created_at
+)
+SELECT
+  md5('expense-' || budget_id::text || '-' || expense_date::text || '-' || entity)::uuid,
+  amount,
+  'a1b2c3d4-1234-5678-abcd-000000000001',
+  budget_id,
+  expense_date,
+  entity,
+  'Seeded sample expense',
+  'Expense',
+  'a1b2c3d4-1234-5678-abcd-000000000004',
+  'a1b2c3d4-1234-5678-abcd-000000000002',
+  now()
+FROM sample_expenses
 ON CONFLICT (id) DO NOTHING;

@@ -70,16 +70,16 @@ async function handleUpdateBudget() {
 }
 
 async function handleDeleteBudget() {
-    if (confirm('Are you sure you want to delete this budget? This action cannot be undone.')) {
+    if (confirm('Delete this budget for the selected month? If the budget has no expenses in any month, the budget itself will also be deleted. This action cannot be undone.')) {
         try {
             deleting.value = true
             error.value = null
             await store.removeBudget(props.budgetId)
             emit('delete')
         } catch (err: any) {
-            const isFkViolation = err?.code === '23503' || err?.message?.includes('Budget_Hit')
-            error.value = isFkViolation
-                ? 'This budget has expense records associated with it and cannot be deleted. Remove all expenses from this budget first, then try again.'
+            const hasPeriodHits = err?.code === 'P0001' || err?.message?.includes('budget period has expense records')
+            error.value = hasPeriodHits
+                ? 'This budget has expense records in the selected month and cannot be deleted for that month. Remove those expenses first, then try again.'
                 : err?.message || 'Error deleting budget'
             console.error('Error deleting budget:', err)
             deleting.value = false
