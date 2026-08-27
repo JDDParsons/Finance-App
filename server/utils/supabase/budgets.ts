@@ -94,6 +94,18 @@ export async function getBudgets(supabase: SupabaseClient, householdId: string) 
   return budgets || []
 }
 
+export async function getInactiveBudgets(supabase: SupabaseClient, householdId: string) {
+  const { data, error } = await getClient(supabase)
+    .from('Budgets')
+    .select('*')
+    .eq('household_id', householdId)
+    .eq('inactive', true)
+    .order('name', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
 export async function getAvailableBudgetMonths(supabase: SupabaseClient): Promise<{ year: number; month: number }[]> {
   const { data, error } = await getClient(supabase)
     .from('Budget_Hit')
@@ -313,4 +325,11 @@ export async function deleteBudgetPeriod(
   if (error) throw error
 
   return { budgetDeleted: data?.[0]?.budget_deleted === true }
+}
+
+export async function reactivateBudget(supabase: SupabaseClient, id: string) {
+  const { error } = await getClient(supabase)
+    .rpc('reactivate_budget', { target_budget_id: id })
+
+  if (error) throw error
 }
