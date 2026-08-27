@@ -2,7 +2,6 @@
 import { ref } from 'vue'
 import {
     getBudgetErrorMessage,
-    isBudgetPeriodHasExpensesError,
     isDuplicateBudgetNameError,
     isInvalidBudgetAmountError,
 } from '~/utils/budgetErrors'
@@ -18,7 +17,6 @@ const props = defineProps<{
 const emit = defineEmits<{
     update: []
     cancel: []
-    delete: []
 }>()
 
 const store = useFinanceStore()
@@ -29,7 +27,6 @@ const color = ref(props.budgetColor ?? '#6366f1')
 const icon = ref<string | null>(props.budgetIcon ?? null)
 
 const loading = ref(false)
-const deleting = ref(false)
 const error = ref<string | null>(null)
 const nameError = ref<string | null>(null)
 const amountError = ref<string | null>(null)
@@ -74,24 +71,6 @@ async function handleUpdateBudget() {
     }
 }
 
-async function handleDeleteBudget() {
-    if (confirm('Delete this budget for the selected month? If the budget has no expenses in any month, the budget itself will also be deleted. This action cannot be undone.')) {
-        try {
-            deleting.value = true
-            error.value = null
-            await store.removeBudget(props.budgetId)
-            emit('delete')
-        } catch (err: any) {
-            error.value = isBudgetPeriodHasExpensesError(err)
-                ? 'This budget has expense records in the selected month and cannot be deleted for that month. Remove those expenses first, then try again.'
-                : getBudgetErrorMessage(err, 'Error deleting budget')
-            console.error('Error deleting budget:', err)
-            deleting.value = false
-        }
-    }
-}
-
-defineExpose({ handleDeleteBudget })
 </script>
 
 <template>
@@ -142,7 +121,7 @@ defineExpose({ handleDeleteBudget })
                     @click="handleUpdateBudget"
                     class="flex-1"
                     :loading="loading"
-                    :disabled="loading || deleting"
+                    :disabled="loading"
                 >
                     Update Budget
                 </UButton>
@@ -151,7 +130,7 @@ defineExpose({ handleDeleteBudget })
                     variant="outline"
                     @click="emit('cancel')"
                     class="flex-1"
-                    :disabled="loading || deleting"
+                    :disabled="loading"
                 >
                     Cancel
                 </UButton>
