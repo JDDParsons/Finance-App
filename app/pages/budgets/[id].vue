@@ -137,7 +137,7 @@ function handleExpenseUpdate() {
                             <span>Spending average</span>
                             <UTooltip
                                 v-model:open="spendingAverageTooltipOpen"
-                                text="12-month average, excluding empty months."
+                                text="12-month average, including $0 months with a budget."
                                 :delay-duration="0"
                                 :content="{ side: 'right', collisionPadding: 12 }"
                                 :arrow="{ width: 12, height: 6 }"
