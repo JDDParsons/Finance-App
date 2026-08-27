@@ -55,6 +55,7 @@ export async function getBudgets(supabase: SupabaseClient, householdId: string) 
   const { data: budgets, error } = await getClient(supabase)
     .from('Budgets')
     .select('*')
+    .eq('inactive', false)
     .order('created_at', { ascending: false })
 
   if (error) throw error
@@ -197,7 +198,7 @@ export async function getBudgetsByMonth(
   for (const b of allBudgets || []) {
     let period = periodMap.get(b.id) || null
 
-    if (!period && isCurrentMonth) {
+    if (!period && isCurrentMonth && !b.inactive) {
       const { data: newPeriod, error: newPeriodError } = await getClient(supabase)
         .from('Budget_Period')
         .insert({ budget_id: b.id, date: formattedDate, amount: b.amount, user_id: b.user_id, household_id: householdId })
