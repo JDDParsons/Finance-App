@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { throwBudgetSupabaseError } from './budget-errors'
 
 function getClient(supabase: SupabaseClient) {
   return supabase.schema('finance-app')
@@ -24,7 +25,7 @@ export async function createBudget(
       budget_icon: icon ?? null,
     })
 
-  if (error) throw error
+  if (error) throwBudgetSupabaseError(error, 'create')
   return data
 }
 
@@ -252,7 +253,7 @@ export async function updateBudget(
       target_period_date: formattedDate,
     })
 
-  if (error) throw error
+  if (error) throwBudgetSupabaseError(error, 'update')
   return data
 }
 
@@ -269,7 +270,7 @@ export async function deleteBudgetPeriod(
       target_period_date: targetPeriodDate,
     })
 
-  if (error) throw error
+  if (error) throwBudgetSupabaseError(error, 'delete')
 
   return { budgetDeleted: data?.[0]?.budget_deleted === true }
 }

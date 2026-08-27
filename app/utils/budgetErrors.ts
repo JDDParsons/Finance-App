@@ -1,27 +1,31 @@
-function getErrorValues(error: any) {
-  return [
-    error?.code,
-    error?.message,
-    error?.statusMessage,
-    error?.data?.code,
-    error?.data?.message,
-    error?.data?.statusMessage,
-    error?.data?.details,
-  ]
+export type BudgetErrorCode
+  = 'BUDGET_NAME_CONFLICT'
+    | 'BUDGET_AMOUNT_INVALID'
+    | 'BUDGET_PERIOD_HAS_EXPENSES'
+    | 'BUDGET_FORBIDDEN'
+    | 'BUDGET_NOT_FOUND'
+    | 'BUDGET_OPERATION_FAILED'
+
+export function getBudgetErrorCode(error: any): BudgetErrorCode | null {
+  return error?.data?.data?.code
+    ?? error?.data?.code
+    ?? null
+}
+
+export function getBudgetErrorMessage(error: any, fallback: string) {
+  return error?.data?.statusMessage
+    ?? error?.statusMessage
+    ?? fallback
 }
 
 export function isDuplicateBudgetNameError(error: any) {
-  return getErrorValues(error).some((value) => {
-    const text = String(value ?? '')
-    return text.includes('23505') || text.includes('Budgets_household_id_name_key')
-  })
+  return getBudgetErrorCode(error) === 'BUDGET_NAME_CONFLICT'
 }
 
 export function isInvalidBudgetAmountError(error: any) {
-  return getErrorValues(error).some((value) => {
-    const text = String(value ?? '')
-    return text.includes('23514')
-      || text.includes('Budgets_amount_positive')
-      || text.includes('Budget_Period_amount_positive')
-  })
+  return getBudgetErrorCode(error) === 'BUDGET_AMOUNT_INVALID'
+}
+
+export function isBudgetPeriodHasExpensesError(error: any) {
+  return getBudgetErrorCode(error) === 'BUDGET_PERIOD_HAS_EXPENSES'
 }
