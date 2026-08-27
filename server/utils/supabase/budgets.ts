@@ -4,54 +4,33 @@ function getClient(supabase: SupabaseClient) {
   return supabase.schema('finance-app')
 }
 
+async function ensureCurrentBudgetPeriods(supabase: SupabaseClient) {
+  const { error } = await getClient(supabase).rpc('ensure_current_budget_periods')
+  if (error) throw error
+}
+
 export async function createBudget(
   supabase: SupabaseClient,
-  userId: string,
-  householdId: string,
   name: string,
   amount: string,
   color?: string,
   icon?: string | null
 ) {
   const { data, error } = await getClient(supabase)
-    .from('Budgets')
-    .insert({
-      name,
-      amount: parseFloat(amount),
-      user_id: userId,
-      household_id: householdId,
-      ...(color ? { color } : {}),
-      ...(icon ? { icon } : {}),
+    .rpc('create_budget_with_period', {
+      budget_name: name,
+      budget_amount: parseFloat(amount),
+      budget_color: color ?? null,
+      budget_icon: icon ?? null,
     })
-    .select()
-    .single()
 
   if (error) throw error
-
-  const now = new Date()
-  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
-  const year = firstDay.getFullYear()
-  const month = String(firstDay.getMonth() + 1).padStart(2, '0')
-  const result = `${year}-${month}-01`
-
-  const { data: periodData, error: periodError } = await getClient(supabase)
-    .from('Budget_Period')
-    .insert({
-      budget_id: data.id,
-      date: result,
-      amount: parseFloat(amount),
-      user_id: userId,
-      household_id: householdId,
-    })
-    .select()
-    .single()
-
-  if (periodError) throw periodError
-
-  return { data, periodData }
+  return data
 }
 
 export async function getBudgets(supabase: SupabaseClient, householdId: string) {
+  await ensureCurrentBudgetPeriods(supabase)
+
   const { data: budgets, error } = await getClient(supabase)
     .from('Budgets')
     .select('*')
@@ -73,22 +52,6 @@ export async function getBudgets(supabase: SupabaseClient, householdId: string) 
   for (const b of budgets) {
     b.currentPeriod = budgetPeriods?.find((p: any) => p.budget_id === b.id && p.date === formattedDate) || null
 
-    if (!b.currentPeriod) {
-      const { data: newPeriod, error: newPeriodError } = await getClient(supabase)
-        .from('Budget_Period')
-        .insert({
-          budget_id: b.id,
-          date: formattedDate,
-          amount: b.amount,
-          user_id: b.user_id,
-          household_id: householdId,
-        })
-        .select()
-        .single()
-
-      if (newPeriodError) console.error('Error creating new budget period:', newPeriodError)
-      b.currentPeriod = newPeriod || null
-    }
   }
 
   return budgets || []
@@ -143,6 +106,10 @@ export async function getBudgetsByMonth(
   const spendingStartDate = historyStartDate < ytdStartDate ? historyStartDate : ytdStartDate
   const spendingEndDate = historyEndDate > ytdEndDate ? historyEndDate : ytdEndDate
   const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1)
+
+  if (isCurrentMonth) {
+    await ensureCurrentBudgetPeriods(supabase)
+  }
 
   const [
     { data: allBudgets, error: budgetsError },
@@ -219,17 +186,7 @@ export async function getBudgetsByMonth(
   const result: any[] = []
 
   for (const b of allBudgets || []) {
-    let period = periodMap.get(b.id) || null
-
-    if (!period && isCurrentMonth && !b.inactive) {
-      const { data: newPeriod, error: newPeriodError } = await getClient(supabase)
-        .from('Budget_Period')
-        .insert({ budget_id: b.id, date: formattedDate, amount: b.amount, user_id: b.user_id, household_id: householdId })
-        .select()
-        .single()
-      if (newPeriodError) console.error('Error creating budget period:', newPeriodError)
-      period = newPeriod || null
-    }
+    const period = periodMap.get(b.id) || null
 
     if (period) {
       const monthlySpending = monthlySpendingByBudget.get(b.id)
@@ -279,34 +236,24 @@ export async function updateBudget(
   year?: number,
   month?: number
 ) {
-  const { data, error } = await getClient(supabase)
-    .from('Budgets')
-    .update({
-      name,
-      amount: parseFloat(amount),
-      ...(color !== undefined ? { color } : {}),
-      ...(icon !== undefined ? { icon } : {}),
-    })
-    .eq('id', id)
-    .select()
-    .single()
-
-  if (error) throw error
-
   const targetYear = year ?? new Date().getFullYear()
   const targetMonth = month ?? (new Date().getMonth() + 1)
   const formattedDate = `${targetYear}-${String(targetMonth).padStart(2, '0')}-01`
 
-  const { data: periodData, error: periodError } = await getClient(supabase)
-    .from('Budget_Period')
-    .update({ amount: parseFloat(amount) })
-    .eq('budget_id', id)
-    .eq('date', formattedDate)
-    .select()
-    .single()
+  const { data, error } = await getClient(supabase)
+    .rpc('update_budget_with_period', {
+      target_budget_id: id,
+      budget_name: name,
+      budget_amount: parseFloat(amount),
+      budget_color: color ?? null,
+      budget_icon: icon ?? null,
+      update_color: color !== undefined,
+      update_icon: icon !== undefined,
+      target_period_date: formattedDate,
+    })
 
-  if (periodError) throw periodError
-  return { data, periodData }
+  if (error) throw error
+  return data
 }
 
 export async function deleteBudgetPeriod(

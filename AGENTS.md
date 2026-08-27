@@ -25,7 +25,7 @@
 - This is a Nuxt 4 single-page app with `srcDir: 'app'` and `ssr: false`.
 - The deployed app uses `app.baseURL = '/Finance-App/'`; keep route and asset changes compatible with that base path.
 - Follow existing Nuxt and TypeScript patterns already present in the repo.
-- Prefer client-side Supabase composables over adding new server endpoints.
+- Keep application data access behind the existing Nuxt server API. UI components and Pinia stores should call `app/composables/api/`, which call `server/api/` routes; routes delegate Supabase work to `server/utils/supabase/`.
 - Keep feature work aligned to the existing domain split: auth, home, budgets, cashflow, savings, accounts, and upload.
 - Use `npm run build` as the repository validation command after code changes.
 
@@ -59,6 +59,14 @@
 - Prefer adding or updating logic in these domain composables instead of calling Supabase directly from many components.
 - Existing Supabase table names are capitalized (for example `Profile`, `Budgets`, `Budget_Hit`, `Account`, `Transaction`); preserve the current naming conventions in queries and migrations unless intentionally changing schema.
 - The app depends on `household_id` scoping. When creating new rows in app-managed tables, follow the existing pattern of resolving the current session user and household before insert.
+
+### Persistence decision rule
+
+- Use direct Supabase table queries in `server/utils/supabase/` for reads and single-table CRUD operations.
+- Use a versioned PostgreSQL function called through `rpc()` when a workflow writes multiple tables and must succeed or fail atomically, or when check-then-write behavior has a concurrency risk.
+- Use a database trigger only for an invariant that must hold regardless of which trusted entry point writes the row. Keep user-initiated workflows explicit rather than hiding them in triggers.
+- Keep authorization inside security-definer functions by resolving `auth.uid()` to the caller's household and scoping every affected row to it. Use an empty `search_path`, fully qualified identifiers, minimal grants, and explicit errors.
+- Keep Nuxt route contracts and UI orchestration in TypeScript; database functions should own transactional data changes, not presentation or external-service logic.
 
 ## Data behavior notes
 
