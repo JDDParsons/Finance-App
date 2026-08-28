@@ -9,6 +9,7 @@ test('combines monthly budget periods and expenses in chronological order', () =
       { budget_id: 'groceries', date: '2026-03-01', amount: 500 },
       { budget_id: 'groceries', date: '2026-01-01', amount: 450 },
       { budget_id: 'groceries', date: '2026-02-01', amount: 475 },
+      { budget_id: 'groceries', date: '2026-04-01', amount: 525 },
     ],
     [
       { budget_id: 'groceries', date: '2026-01-07', amount: 125 },
@@ -16,13 +17,14 @@ test('combines monthly budget periods and expenses in chronological order', () =
       { budget_id: 'groceries', date: '2026-03-14', amount: 525 },
     ],
     '2026-01-01',
-    '2026-04-01'
+    '2026-05-01'
   )
 
   assert.deepEqual(history.get('groceries'), [
     { month: '2026-01', spent: 325, budgeted: 450 },
     { month: '2026-02', spent: 0, budgeted: 475 },
     { month: '2026-03', spent: 525, budgeted: 500 },
+    { month: '2026-04', spent: 0, budgeted: 525 },
   ])
 })
 
