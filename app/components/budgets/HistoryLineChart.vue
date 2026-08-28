@@ -24,6 +24,30 @@ const props = defineProps<{
 }>()
 
 const spentColor = computed(() => props.color || '#22c55e')
+let activeTooltipIndex: number | null = null
+
+function toggleTooltip(event: any, elements: any[], chart: any) {
+  const dataIndex = elements[0]?.index
+  if (dataIndex === undefined) return
+
+  const position = { x: event.x ?? 0, y: event.y ?? 0 }
+  if (activeTooltipIndex === dataIndex) {
+    activeTooltipIndex = null
+    chart.tooltip?.setActiveElements([], position)
+    chart.setActiveElements([])
+    chart.update()
+    return
+  }
+
+  activeTooltipIndex = dataIndex
+  const activeElements = chart.data.datasets.map((_: unknown, datasetIndex: number) => ({
+    datasetIndex,
+    index: dataIndex,
+  }))
+  chart.tooltip?.setActiveElements(activeElements, position)
+  chart.setActiveElements(activeElements)
+  chart.update()
+}
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('en-US', {
@@ -76,6 +100,7 @@ const chartOptions = computed(() => ({
     mode: 'index' as const,
     intersect: false,
   },
+  onClick: toggleTooltip,
   plugins: {
     legend: { display: false },
     tooltip: {

@@ -180,12 +180,12 @@ async function handleDeleteBudget() {
                                 v-model:open="spendingAverageTooltipOpen"
                                 text="12-month average, including $0 months with a budget."
                                 :delay-duration="0"
-                                :content="{ side: 'right', collisionPadding: 12 }"
+                                :content="{ side: 'top', align: 'start', sideOffset: 8, collisionPadding: 12 }"
                                 :arrow="{ width: 12, height: 6 }"
                                 :ui="{
-                                    content: 'h-auto max-w-40 py-1.5',
+                                    content: 'h-auto max-w-40 border border-gray-500 py-1.5 ring-gray-500 dark:border-gray-300 dark:ring-gray-300',
                                     text: 'whitespace-normal text-center',
-                                    arrow: 'fill-default stroke-[var(--ui-border)]'
+                                    arrow: 'fill-default stroke-gray-500 dark:stroke-gray-300'
                                 }"
                             >
                                 <UButton
@@ -208,12 +208,12 @@ async function handleDeleteBudget() {
                                 v-model:open="ytdBalanceTooltipOpen"
                                 text="Budgeted minus spent this year."
                                 :delay-duration="0"
-                                :content="{ side: 'left', collisionPadding: 12 }"
+                                :content="{ side: 'top', align: 'end', sideOffset: 8, collisionPadding: 12 }"
                                 :arrow="{ width: 12, height: 6 }"
                                 :ui="{
-                                    content: 'h-auto max-w-40 py-1.5',
+                                    content: 'h-auto max-w-40 border border-gray-500 py-1.5 ring-gray-500 dark:border-gray-300 dark:ring-gray-300',
                                     text: 'whitespace-normal text-center',
-                                    arrow: 'fill-default stroke-[var(--ui-border)]'
+                                    arrow: 'fill-default stroke-gray-500 dark:stroke-gray-300'
                                 }"
                             >
                                 <UButton

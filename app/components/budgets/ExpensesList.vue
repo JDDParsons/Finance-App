@@ -112,26 +112,24 @@ const tableColumns = [
     <template v-else>
         <!-- Mobile: cards -->
         <div class="lg:hidden">
-            <UScrollArea class="max-h-134 pb-2">
-                <div class="space-y-4 p-1">
-                    <ExpenseCard
-                        v-for="hit in props.budgetHits"
-                        :key="hit.id"
-                        :id="hit.id"
-                        :amount="hit.amount"
-                        :date="hit.date"
-                        :entity="hit.entity"
-                        :budget-color="props.budgetColor"
-                        :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
-                        :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
-                        :user-first-name="hit.user_id ? store.userProfiles.get(hit.user_id)?.firstName ?? null : null"
-                        :user-avatar-link="hit.user_id ? store.userProfiles.get(hit.user_id)?.avatarLink ?? null : null"
-                        class="ml-2 mr-2"
-                        @delete="handleDeleteHit"
-                        @edit="handleEditHit"
-                    />
-                </div>
-            </UScrollArea>
+            <div class="space-y-4 p-1 pb-2">
+                <ExpenseCard
+                    v-for="hit in props.budgetHits"
+                    :key="hit.id"
+                    :id="hit.id"
+                    :amount="hit.amount"
+                    :date="hit.date"
+                    :entity="hit.entity"
+                    :budget-color="props.budgetColor"
+                    :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
+                    :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
+                    :user-first-name="hit.user_id ? store.userProfiles.get(hit.user_id)?.firstName ?? null : null"
+                    :user-avatar-link="hit.user_id ? store.userProfiles.get(hit.user_id)?.avatarLink ?? null : null"
+                    class="ml-2 mr-2"
+                    @delete="handleDeleteHit"
+                    @edit="handleEditHit"
+                />
+            </div>
         </div>
 
         <!-- Desktop: table -->
