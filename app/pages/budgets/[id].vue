@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
 import { getBudgetErrorMessage } from '~/utils/budgetErrors'
+import HistoryLineChart from '~/components/budgets/HistoryLineChart.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -145,7 +146,7 @@ async function handleDeleteBudget() {
             <!-- Budget summary -->
             <section class="mb-6 border-b border-gray-200 pb-6 dark:border-gray-800">
                 <div :class="hasBudgetHistory ? 'lg:grid lg:grid-cols-2 lg:items-center lg:gap-8' : ''">
-                <BudgetsHistoryLineChart
+                <HistoryLineChart
                     v-if="hasBudgetHistory"
                     class="hidden lg:block"
                     :history="budgetHistory"
