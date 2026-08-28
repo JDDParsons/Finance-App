@@ -20,6 +20,21 @@ const loadError = ref(false)
 const isAuthenticated = computed(() => route.path !== '/')
 const showMonthShortcut = computed(() => false)
 const showProfileShortcut = computed(() => false)
+const pageTransition = ref<false | { name: string; mode: 'out-in' }>(false)
+
+function isBudgetDetailsPath(path: string) {
+  return /^\/budgets\/[^/]+$/.test(path)
+}
+
+router.beforeEach((to, from) => {
+  if (from.path === '/budgets' && isBudgetDetailsPath(to.path)) {
+    pageTransition.value = { name: 'budget-slide-in', mode: 'out-in' }
+  } else if (isBudgetDetailsPath(from.path) && to.path === '/budgets') {
+    pageTransition.value = { name: 'budget-slide-out', mode: 'out-in' }
+  } else {
+    pageTransition.value = false
+  }
+})
 
 async function loadAndStart() {
   isLoading.value = true
@@ -94,7 +109,7 @@ watch(() => route.path, async (newPath, oldPath) => {
 
     <SideNav v-if="isAuthenticated" class="hidden lg:flex" />
     <div :class="isAuthenticated ? 'lg:pl-56' : ''" class="relative">
-      <NuxtPage />
+      <NuxtPage :transition="pageTransition" />
     </div>
     <div
       v-if="showMonthShortcut"
