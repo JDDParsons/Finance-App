@@ -93,7 +93,10 @@ async function handleDeleteBudget() {
 </script>
 
 <template>
-    <UContainer class="py-6 pb-24 lg:pb-8">
+    <div class="min-h-screen">
+        <AppHeader title="Budget Details" />
+
+        <UContainer class="max-w-none py-6 pb-24 lg:pb-8">
 
         <!-- Back + Title row -->
         <div class="flex items-center gap-3 mb-6">
@@ -261,5 +264,6 @@ async function handleDeleteBudget() {
             :message="warningMessage"
         />
 
-    </UContainer>
+        </UContainer>
+    </div>
 </template>
