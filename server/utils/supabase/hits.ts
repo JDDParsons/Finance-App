@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { throwBudgetSupabaseError } from './budget-errors'
 
 function getClient(supabase: SupabaseClient) {
   return supabase.schema('finance-app')
@@ -31,7 +32,10 @@ export async function createBudgetHit(
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    if (error.code === 'P0003') throwBudgetSupabaseError(error, 'create an expense')
+    throw error
+  }
   return data
 }
 
@@ -96,7 +100,10 @@ export async function updateBudgetHit(
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    if (error.code === 'P0003') throwBudgetSupabaseError(error, 'update an expense')
+    throw error
+  }
   return data
 }
 

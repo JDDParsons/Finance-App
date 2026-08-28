@@ -119,14 +119,14 @@ ON CONFLICT (id) DO NOTHING;
 -- ---------------------------------------------------------------
 -- 6. Budgets
 -- ---------------------------------------------------------------
-INSERT INTO "finance-app"."Budgets" (id, name, amount, household_id, user_id, color, icon, inactive, created_at)
+INSERT INTO "finance-app"."Budgets" (id, name, household_id, user_id, color, icon, created_at)
 VALUES
-  ('a1b2c3d4-1234-5678-abcd-000000001001', 'Groceries',     600,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#4CAF50', '🛒', false, now()),
-  ('a1b2c3d4-1234-5678-abcd-000000001002', 'Dining Out',    300,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#FF9800', '🍽️', false, now()),
-  ('a1b2c3d4-1234-5678-abcd-000000001003', 'Gas',           200,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#2196F3', '⛽', false, now()),
-  ('a1b2c3d4-1234-5678-abcd-000000001004', 'Utilities',     150,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#9C27B0', '💡', false, now()),
-  ('a1b2c3d4-1234-5678-abcd-000000001005', 'Entertainment', 100,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#E91E63', '🎬', false, now()),
-  ('a1b2c3d4-1234-5678-abcd-000000001006', 'Rent',         1200,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#607D8B', '🏠', false, now())
+  ('a1b2c3d4-1234-5678-abcd-000000001001', 'Groceries',     'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#4CAF50', '🛒', now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001002', 'Dining Out',    'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#FF9800', '🍽️', now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001003', 'Gas',           'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#2196F3', '⛽', now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001004', 'Utilities',     'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#9C27B0', '💡', now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001005', 'Entertainment', 'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#E91E63', '🎬', now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001006', 'Rent',          'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#607D8B', '🏠', now())
 ON CONFLICT (id) DO NOTHING;
 
 -- ---------------------------------------------------------------
@@ -139,7 +139,14 @@ SELECT
   md5('period-' || budget.id::text || '-' || month_start::date::text)::uuid,
   budget.id,
   month_start::date,
-  budget.amount,
+  CASE budget.id::text
+    WHEN 'a1b2c3d4-1234-5678-abcd-000000001001' THEN 600
+    WHEN 'a1b2c3d4-1234-5678-abcd-000000001002' THEN 300
+    WHEN 'a1b2c3d4-1234-5678-abcd-000000001003' THEN 200
+    WHEN 'a1b2c3d4-1234-5678-abcd-000000001004' THEN 150
+    WHEN 'a1b2c3d4-1234-5678-abcd-000000001005' THEN 100
+    WHEN 'a1b2c3d4-1234-5678-abcd-000000001006' THEN 1200
+  END,
   budget.user_id,
   budget.household_id,
   now()

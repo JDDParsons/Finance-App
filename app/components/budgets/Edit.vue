@@ -2,16 +2,12 @@
 import { ref } from 'vue'
 import {
     getBudgetErrorMessage,
-    isDuplicateBudgetNameError,
     isInvalidBudgetAmountError,
 } from '~/utils/budgetErrors'
 
 const props = defineProps<{
     budgetId: string
-    budgetName?: string
     budgetAmount?: number
-    budgetColor?: string
-    budgetIcon?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -21,45 +17,26 @@ const emit = defineEmits<{
 
 const store = useFinanceStore()
 
-const name = ref(props.budgetName ?? '')
 const amount = ref(props.budgetAmount ?? 0)
-const color = ref(props.budgetColor ?? '#6366f1')
-const icon = ref<string | null>(props.budgetIcon ?? null)
 
 const loading = ref(false)
 const error = ref<string | null>(null)
-const nameError = ref<string | null>(null)
 const amountError = ref<string | null>(null)
-
-watch(name, () => {
-    nameError.value = null
-})
 
 watch(amount, () => {
     amountError.value = null
 })
 
-function validateForm() {
-    if (!name.value.trim()) {
-        alert('Please enter a budget name')
-        return false
-    }
-    return true
-}
-
 async function handleUpdateBudget() {
-    if (validateForm()) {
+    if (Number(amount.value) > 0) {
         try {
             loading.value = true
             error.value = null
-            nameError.value = null
             amountError.value = null
-            await store.editBudget(props.budgetId || '', name.value, amount.value.toString(), color.value, icon.value ?? undefined, store.selectedMonth.year, store.selectedMonth.month)
+            await store.editBudgetPeriod(props.budgetId || '', amount.value.toString())
             emit('update')
         } catch (err: any) {
-            if (isDuplicateBudgetNameError(err)) {
-                nameError.value = 'A budget with this name already exists.'
-            } else if (isInvalidBudgetAmountError(err)) {
+            if (isInvalidBudgetAmountError(err)) {
                 amountError.value = 'Amount must be greater than 0.'
             } else {
                 error.value = getBudgetErrorMessage(err, 'Error updating budget')
@@ -68,6 +45,8 @@ async function handleUpdateBudget() {
         } finally {
             loading.value = false
         }
+    } else {
+        amountError.value = 'Amount must be greater than 0.'
     }
 }
 
@@ -88,16 +67,8 @@ async function handleUpdateBudget() {
         </div>
 
         <div v-else class="space-y-6">
-            <UFormField label="Budget Name" :error="nameError" required>
-                <UInput
-                    v-model="name"
-                    placeholder="e.g., Monthly Groceries"
-                    type="text"
-                    size="xl"
-                />
-            </UFormField>
-
-            <UFormField label="Amount" :error="amountError" required>
+            <p class="text-sm text-gray-500">This changes only the allocation for the selected month.</p>
+            <UFormField label="Monthly allocation" :error="amountError" required>
                 <UInput
                     v-model="amount"
                     placeholder="0.00"
@@ -105,14 +76,6 @@ async function handleUpdateBudget() {
                     step="0.01"
                     size="xl"
                 />
-            </UFormField>
-
-            <UFormField label="Colour">
-                <BudgetsColorPicker v-model="color" />
-            </UFormField>
-
-            <UFormField label="Icon">
-                <BudgetsChooseIcon v-model="icon" :color="color" />
             </UFormField>
 
             <div class="flex gap-3">
@@ -123,7 +86,7 @@ async function handleUpdateBudget() {
                     :loading="loading"
                     :disabled="loading"
                 >
-                    Update Budget
+                    Update allocation
                 </UButton>
                 <UButton
                     color="neutral"

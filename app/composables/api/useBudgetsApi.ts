@@ -9,47 +9,56 @@ export function useBudgetsApi() {
     return apiFetch<any[]>('/api/budgets/months')
   }
 
-  function getInactiveBudgets() {
-    return apiFetch<any[]>('/api/budgets/inactive')
+  function getAvailableBudgets(year: number, month: number) {
+    return apiFetch<any[]>(`/api/budgets/available?year=${year}&month=${month}`)
   }
 
-  function createBudget(name: string, amount: string, color?: string, icon?: string | null) {
+  function createBudget(name: string, amount: string, color: string | undefined, icon: string | null | undefined, year: number, month: number) {
     return apiFetch<any>('/api/budgets', {
       method: 'POST',
-      body: { name, amount, color, icon },
-    })
-  }
-
-  function updateBudget(
-    id: string,
-    name: string,
-    amount: string,
-    color?: string,
-    icon?: string | null,
-    year?: number,
-    month?: number
-  ) {
-    return apiFetch<any>(`/api/budgets/${id}`, {
-      method: 'PUT',
       body: { name, amount, color, icon, year, month },
     })
   }
 
-  function deleteBudget(id: string, year: number, month: number) {
-    return apiFetch<{ budgetDeleted: boolean }>(`/api/budgets/${id}?year=${year}&month=${month}`, { method: 'DELETE' })
+  function updateBudgetMetadata(id: string, name: string, color?: string, icon?: string | null) {
+    return apiFetch<any>(`/api/budgets/${id}`, {
+      method: 'PUT',
+      body: { name, color, icon },
+    })
   }
 
-  function reactivateBudget(id: string) {
-    return apiFetch<{ success: boolean }>(`/api/budgets/${id}/reactivate`, { method: 'POST' })
+  function createBudgetPeriod(id: string, amount: string, year: number, month: number) {
+    return apiFetch<any>(`/api/budgets/${id}/period`, { method: 'POST', body: { amount, year, month } })
+  }
+
+  function updateBudgetPeriod(id: string, amount: string, year: number, month: number) {
+    return apiFetch<any>(`/api/budgets/${id}/period`, { method: 'PUT', body: { amount, year, month } })
+  }
+
+  function deleteBudget(id: string, year: number, month: number) {
+    return apiFetch<{ success: boolean }>(`/api/budgets/${id}?year=${year}&month=${month}`, { method: 'DELETE' })
+  }
+
+  function getCopyPreviousPreview(year: number, month: number) {
+    return apiFetch<any>(`/api/budgets/copy-preview?year=${year}&month=${month}`)
+  }
+
+  function copyPreviousBudgets(year: number, month: number) {
+    return apiFetch<{ copiedCount: number; skippedCount: number; sourceCount: number }>('/api/budgets/copy-previous', {
+      method: 'POST', body: { year, month },
+    })
   }
 
   return {
     getBudgetsByMonth,
     getAvailableBudgetMonths,
-    getInactiveBudgets,
+    getAvailableBudgets,
     createBudget,
-    updateBudget,
+    createBudgetPeriod,
+    updateBudgetPeriod,
+    updateBudgetMetadata,
     deleteBudget,
-    reactivateBudget,
+    getCopyPreviousPreview,
+    copyPreviousBudgets,
   }
 }
