@@ -183,7 +183,7 @@ async function handleDeleteBudget() {
                                 :content="{ side: 'top', align: 'start', sideOffset: 8, collisionPadding: 12 }"
                                 :arrow="{ width: 12, height: 6 }"
                                 :ui="{
-                                    content: 'h-auto max-w-40 border border-gray-500 py-1.5 ring-gray-500 dark:border-gray-300 dark:ring-gray-300',
+                                    content: 'h-auto max-w-40 py-1.5 ring-gray-500 dark:ring-gray-300',
                                     text: 'whitespace-normal text-center',
                                     arrow: 'fill-default stroke-gray-500 dark:stroke-gray-300'
                                 }"
@@ -211,7 +211,7 @@ async function handleDeleteBudget() {
                                 :content="{ side: 'top', align: 'end', sideOffset: 8, collisionPadding: 12 }"
                                 :arrow="{ width: 12, height: 6 }"
                                 :ui="{
-                                    content: 'h-auto max-w-40 border border-gray-500 py-1.5 ring-gray-500 dark:border-gray-300 dark:ring-gray-300',
+                                    content: 'h-auto max-w-40 py-1.5 ring-gray-500 dark:ring-gray-300',
                                     text: 'whitespace-normal text-center',
                                     arrow: 'fill-default stroke-gray-500 dark:stroke-gray-300'
                                 }"

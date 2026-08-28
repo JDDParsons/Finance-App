@@ -27,15 +27,19 @@ const spentColor = computed(() => props.color || '#22c55e')
 let activeTooltipIndex: number | null = null
 
 function toggleTooltip(event: any, elements: any[], chart: any) {
-  const dataIndex = elements[0]?.index
+  const dataIndex = elements[0]?.index ?? chart.tooltip?.getActiveElements()?.[0]?.index
   if (dataIndex === undefined) return
 
   const position = { x: event.x ?? 0, y: event.y ?? 0 }
   if (activeTooltipIndex === dataIndex) {
     activeTooltipIndex = null
-    chart.tooltip?.setActiveElements([], position)
-    chart.setActiveElements([])
-    chart.update()
+    // Chart.js also handles click events internally. Clear after that handler
+    // finishes so it cannot immediately restore the tooltip we just closed.
+    setTimeout(() => {
+      chart.tooltip?.setActiveElements([], position)
+      chart.setActiveElements([])
+      chart.update('none')
+    }, 0)
     return
   }
 
