@@ -27,9 +27,6 @@ watchEffect(() => {
 })
 
 
-const headerMenuItems = computed(() => [[
-    { label: 'Add Budget', icon: 'heroicons-solid:plus', onSelect: () => { isSlideoverOpen.value = true } },
-]])
 const isSlideoverOpen = ref(false)
 const budgetName = ref('')
 const amount = ref('')
@@ -143,18 +140,8 @@ function formatCurrency(value: number | string | null | undefined) {
 
     <UContainer class="max-w-none">
         <!-- Budget Allocation Chart -->
-        <div class="flex items-end gap-1 mt-4 mb-2">
-          <BudgetsAllocationGaugeBar class="flex-1" />
-          <UDropdownMenu :items="headerMenuItems" :content="{ align: 'end' }">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              icon="heroicons-solid:ellipsis-vertical"
-              size="md"
-              aria-label="More options"
-              class="!py-0"
-            />
-          </UDropdownMenu>
+        <div class="mt-4 mb-2">
+          <BudgetsAllocationGaugeBar />
         </div>
 
 
@@ -172,10 +159,6 @@ function formatCurrency(value: number | string | null | undefined) {
             <p class="text-gray-400">Loading budgets...</p>
         </div>
 
-        <div v-else-if="displayBudgets.length === 0" class="text-center py-12">
-            <p class="text-gray-400">No budgets yet. Use the menu to create one.</p>
-        </div>
-
         <div v-else class="grid grid-cols-3 gap-3 pb-24 lg:pb-6 sm:grid-cols-3 lg:grid-cols-4">
             <BudgetsBudgetCard
                 v-for="budget in displayBudgets"
@@ -183,6 +166,7 @@ function formatCurrency(value: number | string | null | undefined) {
                 :budget="budget"
                 @select="goToBudget"
             />
+            <BudgetsAddBudgetCard @select="isSlideoverOpen = true" />
         </div>
 
         <USlideover 

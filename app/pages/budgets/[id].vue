@@ -16,6 +16,8 @@ const hasAverageMonthlySpending = computed(() =>
 const hasYtdBalance = computed(() =>
     budget.value?.ytdBalance !== null && budget.value?.ytdBalance !== undefined
 )
+const remainingAmount = computed(() => Number(budget.value?.totalRemainingAmount) || 0)
+const isOverBudget = computed(() => remainingAmount.value < 0)
 const ytdBalanceColor = computed(() => {
     const balance = Number(budget.value?.ytdBalance) || 0
     if (balance > 0) return '#22c55e'
@@ -138,8 +140,8 @@ async function handleDeleteBudget() {
         </div>
 
         <template v-else>
-            <!-- Top: Budget summary card -->
-            <UCard class="mb-2 shadow overflow-hidden" :style="budget.color ? { backgroundColor: `${budget.color}22`, borderColor: `${budget.color}55`, borderTop: `3px solid ${budget.color}` } : {}">
+            <!-- Budget summary -->
+            <section class="mb-6 border-b border-gray-200 pb-6 dark:border-gray-800">
                 <div class="grid grid-cols-3 gap-4 text-center mb-4">
                     <div>
                         <p class="text-xs text-gray-500 mb-1">Allocated</p>
@@ -150,19 +152,21 @@ async function handleDeleteBudget() {
                         <p class="text-lg font-semibold">{{ formatCurrency(budget.totalHitAmount) }}</p>
                     </div>
                     <div>
-                        <p class="text-xs text-gray-500 mb-1">Remaining</p>
+                        <p class="text-xs text-gray-500 mb-1">{{ isOverBudget ? 'Over budget' : 'Remaining' }}</p>
                         <p class="text-lg font-semibold" :style="{ color: progressBarColor }">
-                            {{ formatCurrency(budget.totalRemainingAmount) }}
+                            {{ formatCurrency(isOverBudget ? Math.abs(remainingAmount) : remainingAmount) }}
                         </p>
                     </div>
                 </div>
-                <BudgetsProgressBar
-                    :value="budget.totalHitAmount"
-                    :max="budget.currentPeriod?.amount"
-                />
-                <p class="text-xs text-right mt-1" :style="{ color: progressBarColor }">
-                    {{ budget.progress?.toFixed(1) ?? '0.0' }}% used
-                </p>
+                <div class="mx-auto w-[85%]">
+                    <BudgetsProgressBar
+                        :value="budget.totalHitAmount"
+                        :max="budget.currentPeriod?.amount"
+                    />
+                    <p class="mt-1 text-center text-xs" :style="{ color: progressBarColor }">
+                        {{ budget.progress?.toFixed(1) ?? '0.0' }}% used
+                    </p>
+                </div>
                 <div v-if="hasAverageMonthlySpending || hasYtdBalance" class="mt-4 grid grid-cols-2 gap-4 text-center">
                     <div v-if="hasAverageMonthlySpending">
                         <div class="mb-1 flex items-center justify-center gap-1 whitespace-nowrap text-xs text-gray-500">
@@ -223,7 +227,7 @@ async function handleDeleteBudget() {
                         </p>
                     </div>
                 </div>
-            </UCard>
+            </section>
 
             <!-- Form + List stacked -->
             <div class="flex flex-col gap-6">
@@ -232,6 +236,7 @@ async function handleDeleteBudget() {
                 <BudgetsExpensesList
                     :budget-id="budgetId"
                     :budget-hits="budget.hits"
+                    :budget-color="budget.color"
                     @update="handleExpenseUpdate"
                     @cancel="() => {}"
                 />
