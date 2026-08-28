@@ -130,7 +130,7 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- ---------------------------------------------------------------
--- 7. Monthly budget periods (January through August 2026)
+-- 7. Monthly budget periods (January through August 2026, excluding July)
 -- ---------------------------------------------------------------
 INSERT INTO "finance-app"."Budget_Period" (
   id, budget_id, date, amount, user_id, household_id, created_at
@@ -160,10 +160,11 @@ WHERE budget.id IN (
   'a1b2c3d4-1234-5678-abcd-000000001005',
   'a1b2c3d4-1234-5678-abcd-000000001006'
 )
+AND month_start::date <> '2026-07-01'::date
 ON CONFLICT (id) DO NOTHING;
 
 -- ---------------------------------------------------------------
--- 8. Bi-weekly income ($1,500 from January 7 through August 19)
+-- 8. Bi-weekly income ($1,500 from January 7 through August 19, excluding July)
 -- ---------------------------------------------------------------
 INSERT INTO "finance-app"."Budget_Hit" (
   id, amount, user_id, budget_id, date, entity, notes, type,
@@ -182,6 +183,8 @@ SELECT
   'a1b2c3d4-1234-5678-abcd-000000000002',
   now()
 FROM generate_series('2026-01-07'::date, '2026-08-19'::date, interval '14 days') AS pay_date
+WHERE pay_date::date < '2026-07-01'::date
+   OR pay_date::date >= '2026-08-01'::date
 ON CONFLICT (id) DO NOTHING;
 
 -- ---------------------------------------------------------------
@@ -204,6 +207,7 @@ SELECT
   'a1b2c3d4-1234-5678-abcd-000000000002',
   now()
 FROM generate_series('2026-01-01'::date, '2026-08-01'::date, interval '1 month') AS month_start
+WHERE month_start::date <> '2026-07-01'::date
 ON CONFLICT (id) DO NOTHING;
 
 -- ---------------------------------------------------------------
@@ -212,6 +216,7 @@ ON CONFLICT (id) DO NOTHING;
 WITH months AS (
   SELECT month_start::date, extract(month FROM month_start)::integer AS month_number
   FROM generate_series('2026-01-01'::date, '2026-08-01'::date, interval '1 month') AS month_start
+  WHERE month_start::date <> '2026-07-01'::date
 ), sample_expenses AS (
   SELECT
     'a1b2c3d4-1234-5678-abcd-000000001001'::uuid AS budget_id,
