@@ -12,6 +12,14 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Tooltip, Legend)
 
+;(Tooltip.positioners as any).lowerDataPoint = (items: any[]) => {
+  if (!items.length) return false
+
+  return items
+    .map(item => item.element.tooltipPosition())
+    .reduce((lowerPoint, point) => point.y > lowerPoint.y ? point : lowerPoint)
+}
+
 interface BudgetHistoryPoint {
   month: string
   spent: number
@@ -24,6 +32,34 @@ const props = defineProps<{
 }>()
 
 const spentColor = computed(() => props.color || '#22c55e')
+let activeTooltipIndex: number | null = null
+
+function toggleTooltip(event: any, elements: any[], chart: any) {
+  const dataIndex = elements[0]?.index ?? chart.tooltip?.getActiveElements()?.[0]?.index
+  if (dataIndex === undefined) return
+
+  const position = { x: event.x ?? 0, y: event.y ?? 0 }
+  if (activeTooltipIndex === dataIndex) {
+    activeTooltipIndex = null
+    // Chart.js also handles click events internally. Clear after that handler
+    // finishes so it cannot immediately restore the tooltip we just closed.
+    setTimeout(() => {
+      chart.tooltip?.setActiveElements([], position)
+      chart.setActiveElements([])
+      chart.update('none')
+    }, 0)
+    return
+  }
+
+  activeTooltipIndex = dataIndex
+  const activeElements = chart.data.datasets.map((_: unknown, datasetIndex: number) => ({
+    datasetIndex,
+    index: dataIndex,
+  }))
+  chart.tooltip?.setActiveElements(activeElements, position)
+  chart.setActiveElements(activeElements)
+  chart.update()
+}
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('en-US', {
@@ -76,9 +112,14 @@ const chartOptions = computed(() => ({
     mode: 'index' as const,
     intersect: false,
   },
+  onClick: toggleTooltip,
   plugins: {
     legend: { display: false },
     tooltip: {
+      position: 'lowerDataPoint' as any,
+      xAlign: 'center' as const,
+      yAlign: 'top' as const,
+      caretPadding: 8,
       titleFont: { size: 12, weight: '600' as const },
       bodyFont: { size: 12, weight: 'normal' as const },
       callbacks: {
