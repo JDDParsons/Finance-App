@@ -138,8 +138,8 @@ async function handleDeleteBudget() {
         </div>
 
         <template v-else>
-            <!-- Top: Budget summary card -->
-            <UCard class="mb-2 shadow overflow-hidden" :style="budget.color ? { backgroundColor: `${budget.color}22`, borderColor: `${budget.color}55`, borderTop: `3px solid ${budget.color}` } : {}">
+            <!-- Budget summary -->
+            <section class="mb-6 border-b border-gray-200 pb-6 dark:border-gray-800">
                 <div class="grid grid-cols-3 gap-4 text-center mb-4">
                     <div>
                         <p class="text-xs text-gray-500 mb-1">Allocated</p>
@@ -223,7 +223,7 @@ async function handleDeleteBudget() {
                         </p>
                     </div>
                 </div>
-            </UCard>
+            </section>
 
             <!-- Form + List stacked -->
             <div class="flex flex-col gap-6">
@@ -232,6 +232,7 @@ async function handleDeleteBudget() {
                 <BudgetsExpensesList
                     :budget-id="budgetId"
                     :budget-hits="budget.hits"
+                    :budget-color="budget.color"
                     @update="handleExpenseUpdate"
                     @cancel="() => {}"
                 />

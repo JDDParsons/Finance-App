@@ -6,6 +6,7 @@ import { useFinanceStore } from '~/stores/finance'
 const props = defineProps<{
     budgetId: string
     budgetHits?: any[]
+    budgetColor?: string | null
 }>()
 
 const store = useFinanceStore()
@@ -120,6 +121,7 @@ const tableColumns = [
                         :amount="hit.amount"
                         :date="hit.date"
                         :entity="hit.entity"
+                        :budget-color="props.budgetColor"
                         :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
                         :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
                         :user-first-name="hit.user_id ? store.userProfiles.get(hit.user_id)?.firstName ?? null : null"
