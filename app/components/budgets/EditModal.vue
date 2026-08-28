@@ -13,12 +13,10 @@ const props = defineProps<{
 const emit = defineEmits<{
     update: []
     cancel: []
-    delete: []
 }>()
 
 const tab = ref(props.activeTab ?? 0)
 const isEditing = ref(false)
-const editModalRef = ref<any>(null)
 
 watch(() => props.activeTab, (newValue) => {
     if (newValue !== undefined) {
@@ -34,11 +32,6 @@ function handleEditUpdate() {
 function handleEditCancel() {
     isEditing.value = false
     emit('cancel')
-}
-
-function handleEditDelete() {
-    isEditing.value = false
-    emit('delete')
 }
 
 function handleExpensesUpdate() {
@@ -99,27 +92,15 @@ function handleExpenseCreated() {
             <template #content>
                 <UCard>
                     <template #header>
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-2xl font-bold">Edit Budget</h2>
-                            <UButton
-                                icon="heroicons-solid:trash"
-                                color="error"
-                                variant="ghost"
-                                size="sm"
-                                aria-label="Delete budget"
-                                @click="editModalRef?.handleDeleteBudget()"
-                            />
-                        </div>
+                        <h2 class="text-2xl font-bold">Edit Budget</h2>
                     </template>
                     <BudgetsEdit
-                        ref="editModalRef"
                         :budget-id="budgetId"
                         :budget-name="budgetName"
                         :budget-amount="budgetAmount"
                         :budget-icon="budgetIcon ?? null"
                         @update="handleEditUpdate"
                         @cancel="handleEditCancel"
-                        @delete="handleEditDelete"
                     />
                 </UCard>
             </template>

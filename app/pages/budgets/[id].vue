@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
+import { getBudgetErrorMessage } from '~/utils/budgetErrors'
 
 const route = useRoute()
 const router = useRouter()
@@ -48,7 +49,9 @@ const budgetIconStyle = computed(() => {
 useHead(computed(() => ({ title: budget.value ? `${budget.value.name} | R&J Finance` : 'Budget | R&J Finance' })))
 
 const isEditModalOpen = ref(false)
-const editRef = ref<any>(null)
+const isDeletingBudget = ref(false)
+const isWarningModalOpen = ref(false)
+const warningMessage = ref('')
 const spendingAverageTooltipOpen = ref(false)
 const ytdBalanceTooltipOpen = ref(false)
 
@@ -69,6 +72,23 @@ function handleEditDone() {
 
 function handleExpenseUpdate() {
     store.fetchAll()
+}
+
+async function handleDeleteBudget() {
+    const confirmed = confirm('Delete this budget for the selected month? If the budget has no expenses in any month, the budget itself will also be deleted. This action cannot be undone.')
+    if (!confirmed) return
+
+    try {
+        isDeletingBudget.value = true
+        await store.removeBudget(budgetId)
+        await router.push('/budgets')
+    } catch (error: any) {
+        warningMessage.value = getBudgetErrorMessage(error, 'Unable to delete this budget. Please try again.')
+        isWarningModalOpen.value = true
+        console.error('Unable to delete budget:', error)
+    } finally {
+        isDeletingBudget.value = false
+    }
 }
 </script>
 
@@ -98,6 +118,15 @@ function handleExpenseUpdate() {
                 variant="ghost"
                 aria-label="Edit budget"
                 @click="isEditModalOpen = true"
+            />
+            <UButton
+                icon="heroicons-solid:trash"
+                color="neutral"
+                variant="ghost"
+                aria-label="Delete budget"
+                :loading="isDeletingBudget"
+                :disabled="isDeletingBudget"
+                @click="handleDeleteBudget"
             />
         </div>
 
@@ -212,20 +241,9 @@ function handleExpenseUpdate() {
             <template #content>
                 <UCard>
                     <template #header>
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-2xl font-bold">Edit Budget</h2>
-                            <UButton
-                                icon="heroicons-solid:trash"
-                                color="error"
-                                variant="ghost"
-                                size="sm"
-                                aria-label="Delete budget"
-                                @click="editRef?.handleDeleteBudget()"
-                            />
-                        </div>
+                        <h2 class="text-2xl font-bold">Edit Budget</h2>
                     </template>
                     <BudgetsEdit
-                        ref="editRef"
                         :budget-id="budgetId"
                         :budget-name="budget?.name"
                         :budget-amount="budget?.currentPeriod?.amount"
@@ -233,11 +251,15 @@ function handleExpenseUpdate() {
                         :budget-icon="budget?.icon ?? null"
                         @update="handleEditDone"
                         @cancel="isEditModalOpen = false"
-                        @delete="router.push('/budgets')"
                     />
                 </UCard>
             </template>
         </UModal>
+
+        <WarningModal
+            v-model:open="isWarningModalOpen"
+            :message="warningMessage"
+        />
 
     </UContainer>
 </template>
