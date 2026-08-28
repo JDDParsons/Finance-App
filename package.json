@@ -7,7 +7,7 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "test": "node --test --experimental-strip-types tests/budget-errors.test.mjs",
+    "test": "node --test --experimental-strip-types tests/*.test.mjs",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {

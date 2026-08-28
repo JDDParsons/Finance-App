@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { throwBudgetSupabaseError } from './budget-errors'
+import { buildBudgetHistory } from '../../../utils/budgetHistory'
 
 function getClient(supabase: SupabaseClient) {
   return supabase.schema('finance-app')
@@ -141,6 +142,13 @@ export async function getBudgetsByMonth(
   if (spendingHitsError) throw spendingHitsError
   if (allocationPeriodsError) throw allocationPeriodsError
 
+  const historyByBudget = buildBudgetHistory(
+    allocationPeriods || [],
+    spendingHits || [],
+    historyStartDate,
+    historyEndDate
+  )
+
   const monthlySpendingByBudget = new Map<string, Map<string, number>>()
   const ytdSpendingByBudget = new Map<string, number>()
   const ytdBudgetIds = new Set<string>()
@@ -201,7 +209,13 @@ export async function getBudgetsByMonth(
         ? [...ytdAllocations.values()].reduce((sum, amount) => sum + amount, 0)
         : 0
       const ytdBalance = ytdBudgetIds.has(b.id) ? ytdAllocated - (ytdSpendingByBudget.get(b.id) || 0) : null
-      result.push({ ...b, currentPeriod: period, averageMonthlySpending, ytdBalance })
+      result.push({
+        ...b,
+        currentPeriod: period,
+        averageMonthlySpending,
+        ytdBalance,
+        history: historyByBudget.get(b.id) || [],
+      })
     }
   }
 

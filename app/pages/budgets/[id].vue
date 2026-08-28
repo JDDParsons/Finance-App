@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
 import { getBudgetErrorMessage } from '~/utils/budgetErrors'
+import HistoryLineChart from '~/components/budgets/HistoryLineChart.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -10,6 +11,8 @@ const { budgetIcon } = useBudgetIcon()
 const budgetId = route.params.id as string
 
 const budget = computed(() => store.budgets.find((b: any) => b.id === budgetId))
+const budgetHistory = computed(() => budget.value?.history ?? [])
+const hasBudgetHistory = computed(() => budgetHistory.value.length >= 3)
 const hasAverageMonthlySpending = computed(() =>
     budget.value?.averageMonthlySpending !== null && budget.value?.averageMonthlySpending !== undefined
 )
@@ -142,6 +145,8 @@ async function handleDeleteBudget() {
         <template v-else>
             <!-- Budget summary -->
             <section class="mb-6 border-b border-gray-200 pb-6 dark:border-gray-800">
+                <div :class="hasBudgetHistory ? 'grid gap-6 lg:grid-cols-2 lg:items-center lg:gap-8' : ''">
+                <div>
                 <div class="grid grid-cols-3 gap-4 text-center mb-4">
                     <div>
                         <p class="text-xs text-gray-500 mb-1">Allocated</p>
@@ -226,6 +231,13 @@ async function handleDeleteBudget() {
                             {{ formatCurrency(budget.ytdBalance) }}
                         </p>
                     </div>
+                </div>
+                </div>
+                <HistoryLineChart
+                    v-if="hasBudgetHistory"
+                    :history="budgetHistory"
+                    :color="budget.color"
+                />
                 </div>
             </section>
 
