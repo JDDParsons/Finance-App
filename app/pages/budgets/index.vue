@@ -141,7 +141,7 @@ function formatCurrency(value: number | string | null | undefined) {
   <div class="min-h-screen">
     <AppHeader title="Budgets" />
 
-    <UContainer>
+    <UContainer class="max-w-none">
         <!-- Budget Allocation Chart -->
         <div class="flex items-end gap-1 mt-4 mb-2">
           <BudgetsAllocationGaugeBar class="flex-1" />
