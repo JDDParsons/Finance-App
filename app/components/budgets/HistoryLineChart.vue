@@ -12,6 +12,14 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Tooltip, Legend)
 
+;(Tooltip.positioners as any).lowerDataPoint = (items: any[]) => {
+  if (!items.length) return false
+
+  return items
+    .map(item => item.element.tooltipPosition())
+    .reduce((lowerPoint, point) => point.y > lowerPoint.y ? point : lowerPoint)
+}
+
 interface BudgetHistoryPoint {
   month: string
   spent: number
@@ -108,6 +116,7 @@ const chartOptions = computed(() => ({
   plugins: {
     legend: { display: false },
     tooltip: {
+      position: 'lowerDataPoint' as any,
       xAlign: 'center' as const,
       yAlign: 'top' as const,
       caretPadding: 8,
