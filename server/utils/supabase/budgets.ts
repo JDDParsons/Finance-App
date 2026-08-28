@@ -113,27 +113,15 @@ export async function getBudgetsByMonth(
     await ensureCurrentBudgetPeriods(supabase)
   }
 
-  const { data: allBudgets, error: budgetsError } = await getClient(supabase)
-    .from('Budgets')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (budgetsError) throw budgetsError
-
-  const budgetIds = (allBudgets || []).map(budget => budget.id).filter(Boolean)
-  if (!budgetIds.length) return []
-
   const [
+    { data: allBudgets, error: budgetsError },
     { data: periods, error: periodsError },
     { data: spendingHits, error: spendingHitsError },
     { data: allocationPeriods, error: allocationPeriodsError },
   ] =
     await Promise.all([
-      getClient(supabase)
-        .from('Budget_Period')
-        .select('*')
-        .eq('date', formattedDate)
-        .in('budget_id', budgetIds),
+      getClient(supabase).from('Budgets').select('*').order('created_at', { ascending: false }),
+      getClient(supabase).from('Budget_Period').select('*').eq('date', formattedDate),
       getClient(supabase)
         .from('Budget_Hit')
         .select('budget_id, date, amount')
@@ -144,11 +132,12 @@ export async function getBudgetsByMonth(
       getClient(supabase)
         .from('Budget_Period')
         .select('budget_id, date, amount')
-        .in('budget_id', budgetIds)
+        .eq('household_id', householdId)
         .gte('date', spendingStartDate)
         .lt('date', spendingEndDate),
     ])
 
+  if (budgetsError) throw budgetsError
   if (periodsError) throw periodsError
   if (spendingHitsError) throw spendingHitsError
   if (allocationPeriodsError) throw allocationPeriodsError
