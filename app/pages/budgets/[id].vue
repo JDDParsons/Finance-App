@@ -156,13 +156,15 @@ async function handleDeleteBudget() {
                         </p>
                     </div>
                 </div>
-                <BudgetsProgressBar
-                    :value="budget.totalHitAmount"
-                    :max="budget.currentPeriod?.amount"
-                />
-                <p class="text-xs text-right mt-1" :style="{ color: progressBarColor }">
-                    {{ budget.progress?.toFixed(1) ?? '0.0' }}% used
-                </p>
+                <div class="mx-auto w-[85%]">
+                    <BudgetsProgressBar
+                        :value="budget.totalHitAmount"
+                        :max="budget.currentPeriod?.amount"
+                    />
+                    <p class="mt-1 text-center text-xs" :style="{ color: progressBarColor }">
+                        {{ budget.progress?.toFixed(1) ?? '0.0' }}% used
+                    </p>
+                </div>
                 <div v-if="hasAverageMonthlySpending || hasYtdBalance" class="mt-4 grid grid-cols-2 gap-4 text-center">
                     <div v-if="hasAverageMonthlySpending">
                         <div class="mb-1 flex items-center justify-center gap-1 whitespace-nowrap text-xs text-gray-500">
