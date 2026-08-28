@@ -10,6 +10,24 @@ export interface BudgetHistoryPoint {
   budgeted: number
 }
 
+function nextMonth(month: string) {
+  const [year, monthNumber] = month.split('-').map(Number)
+  return new Date(Date.UTC(year, monthNumber, 1)).toISOString().slice(0, 7)
+}
+
+function fillHistoryGaps(history: Map<string, BudgetHistoryPoint>) {
+  const months = [...history.keys()].sort()
+  const firstMonth = months[0]
+  const lastMonth = months.at(-1)
+  if (!firstMonth || !lastMonth) return []
+
+  const result: BudgetHistoryPoint[] = []
+  for (let month = firstMonth; month <= lastMonth; month = nextMonth(month)) {
+    result.push(history.get(month) ?? { month, spent: 0, budgeted: 0 })
+  }
+  return result
+}
+
 export function buildBudgetHistory(
   periods: BudgetHistorySourceRow[],
   hits: BudgetHistorySourceRow[],
@@ -42,7 +60,7 @@ export function buildBudgetHistory(
   return new Map(
     [...historyByBudget].map(([budgetId, history]) => [
       budgetId,
-      [...history.values()].sort((a, b) => a.month.localeCompare(b.month)),
+      fillHistoryGaps(history),
     ])
   )
 }
