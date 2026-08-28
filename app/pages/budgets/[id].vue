@@ -145,13 +145,7 @@ async function handleDeleteBudget() {
         <template v-else>
             <!-- Budget summary -->
             <section class="mb-6 border-b border-gray-200 pb-6 dark:border-gray-800">
-                <div :class="hasBudgetHistory ? 'lg:grid lg:grid-cols-2 lg:items-center lg:gap-8' : ''">
-                <HistoryLineChart
-                    v-if="hasBudgetHistory"
-                    class="hidden lg:block"
-                    :history="budgetHistory"
-                    :color="budget.color"
-                />
+                <div :class="hasBudgetHistory ? 'grid gap-6 lg:grid-cols-2 lg:items-center lg:gap-8' : ''">
                 <div>
                 <div class="grid grid-cols-3 gap-4 text-center mb-4">
                     <div>
@@ -239,6 +233,11 @@ async function handleDeleteBudget() {
                     </div>
                 </div>
                 </div>
+                <HistoryLineChart
+                    v-if="hasBudgetHistory"
+                    :history="budgetHistory"
+                    :color="budget.color"
+                />
                 </div>
             </section>
 

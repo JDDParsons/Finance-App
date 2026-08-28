@@ -79,6 +79,8 @@ const chartOptions = computed(() => ({
   plugins: {
     legend: { display: false },
     tooltip: {
+      titleFont: { size: 12, weight: '600' as const },
+      bodyFont: { size: 12, weight: 'normal' as const },
       callbacks: {
         title: (items: { dataIndex: number }[]) => {
           const point = props.history[items[0]?.dataIndex ?? -1]
@@ -93,7 +95,13 @@ const chartOptions = computed(() => ({
     x: {
       grid: { display: false },
       border: { display: false },
-      ticks: { color: '#9CA3AF', maxTicksLimit: 6 },
+      ticks: {
+        color: '#9CA3AF',
+        autoSkip: false,
+        font: { size: 12, weight: 'normal' as const },
+        maxRotation: 45,
+        minRotation: 0,
+      },
     },
     y: {
       beginAtZero: true,
@@ -102,6 +110,7 @@ const chartOptions = computed(() => ({
       ticks: {
         color: '#9CA3AF',
         maxTicksLimit: 4,
+        font: { size: 12, weight: 'normal' as const },
         callback: (value: string | number) => formatCurrency(Number(value)),
       },
     },
@@ -111,7 +120,7 @@ const chartOptions = computed(() => ({
 
 <template>
   <div>
-    <p class="mb-2 text-center text-xs font-semibold text-muted">Monthly spending vs budget</p>
+    <p class="mb-2 text-center text-xs text-gray-500">Monthly spending vs budget</p>
     <div class="h-52">
       <Line :data="chartData" :options="chartOptions" />
     </div>
