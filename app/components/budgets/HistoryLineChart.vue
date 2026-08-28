@@ -108,6 +108,9 @@ const chartOptions = computed(() => ({
   plugins: {
     legend: { display: false },
     tooltip: {
+      xAlign: 'center' as const,
+      yAlign: 'top' as const,
+      caretPadding: 8,
       titleFont: { size: 12, weight: '600' as const },
       bodyFont: { size: 12, weight: 'normal' as const },
       callbacks: {
