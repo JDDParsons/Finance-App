@@ -72,7 +72,11 @@ function formatUSD(val) {
             Budget allocation
           </p>
           <p class="text-xs font-bold" :class="isOver ? 'text-error' : 'text-muted'">
-            <span v-if="pctRemaining !== null">{{ formatUSD(remaining) }} remaining ({{ pctRemaining }}%)</span>
+            <span v-if="isOver" class="inline-flex items-center gap-1">
+              <UIcon name="heroicons:exclamation-triangle" class="size-3.5 shrink-0" />
+              Over budget by {{ formatUSD(Math.abs(remaining)) }}
+            </span>
+            <span v-else-if="pctRemaining !== null">{{ formatUSD(remaining) }} remaining ({{ pctRemaining }}%)</span>
             <span v-else>{{ formatUSD(totalAllocated) }} allocated</span>
           </p>
         </div>

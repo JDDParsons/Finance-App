@@ -43,3 +43,27 @@ test('excludes history outside the requested window', () => {
     { month: '2026-02', spent: 75, budgeted: 0 },
   ])
 })
+
+test('fills inactive months between budget periods with zero values', () => {
+  const history = buildBudgetHistory(
+    [
+      { budget_id: 'travel', date: '2026-07-01', amount: 800 },
+      { budget_id: 'travel', date: '2026-08-01', amount: 600 },
+      { budget_id: 'travel', date: '2026-11-01', amount: 900 },
+    ],
+    [
+      { budget_id: 'travel', date: '2026-07-10', amount: 500 },
+      { budget_id: 'travel', date: '2026-11-12', amount: 250 },
+    ],
+    '2026-01-01',
+    '2027-01-01'
+  )
+
+  assert.deepEqual(history.get('travel'), [
+    { month: '2026-07', spent: 500, budgeted: 800 },
+    { month: '2026-08', spent: 0, budgeted: 600 },
+    { month: '2026-09', spent: 0, budgeted: 0 },
+    { month: '2026-10', spent: 0, budgeted: 0 },
+    { month: '2026-11', spent: 250, budgeted: 900 },
+  ])
+})
