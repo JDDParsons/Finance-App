@@ -16,6 +16,8 @@ const hasAverageMonthlySpending = computed(() =>
 const hasYtdBalance = computed(() =>
     budget.value?.ytdBalance !== null && budget.value?.ytdBalance !== undefined
 )
+const remainingAmount = computed(() => Number(budget.value?.totalRemainingAmount) || 0)
+const isOverBudget = computed(() => remainingAmount.value < 0)
 const ytdBalanceColor = computed(() => {
     const balance = Number(budget.value?.ytdBalance) || 0
     if (balance > 0) return '#22c55e'
@@ -150,9 +152,9 @@ async function handleDeleteBudget() {
                         <p class="text-lg font-semibold">{{ formatCurrency(budget.totalHitAmount) }}</p>
                     </div>
                     <div>
-                        <p class="text-xs text-gray-500 mb-1">Remaining</p>
+                        <p class="text-xs text-gray-500 mb-1">{{ isOverBudget ? 'Over budget' : 'Remaining' }}</p>
                         <p class="text-lg font-semibold" :style="{ color: progressBarColor }">
-                            {{ formatCurrency(budget.totalRemainingAmount) }}
+                            {{ formatCurrency(isOverBudget ? Math.abs(remainingAmount) : remainingAmount) }}
                         </p>
                     </div>
                 </div>
