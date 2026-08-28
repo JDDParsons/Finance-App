@@ -9,7 +9,6 @@ const FALLBACK_COLORS = [
 ]
 
 const store = useFinanceStore()
-const router = useRouter()
 
 const totalAllocated = computed(() =>
   store.budgets.reduce((sum, b) => sum + (Number(b.currentPeriod?.amount) || 0), 0)
@@ -104,7 +103,7 @@ const chartOptions = computed(() => makeOptions())
 </script>
 
 <template>
-  <div class="w-full space-y-3 cursor-pointer" @click="router.push('/budgets/summary')">
+  <div class="w-full space-y-3">
     <USkeleton v-if="store.loading" class="w-full rounded" style="height: 72px;" />
     <template v-else>
       <div>
