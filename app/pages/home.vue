@@ -241,6 +241,7 @@ const chartOptions = {
   <div class="min-h-screen">
     <AppHeader title="Summary" />
 
+    <UContainer class="max-w-none">
         <template v-if="store.loading || hasData">
         <div
           class="transition-opacity duration-300"
@@ -306,6 +307,7 @@ const chartOptions = {
                 <p class="text-sm text-muted mt-1">Upload transactions or add income to get started.</p>
             </div>
         </div>
+    </UContainer>
 
   </div>
 </template>

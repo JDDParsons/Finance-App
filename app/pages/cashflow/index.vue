@@ -9,6 +9,7 @@ const activeTab = ref('expenses')
   <div>
     <AppHeader title="Cashflow" />
 
+    <UContainer class="max-w-none">
     <!-- Mobile/tablet: tabs -->
     <div class="pb-24 lg:pb-6 lg:hidden">
       <UTabs
@@ -20,12 +21,12 @@ const activeTab = ref('expenses')
         ]"
       >
         <template #income>
-          <div class="px-4">
+          <div>
             <CashflowAllIncome />
           </div>
         </template>
         <template #expenses>
-          <div class="px-4">
+          <div>
             <CashflowAllExpenses />
           </div>
         </template>
@@ -33,8 +34,9 @@ const activeTab = ref('expenses')
     </div>
 
     <!-- Desktop: combined table -->
-    <div class="hidden lg:block px-4 pb-6">
+    <div class="hidden lg:block pb-6">
       <CashflowTransactionsTable />
     </div>
+    </UContainer>
   </div>
 </template>

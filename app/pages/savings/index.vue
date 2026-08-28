@@ -241,7 +241,7 @@ const compoundProjection = computed(() => {
   <div class="min-h-screen">
     <AppHeader title="Savings" />
 
-    <UContainer>
+    <UContainer class="max-w-none">
     <div class="pt-4 pb-24 lg:pb-6 flex flex-col gap-1">
 
       <!-- Savings trend summary -->
