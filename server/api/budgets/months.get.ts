@@ -1,4 +1,5 @@
 export default defineEventHandler(async (event) => {
-  const { supabase } = await requireAuth(event)
-  return getAvailableBudgetMonths(supabase)
+  const { user, supabase } = await requireAuth(event)
+  const householdId = await resolveHouseholdId(supabase, user.id)
+  return getAvailableBudgetMonths(supabase, householdId)
 })

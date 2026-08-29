@@ -3,6 +3,8 @@ import { createError } from 'h3'
 export type BudgetErrorCode =
   | 'BUDGET_NAME_CONFLICT'
   | 'BUDGET_AMOUNT_INVALID'
+  | 'BUDGET_PERIOD_EXISTS'
+  | 'BUDGET_PERIOD_MISSING'
   | 'BUDGET_PERIOD_HAS_EXPENSES'
   | 'BUDGET_FORBIDDEN'
   | 'BUDGET_NOT_FOUND'
@@ -36,13 +38,28 @@ export function mapBudgetSupabaseError(error: unknown): BudgetErrorResponse {
   }
 
   if (
-    text.includes('budgets_amount_positive')
-    || text.includes('budget_period_amount_positive')
+    text.includes('budget_period_amount_positive')
   ) {
     return {
       statusCode: 422,
       statusMessage: 'Amount must be greater than 0.',
       data: { code: 'BUDGET_AMOUNT_INVALID' },
+    }
+  }
+
+  if (text.includes('budget_period_budget_id_month_key')) {
+    return {
+      statusCode: 409,
+      statusMessage: 'This budget already exists in the selected month.',
+      data: { code: 'BUDGET_PERIOD_EXISTS' },
+    }
+  }
+
+  if (text.includes('p0003') && text.includes('does not have a period')) {
+    return {
+      statusCode: 409,
+      statusMessage: 'This budget is not set up for the expense month. Add it from that month’s Budgets page or choose No budget.',
+      data: { code: 'BUDGET_PERIOD_MISSING' },
     }
   }
 

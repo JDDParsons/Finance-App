@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
+import { getMissingBudgetPeriodMessage } from '~/utils/budgetErrors'
 
 const props = defineProps<{
     expenseId: string
@@ -89,7 +90,9 @@ async function handleUpdate() {
         )
         emit('update')
     } catch (err: any) {
-        error.value = err?.message || 'Error updating expense'
+        error.value = getMissingBudgetPeriodMessage(err, chosenBudget.value?.name ?? 'This budget', date.value)
+            || err?.message
+            || 'Error updating expense'
         console.error('Error updating expense:', err)
     } finally {
         loading.value = false

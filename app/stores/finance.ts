@@ -6,8 +6,9 @@ import { useAccountsStore } from './accounts'
 export const useFinanceStore = defineStore('finance', () => {
   const accountsStore = useAccountsStore()
   const {
-    getBudgetsByMonth, getAvailableBudgetMonths, getInactiveBudgets,
-    createBudget, updateBudget, deleteBudget, reactivateBudget,
+    getBudgetsByMonth, getAvailableBudgetMonths, getAvailableBudgets,
+    createBudget, createBudgetPeriod, createBudgetPeriods, updateBudgetPeriod, updateBudgetMetadata, deleteBudget,
+    getCopyPreviousPreview, copyPreviousBudgets,
   } = useBudgetsApi()
   const {
     getBudgetHitsByMonth, getIncomeByMonth,
@@ -22,7 +23,7 @@ export const useFinanceStore = defineStore('finance', () => {
 
   const availableMonths = ref<{ year: number; month: number }[]>([])
   const budgets = ref<any[]>([])
-  const inactiveBudgets = ref<any[]>([])
+  const availableBudgets = ref<any[]>([])
   const budgetHits = ref<any[]>([])
   const prevMonthBudgetHits = ref<any[]>([])
   const income = ref<any[]>([])
@@ -156,8 +157,9 @@ export const useFinanceStore = defineStore('finance', () => {
     budgetAllEntities.value = reconcileBudgetEntityMap(rawBudgets)
   }
 
-  async function fetchInactiveBudgets() {
-    inactiveBudgets.value = await getInactiveBudgets()
+  async function fetchAvailableBudgets() {
+    const { year, month } = selectedMonth.value
+    availableBudgets.value = await getAvailableBudgets(year, month)
   }
 
   // ── month navigation ──────────────────────────────────────────────────────
@@ -269,38 +271,57 @@ export const useFinanceStore = defineStore('finance', () => {
   // ── budgets ───────────────────────────────────────────────────────────────
 
   async function addBudget(name: string, amount: string, color?: string, icon?: string | null) {
-    await createBudget(name, amount, color, icon)
+    const { year, month } = selectedMonth.value
+    await createBudget(name, amount, color, icon, year, month)
     await refreshBudgets()
   }
 
-  async function editBudget(
+  async function addExistingBudget(id: string, amount: string) {
+    const { year, month } = selectedMonth.value
+    await createBudgetPeriod(id, amount, year, month)
+    await refreshBudgets()
+  }
+
+  async function addExistingBudgets(budgetsToAdd: Array<{ id: string; amount: string }>) {
+    const { year, month } = selectedMonth.value
+    const result = await createBudgetPeriods(budgetsToAdd, year, month)
+    await refreshBudgets()
+    return result
+  }
+
+  async function editBudgetPeriod(id: string, amount: string) {
+    const { year, month } = selectedMonth.value
+    await updateBudgetPeriod(id, amount, year, month)
+    await refreshBudgets()
+  }
+
+  async function editBudgetMetadata(
     id: string,
     name: string,
-    amount: string,
     color?: string,
-    icon?: string | null,
-    year?: number,
-    month?: number
+    icon?: string | null
   ) {
-    await updateBudget(id, name, amount, color, icon, year, month)
+    await updateBudgetMetadata(id, name, color, icon)
     await refreshBudgets()
   }
 
   async function removeBudget(id: string) {
     const { year, month } = selectedMonth.value
-    const { budgetDeleted } = await deleteBudget(id, year, month)
+    await deleteBudget(id, year, month)
     budgets.value = budgets.value.filter((b: any) => b.id !== id)
-    if (budgetDeleted) {
-      const nextBudgetEntities = new Map(budgetAllEntities.value)
-      nextBudgetEntities.delete(id)
-      budgetAllEntities.value = nextBudgetEntities
-    }
   }
 
-  async function restoreBudget(id: string) {
-    await reactivateBudget(id)
-    inactiveBudgets.value = inactiveBudgets.value.filter((budget: any) => budget.id !== id)
+  async function getCopyPreview() {
+    const { year, month } = selectedMonth.value
+    return getCopyPreviousPreview(year, month)
+  }
+
+  async function copyPreviousMonthBudgets() {
+    const { year, month } = selectedMonth.value
+    const result = await copyPreviousBudgets(year, month)
     await refreshBudgets()
+    availableMonths.value = await getAvailableBudgetMonths()
+    return result
   }
 
   return {
@@ -309,7 +330,7 @@ export const useFinanceStore = defineStore('finance', () => {
     hasPrev,
     hasNext,
     budgets,
-    inactiveBudgets,
+    availableBudgets,
     budgetHits,
     prevMonthBudgetHits,
     budgetAllEntities,
@@ -325,7 +346,7 @@ export const useFinanceStore = defineStore('finance', () => {
     fetchAll,
     ensureLoaded,
     refreshBudgets,
-    fetchInactiveBudgets,
+    fetchAvailableBudgets,
     fetchBudgetEntities,
     setMonth,
     prevMonth,
@@ -337,8 +358,12 @@ export const useFinanceStore = defineStore('finance', () => {
     removeExpense,
     updateExpense,
     addBudget,
-    editBudget,
+    addExistingBudget,
+    addExistingBudgets,
+    editBudgetPeriod,
+    editBudgetMetadata,
     removeBudget,
-    restoreBudget,
+    getCopyPreview,
+    copyPreviousMonthBudgets,
   }
 })

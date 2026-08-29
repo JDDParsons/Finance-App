@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
+import { getMissingBudgetPeriodMessage } from '~/utils/budgetErrors'
 
  // app/pages/cashflow/create.vue
  useHead({ title: 'Create Transaction | Budgify',
@@ -109,7 +110,10 @@ async function handleSubmit() {
     showOverlay()
     closeTimer = setTimeout(() => navigateTo('/cashflow'), CLOSE_AFTER_SUCCESS_MS)
   } catch (err: any) {
-    error.value = err?.message || (isIncome.value ? 'Error recording income' : 'Error recording budget hit')
+    const budgetName = store.budgets.find((budget: any) => budget.id === selectedBudgetId.value)?.name ?? 'This budget'
+    error.value = getMissingBudgetPeriodMessage(err, budgetName, date.value)
+      || err?.message
+      || (isIncome.value ? 'Error recording income' : 'Error recording budget hit')
     alert(error.value)
   } finally {
     loading.value = false

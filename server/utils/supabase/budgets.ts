@@ -1,22 +1,20 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { throwBudgetSupabaseError } from './budget-errors'
 import { buildBudgetHistory } from '../../../utils/budgetHistory'
+import { continuousMonthRange, monthStart, previousMonth } from '../../../utils/monthRange'
 
 function getClient(supabase: SupabaseClient) {
   return supabase.schema('finance-app')
-}
-
-async function ensureCurrentBudgetPeriods(supabase: SupabaseClient) {
-  const { error } = await getClient(supabase).rpc('ensure_current_budget_periods')
-  if (error) throw error
 }
 
 export async function createBudget(
   supabase: SupabaseClient,
   name: string,
   amount: string,
-  color?: string,
-  icon?: string | null
+  color: string | undefined,
+  icon: string | null | undefined,
+  year: number,
+  month: number
 ) {
   const { data, error } = await getClient(supabase)
     .rpc('create_budget_with_period', {
@@ -24,6 +22,7 @@ export async function createBudget(
       budget_amount: parseFloat(amount),
       budget_color: color ?? null,
       budget_icon: icon ?? null,
+      target_period_date: monthStart(year, month),
     })
 
   if (error) throwBudgetSupabaseError(error, 'create')
@@ -31,12 +30,10 @@ export async function createBudget(
 }
 
 export async function getBudgets(supabase: SupabaseClient, householdId: string) {
-  await ensureCurrentBudgetPeriods(supabase)
-
   const { data: budgets, error } = await getClient(supabase)
     .from('Budgets')
     .select('*')
-    .eq('inactive', false)
+    .eq('household_id', householdId)
     .order('created_at', { ascending: false })
 
   if (error) throw error
@@ -59,37 +56,52 @@ export async function getBudgets(supabase: SupabaseClient, householdId: string) 
   return budgets || []
 }
 
-export async function getInactiveBudgets(supabase: SupabaseClient, householdId: string) {
-  const { data, error } = await getClient(supabase)
-    .from('Budgets')
-    .select('*')
-    .eq('household_id', householdId)
-    .eq('inactive', true)
-    .order('name', { ascending: true })
+export async function getAvailableBudgets(
+  supabase: SupabaseClient,
+  householdId: string,
+  year: number,
+  month: number
+) {
+  const targetDate = monthStart(year, month)
+  const [{ data: budgets, error: budgetsError }, { data: periods, error: periodsError }] = await Promise.all([
+    getClient(supabase).from('Budgets').select('*').eq('household_id', householdId).order('name'),
+    getClient(supabase)
+      .from('Budget_Period')
+      .select('budget_id, date, amount')
+      .eq('household_id', householdId)
+      .lte('date', targetDate)
+      .order('date', { ascending: false }),
+  ])
+  if (budgetsError) throw budgetsError
+  if (periodsError) throw periodsError
 
-  if (error) throw error
-  return data || []
+  const targetBudgetIds = new Set(
+    (periods || []).filter(period => period.date === targetDate).map(period => period.budget_id)
+  )
+  const suggestionByBudget = new Map<string, number>()
+  for (const period of periods || []) {
+    if (period.date >= targetDate || !period.budget_id || suggestionByBudget.has(period.budget_id)) continue
+    suggestionByBudget.set(period.budget_id, Number(period.amount))
+  }
+
+  return (budgets || [])
+    .filter(budget => !targetBudgetIds.has(budget.id))
+    .map(budget => ({ ...budget, suggestedAmount: suggestionByBudget.get(budget.id) ?? null }))
 }
 
-export async function getAvailableBudgetMonths(supabase: SupabaseClient): Promise<{ year: number; month: number }[]> {
-  const { data, error } = await getClient(supabase)
-    .from('Budget_Hit')
-    .select('date')
-    .eq('type', 'Expense')
-    .order('date', { ascending: true })
-  if (error) throw error
+export async function getAvailableBudgetMonths(
+  supabase: SupabaseClient,
+  householdId: string
+): Promise<{ year: number; month: number }[]> {
+  const [{ data: hits, error: hitsError }, { data: periods, error: periodsError }] = await Promise.all([
+    getClient(supabase).from('Budget_Hit').select('date').eq('household_id', householdId).order('date').limit(1),
+    getClient(supabase).from('Budget_Period').select('date').eq('household_id', householdId).order('date').limit(1),
+  ])
+  if (hitsError) throw hitsError
+  if (periodsError) throw periodsError
 
-  const seen = new Set<string>()
-  const result: { year: number; month: number }[] = []
-  for (const row of data || []) {
-    const [yearStr, monthStr] = (row.date as string).split('-')
-    const key = `${yearStr ?? ''}-${monthStr ?? ''}`
-    if (!seen.has(key)) {
-      seen.add(key)
-      result.push({ year: parseInt(yearStr ?? '0'), month: parseInt(monthStr ?? '0') })
-    }
-  }
-  return result
+  const earliest = [hits?.[0]?.date, periods?.[0]?.date].filter(Boolean).sort()[0] ?? null
+  return continuousMonthRange(earliest)
 }
 
 export async function getBudgetsByMonth(
@@ -98,7 +110,7 @@ export async function getBudgetsByMonth(
   year: number,
   month: number
 ) {
-  const formattedDate = `${year}-${String(month).padStart(2, '0')}-01`
+  const formattedDate = monthStart(year, month)
   const historyStartDate = new Date(Date.UTC(year, month - 12, 1)).toISOString().split('T')[0]
   const historyEndDate = new Date(Date.UTC(year, month, 1)).toISOString().split('T')[0]
   const now = new Date()
@@ -107,12 +119,6 @@ export async function getBudgetsByMonth(
   const ytdEndDate = new Date(Date.UTC(currentYear, now.getMonth() + 1, 1)).toISOString().split('T')[0]
   const spendingStartDate = historyStartDate < ytdStartDate ? historyStartDate : ytdStartDate
   const spendingEndDate = historyEndDate > ytdEndDate ? historyEndDate : ytdEndDate
-  const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1)
-
-  if (isCurrentMonth) {
-    await ensureCurrentBudgetPeriods(supabase)
-  }
-
   const [
     { data: allBudgets, error: budgetsError },
     { data: periods, error: periodsError },
@@ -120,8 +126,8 @@ export async function getBudgetsByMonth(
     { data: allocationPeriods, error: allocationPeriodsError },
   ] =
     await Promise.all([
-      getClient(supabase).from('Budgets').select('*').order('created_at', { ascending: false }),
-      getClient(supabase).from('Budget_Period').select('*').eq('date', formattedDate),
+      getClient(supabase).from('Budgets').select('*').eq('household_id', householdId).order('created_at', { ascending: false }),
+      getClient(supabase).from('Budget_Period').select('*').eq('household_id', householdId).eq('date', formattedDate),
       getClient(supabase)
         .from('Budget_Hit')
         .select('budget_id, date, amount')
@@ -241,32 +247,68 @@ export async function getBudgetById(supabase: SupabaseClient, id: string) {
   return budget
 }
 
-export async function updateBudget(
+export async function updateBudgetMetadata(
   supabase: SupabaseClient,
   id: string,
   name: string,
-  amount: string,
   color?: string,
-  icon?: string | null,
-  year?: number,
-  month?: number
+  icon?: string | null
 ) {
-  const targetYear = year ?? new Date().getFullYear()
-  const targetMonth = month ?? (new Date().getMonth() + 1)
-  const formattedDate = `${targetYear}-${String(targetMonth).padStart(2, '0')}-01`
-
   const { data, error } = await getClient(supabase)
-    .rpc('update_budget_with_period', {
+    .rpc('update_budget_metadata', {
       target_budget_id: id,
       budget_name: name,
-      budget_amount: parseFloat(amount),
       budget_color: color ?? null,
       budget_icon: icon ?? null,
-      update_color: color !== undefined,
-      update_icon: icon !== undefined,
-      target_period_date: formattedDate,
     })
 
+  if (error) throwBudgetSupabaseError(error, 'update')
+  return data
+}
+
+export async function createBudgetPeriod(
+  supabase: SupabaseClient,
+  id: string,
+  amount: string,
+  year: number,
+  month: number
+) {
+  const { data, error } = await getClient(supabase).rpc('create_budget_period', {
+    target_budget_id: id,
+    budget_amount: parseFloat(amount),
+    target_period_date: monthStart(year, month),
+  })
+  if (error) throwBudgetSupabaseError(error, 'create')
+  return data
+}
+
+export async function createBudgetPeriods(
+  supabase: SupabaseClient,
+  budgets: Array<{ id: string; amount: string }>,
+  year: number,
+  month: number
+) {
+  const { data, error } = await getClient(supabase).rpc('create_budget_periods', {
+    target_budget_ids: budgets.map(budget => budget.id),
+    budget_amounts: budgets.map(budget => parseFloat(budget.amount)),
+    target_period_date: monthStart(year, month),
+  })
+  if (error) throwBudgetSupabaseError(error, 'create')
+  return { createdCount: Number(data) || 0 }
+}
+
+export async function updateBudgetPeriod(
+  supabase: SupabaseClient,
+  id: string,
+  amount: string,
+  year: number,
+  month: number
+) {
+  const { data, error } = await getClient(supabase).rpc('update_budget_period', {
+    target_budget_id: id,
+    budget_amount: parseFloat(amount),
+    target_period_date: monthStart(year, month),
+  })
   if (error) throwBudgetSupabaseError(error, 'update')
   return data
 }
@@ -277,8 +319,8 @@ export async function deleteBudgetPeriod(
   year: number,
   month: number
 ) {
-  const targetPeriodDate = `${year}-${String(month).padStart(2, '0')}-01`
-  const { data, error } = await getClient(supabase)
+  const targetPeriodDate = monthStart(year, month)
+  const { error } = await getClient(supabase)
     .rpc('delete_budget_period', {
       target_budget_id: id,
       target_period_date: targetPeriodDate,
@@ -286,12 +328,56 @@ export async function deleteBudgetPeriod(
 
   if (error) throwBudgetSupabaseError(error, 'delete')
 
-  return { budgetDeleted: data?.[0]?.budget_deleted === true }
+  return { success: true }
 }
 
-export async function reactivateBudget(supabase: SupabaseClient, id: string) {
-  const { error } = await getClient(supabase)
-    .rpc('reactivate_budget', { target_budget_id: id })
+export async function getCopyPreviousBudgetPreview(
+  supabase: SupabaseClient,
+  householdId: string,
+  year: number,
+  month: number
+) {
+  const source = previousMonth(year, month)
+  const sourceDate = monthStart(source.year, source.month)
+  const destinationDate = monthStart(year, month)
+  const [{ data: sourcePeriods, error: sourceError }, { data: destinationPeriods, error: destinationError }] = await Promise.all([
+    getClient(supabase).from('Budget_Period').select('budget_id').eq('household_id', householdId).eq('date', sourceDate),
+    getClient(supabase).from('Budget_Period').select('budget_id').eq('household_id', householdId).eq('date', destinationDate),
+  ])
+  if (sourceError) throw sourceError
+  if (destinationError) throw destinationError
 
-  if (error) throw error
+  const destinationIds = new Set((destinationPeriods || []).map(period => period.budget_id))
+  const sourceIds = (sourcePeriods || []).map(period => period.budget_id).filter(Boolean) as string[]
+  const { data: sourceBudgets, error: sourceBudgetsError } = sourceIds.length
+    ? await getClient(supabase).from('Budgets').select('id, name').eq('household_id', householdId).in('id', sourceIds)
+    : { data: [], error: null }
+  if (sourceBudgetsError) throw sourceBudgetsError
+  const nameById = new Map((sourceBudgets || []).map(budget => [budget.id, budget.name]))
+  const sourceCount = sourcePeriods?.length ?? 0
+  const eligibleCount = (sourcePeriods || []).filter(period => !destinationIds.has(period.budget_id)).length
+  const eligibleNames = (sourcePeriods || [])
+    .filter(period => !destinationIds.has(period.budget_id))
+    .map(period => nameById.get(period.budget_id) ?? 'Budget')
+  const skippedNames = (sourcePeriods || [])
+    .filter(period => destinationIds.has(period.budget_id))
+    .map(period => nameById.get(period.budget_id) ?? 'Budget')
+  return { source, sourceCount, eligibleCount, skippedCount: sourceCount - eligibleCount, eligibleNames, skippedNames }
+}
+
+export async function copyPreviousBudgetPeriods(
+  supabase: SupabaseClient,
+  year: number,
+  month: number
+) {
+  const { data, error } = await getClient(supabase)
+    .rpc('copy_previous_budget_periods', { target_period_date: monthStart(year, month) })
+
+  if (error) throwBudgetSupabaseError(error, 'copy')
+  const result = data?.[0] ?? { copied_count: 0, skipped_count: 0, source_count: 0 }
+  return {
+    copiedCount: result.copied_count,
+    skippedCount: result.skipped_count,
+    sourceCount: result.source_count,
+  }
 }

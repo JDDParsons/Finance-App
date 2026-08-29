@@ -7,6 +7,7 @@ const route = useRoute()
 const router = useRouter()
 const store = useFinanceStore()
 const { budgetIcon } = useBudgetIcon()
+const { monthTitle } = useSelectedMonthTitle()
 
 const budgetId = route.params.id as string
 
@@ -80,7 +81,7 @@ function handleExpenseUpdate() {
 }
 
 async function handleDeleteBudget() {
-    const confirmed = confirm('Delete this budget for the selected month? If the budget has no expenses in any month, the budget itself will also be deleted. This action cannot be undone.')
+    const confirmed = confirm(`Remove this budget from ${monthTitle.value}? Other months and the shared budget details will not be changed. This action cannot be undone.`)
     if (!confirmed) return
 
     try {
@@ -125,13 +126,14 @@ async function handleDeleteBudget() {
                 color="neutral"
                 variant="ghost"
                 aria-label="Edit budget"
+                title="Edit budget"
                 @click="isEditModalOpen = true"
             />
             <UButton
                 icon="heroicons-solid:trash"
                 color="neutral"
                 variant="ghost"
-                aria-label="Delete budget"
+                :aria-label="`Remove budget from ${monthTitle}`"
                 :loading="isDeletingBudget"
                 :disabled="isDeletingBudget"
                 @click="handleDeleteBudget"
@@ -261,7 +263,7 @@ async function handleDeleteBudget() {
             <template #content>
                 <UCard>
                     <template #header>
-                        <h2 class="text-2xl font-bold">Edit Budget</h2>
+                        <h2 class="text-2xl font-bold">Edit budget</h2>
                     </template>
                     <BudgetsEdit
                         :budget-id="budgetId"

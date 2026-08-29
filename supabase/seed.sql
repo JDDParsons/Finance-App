@@ -119,18 +119,18 @@ ON CONFLICT (id) DO NOTHING;
 -- ---------------------------------------------------------------
 -- 6. Budgets
 -- ---------------------------------------------------------------
-INSERT INTO "finance-app"."Budgets" (id, name, amount, household_id, user_id, color, icon, inactive, created_at)
+INSERT INTO "finance-app"."Budgets" (id, name, household_id, user_id, color, icon, created_at)
 VALUES
-  ('a1b2c3d4-1234-5678-abcd-000000001001', 'Groceries',     600,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#4CAF50', '🛒', false, now()),
-  ('a1b2c3d4-1234-5678-abcd-000000001002', 'Dining Out',    300,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#FF9800', '🍽️', false, now()),
-  ('a1b2c3d4-1234-5678-abcd-000000001003', 'Gas',           200,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#2196F3', '⛽', false, now()),
-  ('a1b2c3d4-1234-5678-abcd-000000001004', 'Utilities',     150,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#9C27B0', '💡', false, now()),
-  ('a1b2c3d4-1234-5678-abcd-000000001005', 'Entertainment', 100,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#E91E63', '🎬', false, now()),
-  ('a1b2c3d4-1234-5678-abcd-000000001006', 'Rent',         1200,  'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#607D8B', '🏠', false, now())
+  ('a1b2c3d4-1234-5678-abcd-000000001001', 'Groceries',     'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#4CAF50', '🛒', now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001002', 'Dining Out',    'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#FF9800', '🍽️', now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001003', 'Gas',           'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#2196F3', '⛽', now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001004', 'Utilities',     'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#9C27B0', '💡', now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001005', 'Entertainment', 'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#E91E63', '🎬', now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001006', 'Rent',          'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#607D8B', '🏠', now())
 ON CONFLICT (id) DO NOTHING;
 
 -- ---------------------------------------------------------------
--- 7. Monthly budget periods (January through August 2026)
+-- 7. Monthly budget periods (January through August 2026, excluding July)
 -- ---------------------------------------------------------------
 INSERT INTO "finance-app"."Budget_Period" (
   id, budget_id, date, amount, user_id, household_id, created_at
@@ -139,7 +139,14 @@ SELECT
   md5('period-' || budget.id::text || '-' || month_start::date::text)::uuid,
   budget.id,
   month_start::date,
-  budget.amount,
+  CASE budget.id::text
+    WHEN 'a1b2c3d4-1234-5678-abcd-000000001001' THEN 600
+    WHEN 'a1b2c3d4-1234-5678-abcd-000000001002' THEN 300
+    WHEN 'a1b2c3d4-1234-5678-abcd-000000001003' THEN 200
+    WHEN 'a1b2c3d4-1234-5678-abcd-000000001004' THEN 150
+    WHEN 'a1b2c3d4-1234-5678-abcd-000000001005' THEN 100
+    WHEN 'a1b2c3d4-1234-5678-abcd-000000001006' THEN 1200
+  END,
   budget.user_id,
   budget.household_id,
   now()
@@ -153,10 +160,11 @@ WHERE budget.id IN (
   'a1b2c3d4-1234-5678-abcd-000000001005',
   'a1b2c3d4-1234-5678-abcd-000000001006'
 )
+AND month_start::date <> '2026-07-01'::date
 ON CONFLICT (id) DO NOTHING;
 
 -- ---------------------------------------------------------------
--- 8. Bi-weekly income ($1,500 from January 7 through August 19)
+-- 8. Bi-weekly income ($1,500 from January 7 through August 19, excluding July)
 -- ---------------------------------------------------------------
 INSERT INTO "finance-app"."Budget_Hit" (
   id, amount, user_id, budget_id, date, entity, notes, type,
@@ -175,6 +183,8 @@ SELECT
   'a1b2c3d4-1234-5678-abcd-000000000002',
   now()
 FROM generate_series('2026-01-07'::date, '2026-08-19'::date, interval '14 days') AS pay_date
+WHERE pay_date::date < '2026-07-01'::date
+   OR pay_date::date >= '2026-08-01'::date
 ON CONFLICT (id) DO NOTHING;
 
 -- ---------------------------------------------------------------
@@ -197,6 +207,7 @@ SELECT
   'a1b2c3d4-1234-5678-abcd-000000000002',
   now()
 FROM generate_series('2026-01-01'::date, '2026-08-01'::date, interval '1 month') AS month_start
+WHERE month_start::date <> '2026-07-01'::date
 ON CONFLICT (id) DO NOTHING;
 
 -- ---------------------------------------------------------------
@@ -205,6 +216,7 @@ ON CONFLICT (id) DO NOTHING;
 WITH months AS (
   SELECT month_start::date, extract(month FROM month_start)::integer AS month_number
   FROM generate_series('2026-01-01'::date, '2026-08-01'::date, interval '1 month') AS month_start
+  WHERE month_start::date <> '2026-07-01'::date
 ), sample_expenses AS (
   SELECT
     'a1b2c3d4-1234-5678-abcd-000000001001'::uuid AS budget_id,
