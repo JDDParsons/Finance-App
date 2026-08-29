@@ -55,7 +55,6 @@ const budgetIconStyle = computed(() => {
 useHead(computed(() => ({ title: budget.value ? `${budget.value.name} | R&J Finance` : 'Budget | R&J Finance' })))
 
 const isEditModalOpen = ref(false)
-const isMetadataModalOpen = ref(false)
 const isDeletingBudget = ref(false)
 const isWarningModalOpen = ref(false)
 const warningMessage = ref('')
@@ -126,9 +125,9 @@ async function handleDeleteBudget() {
                 icon="heroicons:pencil-square"
                 color="neutral"
                 variant="ghost"
-                aria-label="Edit shared budget details"
-                title="Edit shared details (affects all months)"
-                @click="isMetadataModalOpen = true"
+                aria-label="Edit budget"
+                title="Edit budget"
+                @click="isEditModalOpen = true"
             />
             <UButton
                 icon="heroicons-solid:trash"
@@ -153,17 +152,7 @@ async function handleDeleteBudget() {
                 <div class="grid grid-cols-3 gap-4 text-center mb-4">
                     <div>
                         <p class="text-xs text-gray-500 mb-1">Allocated</p>
-                        <div class="flex items-center justify-center gap-1">
-                            <p class="text-lg font-semibold">{{ formatCurrency(budget.currentPeriod?.amount) }}</p>
-                            <UButton
-                                icon="heroicons:pencil-square"
-                                color="neutral"
-                                variant="ghost"
-                                size="xs"
-                                :aria-label="`Edit ${monthTitle} allocation`"
-                                @click="isEditModalOpen = true"
-                            />
-                        </div>
+                        <p class="text-lg font-semibold">{{ formatCurrency(budget.currentPeriod?.amount) }}</p>
                     </div>
                     <div>
                         <p class="text-xs text-gray-500 mb-1">Spent</p>
@@ -274,31 +263,16 @@ async function handleDeleteBudget() {
             <template #content>
                 <UCard>
                     <template #header>
-                        <h2 class="text-2xl font-bold">Edit {{ monthTitle }} allocation</h2>
+                        <h2 class="text-2xl font-bold">Edit budget</h2>
                     </template>
                     <BudgetsEdit
                         :budget-id="budgetId"
-                        :budget-amount="budget?.currentPeriod?.amount"
-                        @update="handleEditDone"
-                        @cancel="isEditModalOpen = false"
-                    />
-                </UCard>
-            </template>
-        </UModal>
-
-        <UModal v-model:open="isMetadataModalOpen">
-            <template #content>
-                <UCard>
-                    <template #header>
-                        <h2 class="text-2xl font-bold">Edit shared budget details</h2>
-                    </template>
-                    <BudgetsEditMetadata
-                        :budget-id="budgetId"
                         :budget-name="budget?.name"
+                        :budget-amount="budget?.currentPeriod?.amount"
                         :budget-color="budget?.color"
                         :budget-icon="budget?.icon ?? null"
-                        @update="isMetadataModalOpen = false"
-                        @cancel="isMetadataModalOpen = false"
+                        @update="handleEditDone"
+                        @cancel="isEditModalOpen = false"
                     />
                 </UCard>
             </template>
