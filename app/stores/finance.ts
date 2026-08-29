@@ -7,7 +7,7 @@ export const useFinanceStore = defineStore('finance', () => {
   const accountsStore = useAccountsStore()
   const {
     getBudgetsByMonth, getAvailableBudgetMonths, getAvailableBudgets,
-    createBudget, createBudgetPeriod, updateBudgetPeriod, updateBudgetMetadata, deleteBudget,
+    createBudget, createBudgetPeriod, createBudgetPeriods, updateBudgetPeriod, updateBudgetMetadata, deleteBudget,
     getCopyPreviousPreview, copyPreviousBudgets,
   } = useBudgetsApi()
   const {
@@ -282,6 +282,13 @@ export const useFinanceStore = defineStore('finance', () => {
     await refreshBudgets()
   }
 
+  async function addExistingBudgets(budgetsToAdd: Array<{ id: string; amount: string }>) {
+    const { year, month } = selectedMonth.value
+    const result = await createBudgetPeriods(budgetsToAdd, year, month)
+    await refreshBudgets()
+    return result
+  }
+
   async function editBudgetPeriod(id: string, amount: string) {
     const { year, month } = selectedMonth.value
     await updateBudgetPeriod(id, amount, year, month)
@@ -352,6 +359,7 @@ export const useFinanceStore = defineStore('finance', () => {
     updateExpense,
     addBudget,
     addExistingBudget,
+    addExistingBudgets,
     editBudgetPeriod,
     editBudgetMetadata,
     removeBudget,

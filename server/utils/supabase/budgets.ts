@@ -282,6 +282,21 @@ export async function createBudgetPeriod(
   return data
 }
 
+export async function createBudgetPeriods(
+  supabase: SupabaseClient,
+  budgets: Array<{ id: string; amount: string }>,
+  year: number,
+  month: number
+) {
+  const { data, error } = await getClient(supabase).rpc('create_budget_periods', {
+    target_budget_ids: budgets.map(budget => budget.id),
+    budget_amounts: budgets.map(budget => parseFloat(budget.amount)),
+    target_period_date: monthStart(year, month),
+  })
+  if (error) throwBudgetSupabaseError(error, 'create')
+  return { createdCount: Number(data) || 0 }
+}
+
 export async function updateBudgetPeriod(
   supabase: SupabaseClient,
   id: string,

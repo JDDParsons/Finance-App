@@ -31,6 +31,12 @@ export function useBudgetsApi() {
     return apiFetch<any>(`/api/budgets/${id}/period`, { method: 'POST', body: { amount, year, month } })
   }
 
+  function createBudgetPeriods(budgets: Array<{ id: string; amount: string }>, year: number, month: number) {
+    return apiFetch<{ createdCount: number }>('/api/budgets/periods', {
+      method: 'POST', body: { budgets, year, month },
+    })
+  }
+
   function updateBudgetPeriod(id: string, amount: string, year: number, month: number) {
     return apiFetch<any>(`/api/budgets/${id}/period`, { method: 'PUT', body: { amount, year, month } })
   }
@@ -55,6 +61,7 @@ export function useBudgetsApi() {
     getAvailableBudgets,
     createBudget,
     createBudgetPeriod,
+    createBudgetPeriods,
     updateBudgetPeriod,
     updateBudgetMetadata,
     deleteBudget,
