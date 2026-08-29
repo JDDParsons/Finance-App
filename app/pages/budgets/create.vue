@@ -23,6 +23,13 @@ const createError = ref<string | null>(null)
 const budgetNameError = ref<string | null>(null)
 const amountError = ref<string | null>(null)
 
+const loadingLabel = computed(() => {
+  if (availableLoading.value) return 'Loading existing budgets…'
+  if (existingLoading.value) return 'Adding budgets…'
+  if (createLoading.value) return 'Creating budget…'
+  return 'Loading…'
+})
+
 const selectableBudgets = computed(() =>
   store.availableBudgets.filter((budget: any) => Number(budget.suggestedAmount) > 0)
 )
@@ -107,6 +114,11 @@ function formatCurrency(value: number | string | null | undefined) {
 
 <template>
   <div class="min-h-screen">
+    <LoadingOverlay
+      :visible="availableLoading || existingLoading || createLoading"
+      :label="loadingLabel"
+    />
+
     <AppHeader title="Add Budget" />
 
     <UContainer class="max-w-none py-6 pb-24 lg:pb-8">
@@ -124,8 +136,11 @@ function formatCurrency(value: number | string | null | undefined) {
         </div>
       </div>
 
-      <div class="grid gap-6 lg:grid-cols-2 lg:items-start">
-        <UCard>
+      <div
+        class="grid gap-6 lg:items-start"
+        :class="availableLoading || existingError || store.availableBudgets.length > 0 ? 'lg:grid-cols-2' : 'lg:grid-cols-1'"
+      >
+        <UCard v-if="availableLoading || existingError || store.availableBudgets.length > 0">
           <template #header>
             <div>
               <h2 class="text-xl font-bold">Add existing budgets to this month</h2>
@@ -133,15 +148,7 @@ function formatCurrency(value: number | string | null | undefined) {
             </div>
           </template>
 
-          <div v-if="availableLoading" class="flex justify-center py-12">
-            <UIcon name="heroicons-solid:arrow-path" class="size-6 animate-spin text-primary" />
-          </div>
-
-          <UAlert v-else-if="existingError" class="mb-4" color="error" variant="soft" :description="existingError" />
-
-          <p v-if="!availableLoading && store.availableBudgets.length === 0" class="py-10 text-center text-sm text-gray-400">
-            Every shared budget is already in {{ monthTitle }}.
-          </p>
+          <UAlert v-if="existingError" class="mb-4" color="error" variant="soft" :description="existingError" />
 
           <div v-else-if="!availableLoading" class="space-y-2">
             <button
@@ -150,7 +157,7 @@ function formatCurrency(value: number | string | null | undefined) {
               type="button"
               class="flex w-full items-center gap-3 rounded-xl border p-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50"
               :class="isSelected(budget.id)
-                ? 'border-primary-500 bg-primary-50/60 dark:bg-primary-950/30'
+                ? 'border-blue-500 bg-blue-50/70 dark:border-blue-400 dark:bg-blue-950/30'
                 : 'border-gray-200 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900'"
               :disabled="existingLoading || !(Number(budget.suggestedAmount) > 0)"
               :aria-pressed="isSelected(budget.id)"
@@ -171,7 +178,7 @@ function formatCurrency(value: number | string | null | undefined) {
               <UIcon
                 :name="isSelected(budget.id) ? 'heroicons:check-circle-solid' : 'heroicons:check-circle'"
                 class="size-6"
-                :class="isSelected(budget.id) ? 'text-primary' : 'text-gray-300 dark:text-gray-700'"
+                :class="isSelected(budget.id) ? 'text-blue-500 dark:text-blue-400' : 'text-gray-300 dark:text-gray-700'"
               />
             </button>
           </div>
@@ -179,19 +186,17 @@ function formatCurrency(value: number | string | null | undefined) {
           <template #footer>
             <div class="grid grid-cols-2 gap-3">
               <UButton
-                color="neutral"
-                variant="outline"
+                color="primary"
                 block
-                :loading="existingLoading"
                 :disabled="availableLoading || existingLoading || selectableBudgets.length === 0"
                 @click="addExisting(selectableBudgets.map((budget: any) => budget.id))"
               >
                 Add all
               </UButton>
               <UButton
-                color="primary"
+                :variant="selectedBudgetIds.length ? 'solid' : 'soft'"
+                :color="selectedBudgetIds.length ? 'secondary' : 'neutral'"
                 block
-                :loading="existingLoading"
                 :disabled="availableLoading || existingLoading || selectedBudgetIds.length === 0"
                 @click="addExisting(selectedBudgetIds)"
               >
@@ -222,7 +227,7 @@ function formatCurrency(value: number | string | null | undefined) {
           </div>
 
           <template #footer>
-            <UButton color="primary" block size="lg" :loading="createLoading" :disabled="createLoading || existingLoading" @click="createBudget">
+            <UButton color="primary" block size="lg" :disabled="createLoading || existingLoading" @click="createBudget">
               Create this budget
             </UButton>
           </template>
