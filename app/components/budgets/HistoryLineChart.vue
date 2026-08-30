@@ -29,6 +29,7 @@ interface BudgetHistoryPoint {
 const props = defineProps<{
   history: BudgetHistoryPoint[]
   color?: string | null
+  income?: boolean
 }>()
 
 const spentColor = computed(() => props.color || '#22c55e')
@@ -82,7 +83,7 @@ const chartData = computed(() => ({
   labels: props.history.map(point => formatMonth(point.month)),
   datasets: [
     {
-      label: 'Spent',
+      label: props.income ? 'Received' : 'Spent',
       data: props.history.map(point => point.spent),
       borderColor: spentColor.value,
       backgroundColor: spentColor.value,
@@ -92,7 +93,7 @@ const chartData = computed(() => ({
       tension: 0.3,
     },
     {
-      label: 'Budgeted',
+      label: props.income ? 'Planned' : 'Budgeted',
       data: props.history.map(point => point.budgeted),
       borderColor: '#94a3b8',
       backgroundColor: '#94a3b8',
@@ -161,18 +162,18 @@ const chartOptions = computed(() => ({
 
 <template>
   <div>
-    <p class="mb-2 text-center text-xs text-gray-500">Monthly spending vs budget</p>
+    <p class="mb-2 text-center text-xs text-gray-500">Monthly {{ income ? 'income vs plan' : 'spending vs budget' }}</p>
     <div class="h-52">
       <Line :data="chartData" :options="chartOptions" />
     </div>
     <div class="mt-2 flex justify-center gap-4 text-xs text-muted">
       <span class="flex items-center gap-1.5">
         <span class="inline-block h-0.5 w-4 rounded-full" :style="{ backgroundColor: spentColor }" />
-        Spent
+        {{ income ? 'Received' : 'Spent' }}
       </span>
       <span class="flex items-center gap-1.5">
         <span class="inline-block w-4 border-t-2 border-dashed border-slate-400" />
-        Budgeted
+        {{ income ? 'Planned' : 'Budgeted' }}
       </span>
     </div>
   </div>

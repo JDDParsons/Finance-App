@@ -3,7 +3,8 @@ export type BudgetErrorCode
     | 'BUDGET_AMOUNT_INVALID'
     | 'BUDGET_PERIOD_EXISTS'
     | 'BUDGET_PERIOD_MISSING'
-    | 'BUDGET_PERIOD_HAS_EXPENSES'
+    | 'BUDGET_PERIOD_HAS_TRANSACTIONS'
+    | 'BUDGET_TYPE_MISMATCH'
     | 'BUDGET_FORBIDDEN'
     | 'BUDGET_NOT_FOUND'
     | 'BUDGET_OPERATION_FAILED'
@@ -28,8 +29,8 @@ export function isInvalidBudgetAmountError(error: any) {
   return getBudgetErrorCode(error) === 'BUDGET_AMOUNT_INVALID'
 }
 
-export function isBudgetPeriodHasExpensesError(error: any) {
-  return getBudgetErrorCode(error) === 'BUDGET_PERIOD_HAS_EXPENSES'
+export function isBudgetPeriodHasTransactionsError(error: any) {
+  return getBudgetErrorCode(error) === 'BUDGET_PERIOD_HAS_TRANSACTIONS'
 }
 
 export function getMissingBudgetPeriodMessage(

@@ -2,6 +2,7 @@
 const props = defineProps<{
     budgets: any[]
     expensesOnly?: boolean
+    type?: 'expense' | 'income'
 }>()
 
 const emit = defineEmits<{
@@ -11,15 +12,11 @@ const emit = defineEmits<{
 const { budgetIcon } = useBudgetIcon()
 
 function choose(budget: any) {
-    emit('select', { budgetId: budget.id, budgetName: budget.name, noBudget: false, type: 'expense' })
+    emit('select', { budgetId: budget.id, budgetName: budget.name, noBudget: false, type: props.type ?? 'expense' })
 }
 
 function chooseNoBudget() {
-    emit('select', { budgetId: null, budgetName: null, noBudget: true, type: 'expense' })
-}
-
-function choosePaycheck() {
-    emit('select', { budgetId: null, budgetName: null, noBudget: true, type: 'income' })
+    emit('select', { budgetId: null, budgetName: null, noBudget: true, type: props.type ?? 'expense' })
 }
 </script>
 
@@ -100,21 +97,6 @@ function choosePaycheck() {
                     </button>
                 </div>
 
-                <USeparator />
-
-                <button
-                    type="button"
-                    class="flex w-full items-center gap-3 rounded-2xl border border-gray-200 px-4 py-4 text-left transition-colors cursor-pointer hover:border-primary-400 hover:bg-primary-50 dark:border-gray-700 dark:hover:border-primary-500 dark:hover:bg-primary-900/20"
-                    @click="choosePaycheck"
-                >
-                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-green-400 bg-green-50 dark:border-green-500 dark:bg-green-900/30">
-                        <UIcon name="heroicons:banknotes-solid" class="size-5 text-green-500" />
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-sm font-medium text-gray-900 dark:text-white">Income</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Create a paycheck or other income entry</p>
-                    </div>
-                </button>
             </div>
         </template>
     </div>

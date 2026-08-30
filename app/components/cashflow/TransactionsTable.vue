@@ -30,15 +30,15 @@ const store = useFinanceStore()
 const { budgetIcon } = useBudgetIcon()
 
 const budgetMap = computed(() =>
-  new Map<string, string>(store.budgets.map((b: any) => [b.id, b.name]))
+  new Map<string, string>([...store.budgets, ...store.incomeBudgets].map((b: any) => [b.id, b.name]))
 )
 
 const budgetColorMap = computed(() =>
-  new Map<string, string | null>(store.budgets.map((b: any) => [b.id, b.color ?? null]))
+  new Map<string, string | null>([...store.budgets, ...store.incomeBudgets].map((b: any) => [b.id, b.color ?? null]))
 )
 
 const budgetIconMap = computed(() =>
-  new Map<string, string>(store.budgets.map((b: any) => [b.id, b.icon ?? budgetIcon(b.name)]))
+  new Map<string, string>([...store.budgets, ...store.incomeBudgets].map((b: any) => [b.id, b.icon ?? budgetIcon(b.name)]))
 )
 
 const accountMap = computed(() =>
@@ -246,7 +246,7 @@ async function handleModalDelete() {
       </template>
 
       <template #budget-cell="{ row }">
-        <div v-if="!isDateGroup(row.original) && row.original.type === 'expense' && row.original.budget_id" class="flex items-center gap-1.5">
+        <div v-if="!isDateGroup(row.original) && row.original.budget_id" class="flex items-center gap-1.5">
           <div
             class="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
             :style="budgetColorMap.get(row.original.budget_id) ? { backgroundColor: budgetColorMap.get(row.original.budget_id) + '33' } : {}"
@@ -318,6 +318,7 @@ async function handleModalDelete() {
             :income-amount="selectedTransaction.amount"
             :income-date="selectedTransaction.date"
             :income-entity="selectedTransaction.entity"
+            :income-budget-id="selectedTransaction.budget_id ?? null"
             :income-account-id="selectedTransaction.account_id ?? null"
             @update="handleEditClose"
             @cancel="handleEditClose"

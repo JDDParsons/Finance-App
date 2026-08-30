@@ -1,8 +1,7 @@
 <script setup lang="ts">
 useHead({ title: 'Cash Flow | Budgify' })
 
-// Tab state — 'income' | 'expenses'
-const activeTab = ref('expenses')
+const activeTab = ref<'expenses' | 'income'>('expenses')
 </script>
 
 <template>
@@ -10,27 +9,17 @@ const activeTab = ref('expenses')
     <AppHeader title="Cashflow" />
 
     <UContainer class="max-w-none">
-    <!-- Mobile/tablet: tabs -->
+    <!-- Mobile/tablet: segmented transaction view -->
     <div class="pb-24 lg:pb-6 lg:hidden">
-      <UTabs
-        v-model="activeTab"
-        color="primary"
-        :items="[
-          { label: 'Expenses', slot: 'expenses', icon: 'heroicons-solid:arrow-trending-down', value: 'expenses' },
-          { label: 'Income', slot: 'income', icon: 'heroicons-solid:arrow-trending-up', value: 'income' }
-        ]"
-      >
-        <template #income>
-          <div>
-            <CashflowAllIncome />
-          </div>
-        </template>
-        <template #expenses>
-          <div>
-            <CashflowAllExpenses />
-          </div>
-        </template>
-      </UTabs>
+      <div class="mt-4 mb-2">
+        <div class="mb-4 grid grid-cols-2 rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
+          <UButton :variant="activeTab === 'expenses' ? 'solid' : 'ghost'" block @click="activeTab = 'expenses'">Expenses</UButton>
+          <UButton :variant="activeTab === 'income' ? 'solid' : 'ghost'" block @click="activeTab = 'income'">Income</UButton>
+        </div>
+      </div>
+
+      <CashflowAllExpenses v-if="activeTab === 'expenses'" />
+      <CashflowAllIncome v-else />
     </div>
 
     <!-- Desktop: combined table -->

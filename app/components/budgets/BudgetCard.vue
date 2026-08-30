@@ -8,6 +8,7 @@ interface BudgetCardBudget {
     amount?: number | null
   } | null
   totalHitAmount?: number | null
+  type?: 'Expense' | 'Income'
 }
 
 const props = defineProps<{
@@ -31,12 +32,14 @@ const iconName = computed(() => props.budget.icon ?? budgetIcon(props.budget.nam
 
 // Bar width resets each 100% tier: 0-100 → green, 100-200 → yellow, 200+ → red
 const barWidth = computed(() => {
+  if (props.budget.type === 'Income') return Math.min(spentPercent.value, 100)
   if (spentPercent.value > 200) return Math.min(spentPercent.value - 200, 100)
   if (spentPercent.value > 100) return spentPercent.value - 100
   return Math.min(spentPercent.value, 100)
 })
 
 const barColor = computed(() => {
+  if (props.budget.type === 'Income') return '#22c55e'
   if (spentPercent.value > 200) return '#ef4444'
   if (spentPercent.value > 100) return '#eab308'
   return '#22c55e'
@@ -44,6 +47,7 @@ const barColor = computed(() => {
 
 // Track background upgrades to the previous tier's fill color once exceeded
 const trackStyle = computed(() => {
+  if (props.budget.type === 'Income') return {}
   if (spentPercent.value > 200) return { backgroundColor: '#eab308' }
   if (spentPercent.value > 100) return { backgroundColor: '#22c55e' }
   return {}

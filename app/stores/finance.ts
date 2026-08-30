@@ -23,6 +23,7 @@ export const useFinanceStore = defineStore('finance', () => {
 
   const availableMonths = ref<{ year: number; month: number }[]>([])
   const budgets = ref<any[]>([])
+  const incomeBudgets = ref<any[]>([])
   const availableBudgets = ref<any[]>([])
   const budgetHits = ref<any[]>([])
   const prevMonthBudgetHits = ref<any[]>([])
@@ -107,8 +108,9 @@ export const useFinanceStore = defineStore('finance', () => {
       const { year, month } = selectedMonth.value
       const prevYear = month === 1 ? year - 1 : year
       const prevMonth = month === 1 ? 12 : month - 1
-      const [rawBudgets, hits, prevHits, inc, avail] = await Promise.all([
-        getBudgetsByMonth(year, month),
+      const [rawBudgets, rawIncomeBudgets, hits, prevHits, inc, avail] = await Promise.all([
+        getBudgetsByMonth(year, month, 'Expense'),
+        getBudgetsByMonth(year, month, 'Income'),
         getBudgetHitsByMonth(year, month),
         getBudgetHitsByMonth(prevYear, prevMonth),
         getIncomeByMonth(year, month),
@@ -120,7 +122,8 @@ export const useFinanceStore = defineStore('finance', () => {
       prevMonthBudgetHits.value = prevHits
       income.value = inc
       budgets.value = enrichBudgets(rawBudgets, hits)
-      const budgetIds = rawBudgets
+      incomeBudgets.value = enrichBudgets(rawIncomeBudgets, inc)
+      const budgetIds = [...rawBudgets, ...rawIncomeBudgets]
         .map((budget: any) => budget?.id)
         .filter(Boolean)
       initialized.value = true
@@ -151,15 +154,22 @@ export const useFinanceStore = defineStore('finance', () => {
 
   async function refreshBudgets() {
     const { year, month } = selectedMonth.value
-    const [rawBudgets, hits] = await Promise.all([getBudgetsByMonth(year, month), getBudgetHitsByMonth(year, month)])
+    const [rawBudgets, rawIncomeBudgets, hits, inc] = await Promise.all([
+      getBudgetsByMonth(year, month, 'Expense'),
+      getBudgetsByMonth(year, month, 'Income'),
+      getBudgetHitsByMonth(year, month),
+      getIncomeByMonth(year, month),
+    ])
     budgetHits.value = hits
+    income.value = inc
     budgets.value = enrichBudgets(rawBudgets, hits)
-    budgetAllEntities.value = reconcileBudgetEntityMap(rawBudgets)
+    incomeBudgets.value = enrichBudgets(rawIncomeBudgets, inc)
+    budgetAllEntities.value = reconcileBudgetEntityMap([...rawBudgets, ...rawIncomeBudgets])
   }
 
-  async function fetchAvailableBudgets() {
+  async function fetchAvailableBudgets(type: 'Expense' | 'Income' = 'Expense') {
     const { year, month } = selectedMonth.value
-    availableBudgets.value = await getAvailableBudgets(year, month)
+    availableBudgets.value = await getAvailableBudgets(year, month, type)
   }
 
   // ── month navigation ──────────────────────────────────────────────────────
@@ -223,8 +233,8 @@ export const useFinanceStore = defineStore('finance', () => {
 
   // ── income ────────────────────────────────────────────────────────────────
 
-  async function addIncome(amount: number, date: string, entity: string, accountId: string | null = null, notes: string | null = null) {
-    const row = await insertIncome(amount, date, entity, accountId, notes)
+  async function addIncome(amount: number, date: string, entity: string, budgetId: string | null = null, accountId: string | null = null, notes: string | null = null) {
+    const row = await insertIncome(amount, date, entity, budgetId, accountId, notes)
     income.value = [row, ...income.value].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     )
@@ -235,11 +245,12 @@ export const useFinanceStore = defineStore('finance', () => {
     income.value = income.value.filter(r => r.id !== id)
   }
 
-  async function updateIncome(id: string, amount: number, date: string, entity: string, accountId?: string | null, notes?: string | null) {
+  async function updateIncome(id: string, amount: number, date: string, entity: string, budgetId?: string | null, accountId?: string | null, notes?: string | null) {
     const existing = income.value.find((r: any) => r.id === id)
     const resolvedAccountId = accountId === undefined ? (existing?.account_id ?? null) : accountId
+    const resolvedBudgetId = budgetId === undefined ? (existing?.budget_id ?? null) : budgetId
     const resolvedNotes = notes === undefined ? (existing?.notes ?? null) : notes
-    const row = await apiUpdateIncome(id, amount, date, entity, resolvedAccountId, resolvedNotes)
+    const row = await apiUpdateIncome(id, amount, date, entity, resolvedBudgetId, resolvedAccountId, resolvedNotes)
     income.value = income.value.map(r => r.id === id ? row : r).sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     )
@@ -270,9 +281,9 @@ export const useFinanceStore = defineStore('finance', () => {
 
   // ── budgets ───────────────────────────────────────────────────────────────
 
-  async function addBudget(name: string, amount: string, color?: string, icon?: string | null) {
+  async function addBudget(name: string, amount: string, color?: string, icon?: string | null, type: 'Expense' | 'Income' = 'Expense') {
     const { year, month } = selectedMonth.value
-    await createBudget(name, amount, color, icon, year, month)
+    await createBudget(name, amount, color, icon, type, year, month)
     await refreshBudgets()
   }
 
@@ -309,16 +320,17 @@ export const useFinanceStore = defineStore('finance', () => {
     const { year, month } = selectedMonth.value
     await deleteBudget(id, year, month)
     budgets.value = budgets.value.filter((b: any) => b.id !== id)
+    incomeBudgets.value = incomeBudgets.value.filter((b: any) => b.id !== id)
   }
 
-  async function getCopyPreview() {
+  async function getCopyPreview(type: 'Expense' | 'Income' = 'Expense') {
     const { year, month } = selectedMonth.value
-    return getCopyPreviousPreview(year, month)
+    return getCopyPreviousPreview(year, month, type)
   }
 
-  async function copyPreviousMonthBudgets() {
+  async function copyPreviousMonthBudgets(type: 'Expense' | 'Income' = 'Expense') {
     const { year, month } = selectedMonth.value
-    const result = await copyPreviousBudgets(year, month)
+    const result = await copyPreviousBudgets(year, month, type)
     await refreshBudgets()
     availableMonths.value = await getAvailableBudgetMonths()
     return result
@@ -330,6 +342,7 @@ export const useFinanceStore = defineStore('finance', () => {
     hasPrev,
     hasNext,
     budgets,
+    incomeBudgets,
     availableBudgets,
     budgetHits,
     prevMonthBudgetHits,

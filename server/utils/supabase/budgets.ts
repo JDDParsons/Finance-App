@@ -2,6 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { throwBudgetSupabaseError } from './budget-errors'
 import { buildBudgetHistory } from '../../../utils/budgetHistory'
 import { continuousMonthRange, monthStart, previousMonth } from '../../../utils/monthRange'
+import type { BudgetType } from '../budget-types'
+import { buildBudgetAmountSuggestions } from '../../../utils/budgetSuggestions'
 
 function getClient(supabase: SupabaseClient) {
   return supabase.schema('finance-app')
@@ -13,6 +15,7 @@ export async function createBudget(
   amount: string,
   color: string | undefined,
   icon: string | null | undefined,
+  type: BudgetType,
   year: number,
   month: number
 ) {
@@ -22,6 +25,7 @@ export async function createBudget(
       budget_amount: parseFloat(amount),
       budget_color: color ?? null,
       budget_icon: icon ?? null,
+      budget_type: type,
       target_period_date: monthStart(year, month),
     })
 
@@ -60,16 +64,16 @@ export async function getAvailableBudgets(
   supabase: SupabaseClient,
   householdId: string,
   year: number,
-  month: number
+  month: number,
+  type: BudgetType = 'Expense'
 ) {
   const targetDate = monthStart(year, month)
   const [{ data: budgets, error: budgetsError }, { data: periods, error: periodsError }] = await Promise.all([
-    getClient(supabase).from('Budgets').select('*').eq('household_id', householdId).order('name'),
+    getClient(supabase).from('Budgets').select('*').eq('household_id', householdId).eq('type', type).order('name'),
     getClient(supabase)
       .from('Budget_Period')
       .select('budget_id, date, amount')
       .eq('household_id', householdId)
-      .lte('date', targetDate)
       .order('date', { ascending: false }),
   ])
   if (budgetsError) throw budgetsError
@@ -78,11 +82,7 @@ export async function getAvailableBudgets(
   const targetBudgetIds = new Set(
     (periods || []).filter(period => period.date === targetDate).map(period => period.budget_id)
   )
-  const suggestionByBudget = new Map<string, number>()
-  for (const period of periods || []) {
-    if (period.date >= targetDate || !period.budget_id || suggestionByBudget.has(period.budget_id)) continue
-    suggestionByBudget.set(period.budget_id, Number(period.amount))
-  }
+  const suggestionByBudget = buildBudgetAmountSuggestions(periods || [], targetDate)
 
   return (budgets || [])
     .filter(budget => !targetBudgetIds.has(budget.id))
@@ -108,7 +108,8 @@ export async function getBudgetsByMonth(
   supabase: SupabaseClient,
   householdId: string,
   year: number,
-  month: number
+  month: number,
+  type: BudgetType = 'Expense'
 ) {
   const formattedDate = monthStart(year, month)
   const historyStartDate = new Date(Date.UTC(year, month - 12, 1)).toISOString().split('T')[0]
@@ -126,13 +127,13 @@ export async function getBudgetsByMonth(
     { data: allocationPeriods, error: allocationPeriodsError },
   ] =
     await Promise.all([
-      getClient(supabase).from('Budgets').select('*').eq('household_id', householdId).order('created_at', { ascending: false }),
+      getClient(supabase).from('Budgets').select('*').eq('household_id', householdId).eq('type', type).order('created_at', { ascending: false }),
       getClient(supabase).from('Budget_Period').select('*').eq('household_id', householdId).eq('date', formattedDate),
       getClient(supabase)
         .from('Budget_Hit')
         .select('budget_id, date, amount')
         .eq('household_id', householdId)
-        .eq('type', 'Expense')
+        .eq('type', type)
         .gte('date', spendingStartDate)
         .lt('date', spendingEndDate),
       getClient(supabase)
@@ -214,7 +215,10 @@ export async function getBudgetsByMonth(
       const ytdAllocated = ytdAllocations
         ? [...ytdAllocations.values()].reduce((sum, amount) => sum + amount, 0)
         : 0
-      const ytdBalance = ytdBudgetIds.has(b.id) ? ytdAllocated - (ytdSpendingByBudget.get(b.id) || 0) : null
+      const actualYtd = ytdSpendingByBudget.get(b.id) || 0
+      const ytdBalance = ytdBudgetIds.has(b.id)
+        ? (type === 'Income' ? actualYtd - ytdAllocated : ytdAllocated - actualYtd)
+        : null
       result.push({
         ...b,
         currentPeriod: period,
@@ -335,7 +339,8 @@ export async function getCopyPreviousBudgetPreview(
   supabase: SupabaseClient,
   householdId: string,
   year: number,
-  month: number
+  month: number,
+  type: BudgetType = 'Expense'
 ) {
   const source = previousMonth(year, month)
   const sourceDate = monthStart(source.year, source.month)
@@ -348,18 +353,21 @@ export async function getCopyPreviousBudgetPreview(
   if (destinationError) throw destinationError
 
   const destinationIds = new Set((destinationPeriods || []).map(period => period.budget_id))
-  const sourceIds = (sourcePeriods || []).map(period => period.budget_id).filter(Boolean) as string[]
-  const { data: sourceBudgets, error: sourceBudgetsError } = sourceIds.length
-    ? await getClient(supabase).from('Budgets').select('id, name').eq('household_id', householdId).in('id', sourceIds)
+  const allSourceIds = (sourcePeriods || []).map(period => period.budget_id).filter(Boolean) as string[]
+  const { data: sourceBudgets, error: sourceBudgetsError } = allSourceIds.length
+    ? await getClient(supabase).from('Budgets').select('id, name').eq('household_id', householdId).eq('type', type).in('id', allSourceIds)
     : { data: [], error: null }
   if (sourceBudgetsError) throw sourceBudgetsError
+  const sourceIds = (sourceBudgets || []).map(budget => budget.id)
+  const sourceIdSet = new Set(sourceIds)
+  const typedSourcePeriods = (sourcePeriods || []).filter(period => sourceIdSet.has(period.budget_id))
   const nameById = new Map((sourceBudgets || []).map(budget => [budget.id, budget.name]))
-  const sourceCount = sourcePeriods?.length ?? 0
-  const eligibleCount = (sourcePeriods || []).filter(period => !destinationIds.has(period.budget_id)).length
-  const eligibleNames = (sourcePeriods || [])
+  const sourceCount = typedSourcePeriods.length
+  const eligibleCount = typedSourcePeriods.filter(period => !destinationIds.has(period.budget_id)).length
+  const eligibleNames = typedSourcePeriods
     .filter(period => !destinationIds.has(period.budget_id))
     .map(period => nameById.get(period.budget_id) ?? 'Budget')
-  const skippedNames = (sourcePeriods || [])
+  const skippedNames = typedSourcePeriods
     .filter(period => destinationIds.has(period.budget_id))
     .map(period => nameById.get(period.budget_id) ?? 'Budget')
   return { source, sourceCount, eligibleCount, skippedCount: sourceCount - eligibleCount, eligibleNames, skippedNames }
@@ -368,10 +376,11 @@ export async function getCopyPreviousBudgetPreview(
 export async function copyPreviousBudgetPeriods(
   supabase: SupabaseClient,
   year: number,
-  month: number
+  month: number,
+  type: BudgetType = 'Expense'
 ) {
   const { data, error } = await getClient(supabase)
-    .rpc('copy_previous_budget_periods', { target_period_date: monthStart(year, month) })
+    .rpc('copy_previous_budget_periods', { target_period_date: monthStart(year, month), budget_type: type })
 
   if (error) throwBudgetSupabaseError(error, 'copy')
   const result = data?.[0] ?? { copied_count: 0, skipped_count: 0, source_count: 0 }

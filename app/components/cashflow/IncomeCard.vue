@@ -5,6 +5,7 @@ const props = defineProps<{
   date: string | null
   entity?: string | null
   accountName?: string | null
+  budgetName?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -46,6 +47,7 @@ function isFuture(val: string | null) {
         <span class="text-sm text-gray-500">{{ formatDate(date) }}</span>
         <span v-if="entity" class="text-sm text-gray-600 dark:text-gray-300">{{ entity }}</span>
         <span v-if="accountName" class="text-xs text-gray-400">{{ accountName }}</span>
+        <UBadge v-if="budgetName" color="success" variant="subtle" class="w-fit">{{ budgetName }}</UBadge>
       </div>
       <UButton
         icon="heroicons-solid:trash"

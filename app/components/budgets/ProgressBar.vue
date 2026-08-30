@@ -2,6 +2,7 @@
 const props = defineProps<{
     value: number
     max: number
+    positiveOverflow?: boolean
 }>()
 
 const spentPercentage = computed(() => {
@@ -10,18 +11,21 @@ const spentPercentage = computed(() => {
 })
 
 const barWidth = computed(() => {
+    if (props.positiveOverflow) return Math.min(spentPercentage.value, 100)
     if (spentPercentage.value > 200) return Math.min(spentPercentage.value - 200, 100)
     if (spentPercentage.value > 100) return spentPercentage.value - 100
     return Math.min(spentPercentage.value, 100)
 })
 
 const barColor = computed(() => {
+    if (props.positiveOverflow) return '#22c55e'
     if (spentPercentage.value > 200) return '#ef4444'
     if (spentPercentage.value > 100) return '#eab308'
     return '#22c55e'
 })
 
 const trackStyle = computed(() => {
+    if (props.positiveOverflow) return {}
     if (spentPercentage.value > 200) return { backgroundColor: '#eab308' }
     if (spentPercentage.value > 100) return { backgroundColor: '#22c55e' }
     return {}

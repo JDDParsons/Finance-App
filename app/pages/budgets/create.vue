@@ -6,6 +6,9 @@ useHead({ title: 'Add Budget | R&J Finance' })
 
 const store = useFinanceStore()
 const router = useRouter()
+const route = useRoute()
+const budgetType = computed<'Expense' | 'Income'>(() => route.query.type === 'income' ? 'Income' : 'Expense')
+const returnQuery = computed(() => budgetType.value === 'Income' ? { type: 'income' } : {})
 const { monthTitle } = useSelectedMonthTitle()
 const { budgetIcon } = useBudgetIcon()
 
@@ -37,7 +40,7 @@ const selectableBudgets = computed(() =>
 onMounted(async () => {
   try {
     await store.ensureLoaded()
-    await store.fetchAvailableBudgets()
+    await store.fetchAvailableBudgets(budgetType.value)
   } catch (error: any) {
     existingError.value = getBudgetErrorMessage(error, 'Unable to load existing budgets.')
   } finally {
@@ -73,7 +76,7 @@ async function addExisting(ids: string[]) {
     existingLoading.value = true
     existingError.value = null
     await store.addExistingBudgets(budgets)
-    await router.push('/budgets')
+    await router.push({ path: '/budgets', query: returnQuery.value })
   } catch (error: any) {
     existingError.value = getBudgetErrorMessage(error, 'Unable to add the selected budgets.')
   } finally {
@@ -94,8 +97,8 @@ async function createBudget() {
   try {
     createLoading.value = true
     createError.value = null
-    await store.addBudget(budgetName.value, amount.value, budgetColor.value, budgetIconChoice.value)
-    await router.push('/budgets')
+    await store.addBudget(budgetName.value, amount.value, budgetColor.value, budgetIconChoice.value, budgetType.value)
+    await router.push({ path: '/budgets', query: returnQuery.value })
   } catch (error: any) {
     if (isDuplicateBudgetNameError(error)) budgetNameError.value = 'A budget with this name already exists.'
     else if (isInvalidBudgetAmountError(error)) amountError.value = 'Amount must be greater than 0.'
@@ -119,7 +122,7 @@ function formatCurrency(value: number | string | null | undefined) {
       :label="loadingLabel"
     />
 
-    <AppHeader title="Add Budget" />
+    <AppHeader :title="`Add ${budgetType === 'Income' ? 'Income ' : ''}Budget`" />
 
     <UContainer class="max-w-none py-6 pb-24 lg:pb-8">
       <div class="mb-6 flex items-center gap-3">
@@ -128,11 +131,11 @@ function formatCurrency(value: number | string | null | undefined) {
           color="neutral"
           variant="ghost"
           aria-label="Back to budgets"
-          @click="router.push('/budgets')"
+          @click="router.push({ path: '/budgets', query: returnQuery })"
         />
         <div>
-          <h1 class="text-3xl font-bold">Add budget</h1>
-          <p class="mt-1 text-sm text-gray-500">Set up budgets for {{ monthTitle }}.</p>
+          <h1 class="text-3xl font-bold">Add {{ budgetType === 'Income' ? 'income ' : '' }}budget</h1>
+          <p class="mt-1 text-sm text-gray-500">Set up {{ budgetType.toLowerCase() }} budgets for {{ monthTitle }}.</p>
         </div>
       </div>
 
@@ -144,7 +147,7 @@ function formatCurrency(value: number | string | null | undefined) {
           <template #header>
             <div>
               <h2 class="text-xl font-bold">Add existing budgets to this month</h2>
-              <p class="mt-1 text-sm text-gray-500">Select one or more shared budgets to reuse their latest allocations.</p>
+              <p class="mt-1 text-sm text-gray-500">Select one or more shared budgets to reuse their nearest monthly allocations.</p>
             </div>
           </template>
 
@@ -172,7 +175,7 @@ function formatCurrency(value: number | string | null | undefined) {
               <span class="min-w-0 flex-1">
                 <span class="block truncate font-medium">{{ budget.name }}</span>
                 <span class="block text-sm text-gray-500">
-                  {{ budget.suggestedAmount ? formatCurrency(budget.suggestedAmount) : 'No previous allocation' }}
+                  {{ budget.suggestedAmount ? formatCurrency(budget.suggestedAmount) : 'No reusable allocation' }}
                 </span>
               </span>
               <UIcon
@@ -217,7 +220,7 @@ function formatCurrency(value: number | string | null | undefined) {
           <div class="space-y-6">
             <UAlert v-if="createError" color="error" variant="soft" :description="createError" />
             <UFormField label="Budget name" :error="budgetNameError" required>
-              <UInput v-model="budgetName" placeholder="e.g., Monthly Groceries" type="text" size="xl" />
+              <UInput v-model="budgetName" :placeholder="budgetType === 'Income' ? 'e.g., Salary' : 'e.g., Monthly Groceries'" type="text" size="xl" />
             </UFormField>
             <UFormField label="Amount" :error="amountError" required>
               <UInput v-model="amount" placeholder="0.00" type="number" step="0.01" size="xl" />
