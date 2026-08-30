@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
+import { useTransactionViewStore } from '~/stores/transactionView'
 
 const store = useFinanceStore()
-const transactionType = ref<'expense' | 'income'>('expense')
+const transactionView = useTransactionViewStore()
+const transactionType = computed({
+  get: () => transactionView.selectedType,
+  set: type => transactionView.selectType(type),
+})
 const visibleBudgets = computed(() => transactionType.value === 'income' ? store.incomeBudgets : store.budgets)
 
 const emit = defineEmits<{

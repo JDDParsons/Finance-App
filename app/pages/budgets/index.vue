@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
+import { useTransactionViewStore } from '~/stores/transactionView'
 
 useHead({ title: 'Budgets | R&J Finance' })
 
 const store = useFinanceStore()
+const transactionView = useTransactionViewStore()
 const router = useRouter()
 const route = useRoute()
 const loading = computed(() => store.loading)
 const error = computed(() => store.error)
 
-const selectedType = computed<'Expense' | 'Income'>(() => route.query.type === 'income' ? 'Income' : 'Expense')
+const selectedType = computed<'Expense' | 'Income'>(() => transactionView.selectedType === 'income' ? 'Income' : 'Expense')
 const displayBudgets = computed(() =>
   [...(selectedType.value === 'Income' ? store.incomeBudgets : store.budgets)]
     .sort((a: any, b: any) => (b.currentPeriod?.amount || 0) - (a.currentPeriod?.amount || 0))
@@ -19,8 +21,21 @@ const receivedIncome = computed(() => store.income.reduce((sum, row) => sum + (N
 const formatCurrency = (value: number) => value.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
 
 function selectType(type: 'Expense' | 'Income') {
+  transactionView.selectType(type === 'Income' ? 'income' : 'expense')
   router.replace({ path: '/budgets', query: type === 'Income' ? { type: 'income' } : {} })
 }
+
+watch(
+  () => route.query.type,
+  type => {
+    if (type === 'income' || type === 'expense') {
+      transactionView.selectType(type)
+    } else if (transactionView.selectedType === 'income') {
+      router.replace({ path: '/budgets', query: { type: 'income' } })
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <template>

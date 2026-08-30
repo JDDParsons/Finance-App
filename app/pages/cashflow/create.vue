@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
+import { useTransactionViewStore } from '~/stores/transactionView'
 import { getMissingBudgetPeriodMessage } from '~/utils/budgetErrors'
 
  // app/pages/cashflow/create.vue
@@ -10,6 +11,7 @@ import { getMissingBudgetPeriodMessage } from '~/utils/budgetErrors'
  })
 
 const store = useFinanceStore()
+const transactionView = useTransactionViewStore()
 const router = useRouter()
 const { show: showOverlay } = useSuccessOverlay()
 
@@ -31,7 +33,10 @@ function finishStepTransition() {
   isStepTransitioning.value = false
 }
 
-const transactionType = ref<'expense' | 'income'>('expense')
+const transactionType = computed({
+  get: () => transactionView.selectedType,
+  set: type => transactionView.selectType(type),
+})
 const selectedBudgetId = ref('')
 const noBudget = ref(false)
 const date = ref(new Date().toLocaleDateString('en-CA'))
@@ -47,7 +52,9 @@ const CLOSE_AFTER_SUCCESS_MS = 1500
 let closeTimer: ReturnType<typeof setTimeout> | null = null
 
 onMounted(() => {
-  accountId.value = store.defaultExpenseAccount?.id ?? null
+  accountId.value = transactionType.value === 'income'
+    ? (store.defaultIncomeAccount?.id ?? null)
+    : (store.defaultExpenseAccount?.id ?? null)
 })
 
 onBeforeUnmount(() => {
@@ -67,7 +74,7 @@ const allEntitySuggestions = computed((): string[] => {
 })
 
 function handleBudgetSelect(selection: { budgetId: string | null; budgetName: string | null; noBudget: boolean; type: 'expense' | 'income' }) {
-  transactionType.value = selection.type
+  transactionView.selectType(selection.type)
   selectedBudgetId.value = selection.budgetId ?? ''
   noBudget.value = selection.noBudget
   entity.value = ''
