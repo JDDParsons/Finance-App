@@ -6,8 +6,8 @@ const FALLBACK_COLORS = [
 
 const store = useFinanceStore()
 
-const totalIncome = computed(() =>
-  store.income.reduce((sum, i) => sum + (Number(i.amount) || 0), 0)
+const totalBudgetedIncome = computed(() =>
+  store.incomeBudgets.reduce((sum, budget) => sum + (Number(budget.currentPeriod?.amount) || 0), 0)
 )
 
 const totalAllocated = computed(() =>
@@ -15,17 +15,17 @@ const totalAllocated = computed(() =>
 )
 
 const pctOfIncome = computed(() => {
-  if (!totalIncome.value) return null
-  return Math.round((totalAllocated.value / totalIncome.value) * 100)
+  if (!totalBudgetedIncome.value) return null
+  return Math.round((totalAllocated.value / totalBudgetedIncome.value) * 100)
 })
 
-const remaining = computed(() => totalIncome.value - totalAllocated.value)
+const remaining = computed(() => totalBudgetedIncome.value - totalAllocated.value)
 const pctRemaining = computed(() => {
-  if (!totalIncome.value) return null
-  return Math.round((remaining.value / totalIncome.value) * 100)
+  if (!totalBudgetedIncome.value) return null
+  return Math.round((remaining.value / totalBudgetedIncome.value) * 100)
 })
 
-const isOver = computed(() => totalAllocated.value > totalIncome.value)
+const isOver = computed(() => totalAllocated.value > totalBudgetedIncome.value)
 
 // Sort largest first so the gauge reads left-to-right big-to-small
 const sortedBudgets = computed(() =>
@@ -36,8 +36,8 @@ const sortedBudgets = computed(() =>
 
 // Each segment as a % of income (capped so total never exceeds 100% visually)
 const segments = computed(() => {
-  if (!totalIncome.value) return []
-  const base = Math.max(totalIncome.value, totalAllocated.value)
+  if (!totalBudgetedIncome.value) return []
+  const base = Math.max(totalBudgetedIncome.value, totalAllocated.value)
   let remaining = 100
   return sortedBudgets.value.map((b, i) => {
     const pct = Math.min(((Number(b.currentPeriod?.amount) || 0) / base) * 100, remaining)
@@ -108,11 +108,11 @@ function formatUSD(val) {
     <template #content>
       <div class="grid w-72 grid-cols-2 gap-3 p-3">
         <div class="rounded-lg bg-elevated p-2">
-          <p class="mb-0.5 text-xs text-gray-400">Total Income</p>
-          <p class="text-lg font-bold">{{ formatUSD(totalIncome) }}</p>
+          <p class="mb-0.5 text-xs text-gray-400">Budgeted Income</p>
+          <p class="text-lg font-bold">{{ formatUSD(totalBudgetedIncome) }}</p>
         </div>
         <div class="rounded-lg bg-elevated p-2">
-          <p class="mb-0.5 text-xs text-gray-400">% Income Budgeted</p>
+          <p class="mb-0.5 text-xs text-gray-400">% Income Allocated</p>
           <p class="text-lg font-bold" :class="isOver ? 'text-red-400' : 'text-primary'">
             {{ pctOfIncome ?? 0 }}%
           </p>

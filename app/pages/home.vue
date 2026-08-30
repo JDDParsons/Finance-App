@@ -61,11 +61,16 @@ const totalIncome = computed(() =>
   store.income.reduce((sum, i) => sum + (Number(i.amount) || 0), 0)
 )
 
+const totalBudgetedIncome = computed(() =>
+  store.incomeBudgets.reduce((sum, budget) => sum + (Number(budget.currentPeriod?.amount) || 0), 0)
+)
+
 const { statusMessage, isCurrentMonth, rawRemaining, budgetProjectedBalance } = useStatusMessage(totalIncome, totalExpenses)
 
-const hasData = computed(() => store.income.length > 0 || store.budgetHits.length > 0)
+const hasData = computed(() => store.income.length > 0 || store.budgetHits.length > 0 || store.incomeBudgets.length > 0)
 
 const remaining = computed(() => Math.max(totalIncome.value - totalExpenses.value, 0))
+const chartRemaining = computed(() => Math.max(totalBudgetedIncome.value - totalExpenses.value, 0))
 
 // ── month-over-month ─────────────────────────────────────────────────────────
 const prevMonthTotalExpenses = computed(() =>
@@ -111,7 +116,7 @@ const projectedBalance = computed(() => {
 
 // ── gauge needle ─────────────────────────────────────────────────────────────
 const needleAngle = computed(() => {
-  const ratio = Math.min(totalExpenses.value / Math.max(totalIncome.value, 1), 1)
+  const ratio = Math.min(totalExpenses.value / Math.max(totalBudgetedIncome.value, 1), 1)
   return -90 + ratio * 180
 })
 
@@ -181,7 +186,7 @@ const chartData = computed(() => {
 
   // Append the Remaining slice
   labels.push('Remaining')
-  data.push(remaining.value)
+  data.push(chartRemaining.value)
   backgroundColors.push(`${chartColors.value.remaining}99`)
   borderColors.push(chartColors.value.remaining)
   borderWidths.push(1)
@@ -266,8 +271,8 @@ const chartOptions = {
 
                     <div class="flex gap-8 text-center">
                         <div>
-                            <p class="text-sm text-gray-400">Income</p>
-                            <p class="text-lg font-semibold">${{ totalIncome.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
+                            <p class="text-sm text-gray-400">Budgeted income</p>
+                            <p class="text-lg font-semibold">${{ totalBudgetedIncome.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
                         </div>
                         <div>
                             <p class="text-sm text-gray-400">Expenses</p>
@@ -278,7 +283,7 @@ const chartOptions = {
                         </div>
                         <div>
                             <p class="text-sm text-gray-400">Remaining</p>
-                            <p class="text-lg font-semibold text-primary">${{ remaining.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
+                            <p class="text-lg font-semibold text-primary">${{ chartRemaining.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
                         </div>
                     </div>
                 </div>
