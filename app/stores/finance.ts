@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { useBudgetsApi } from '~/composables/api/useBudgetsApi'
 import { useHitsApi } from '~/composables/api/useHitsApi'
 import { useAccountsStore } from './accounts'
+import { enrichBudgets } from '../../utils/budgetEnrichment'
 
 export const useFinanceStore = defineStore('finance', () => {
   const accountsStore = useAccountsStore()
@@ -45,22 +46,9 @@ export const useFinanceStore = defineStore('finance', () => {
 
   // ── helpers ──────────────────────────────────────────────────────────────
 
-  function enrichBudgets(rawBudgets: any[], hits: any[]) {
+  function enrichSelectedMonthBudgets(rawBudgets: any[], hits: any[]) {
     const { year, month } = selectedMonth.value
-
-    return rawBudgets.map(b => {
-      const budgetHitList = hits.filter(h => h.budget_id === b.id)
-      const totalHitAmount = budgetHitList.reduce((sum, h) => {
-        const d = new Date((h.date as string).replace(/-/g, '/'))
-        const matches = d.getFullYear() === year && (d.getMonth() + 1) === month
-        return matches ? sum + (Number(h.amount) || 0) : sum
-      }, 0)
-      const totalRemainingAmount = (b.currentPeriod?.amount || 0) - totalHitAmount
-      const progress = b.currentPeriod?.amount
-        ? (totalHitAmount / b.currentPeriod.amount) * 100
-        : 0
-      return { ...b, hits: budgetHitList, totalHitAmount, totalRemainingAmount, numberOfHits: budgetHitList.length, progress }
-    })
+    return enrichBudgets(rawBudgets, hits, year, month)
   }
 
   function normalizeEntities(entities: string[]) {
@@ -121,8 +109,8 @@ export const useFinanceStore = defineStore('finance', () => {
       budgetHits.value = hits
       prevMonthBudgetHits.value = prevHits
       income.value = inc
-      budgets.value = enrichBudgets(rawBudgets, hits)
-      incomeBudgets.value = enrichBudgets(rawIncomeBudgets, inc)
+      budgets.value = enrichSelectedMonthBudgets(rawBudgets, hits)
+      incomeBudgets.value = enrichSelectedMonthBudgets(rawIncomeBudgets, inc)
       const budgetIds = [...rawBudgets, ...rawIncomeBudgets]
         .map((budget: any) => budget?.id)
         .filter(Boolean)
@@ -162,8 +150,8 @@ export const useFinanceStore = defineStore('finance', () => {
     ])
     budgetHits.value = hits
     income.value = inc
-    budgets.value = enrichBudgets(rawBudgets, hits)
-    incomeBudgets.value = enrichBudgets(rawIncomeBudgets, inc)
+    budgets.value = enrichSelectedMonthBudgets(rawBudgets, hits)
+    incomeBudgets.value = enrichSelectedMonthBudgets(rawIncomeBudgets, inc)
     budgetAllEntities.value = reconcileBudgetEntityMap([...rawBudgets, ...rawIncomeBudgets])
   }
 
@@ -238,11 +226,13 @@ export const useFinanceStore = defineStore('finance', () => {
     income.value = [row, ...income.value].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     )
+    incomeBudgets.value = enrichSelectedMonthBudgets(incomeBudgets.value, income.value)
   }
 
   async function removeIncome(id: string) {
     await deleteIncome(id)
     income.value = income.value.filter(r => r.id !== id)
+    incomeBudgets.value = enrichSelectedMonthBudgets(incomeBudgets.value, income.value)
   }
 
   async function updateIncome(id: string, amount: number, date: string, entity: string, budgetId?: string | null, accountId?: string | null, notes?: string | null) {
@@ -254,6 +244,7 @@ export const useFinanceStore = defineStore('finance', () => {
     income.value = income.value.map(r => r.id === id ? row : r).sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     )
+    incomeBudgets.value = enrichSelectedMonthBudgets(incomeBudgets.value, income.value)
   }
 
   // ── expenses ──────────────────────────────────────────────────────────────
@@ -261,13 +252,13 @@ export const useFinanceStore = defineStore('finance', () => {
   async function addExpense(budgetId: string | null, date: string, amount: string, entity: string, accountId: string | null = null, notes: string | null = null) {
     const hit = await createBudgetHit(budgetId, date, amount, entity, accountId, notes)
     budgetHits.value = [hit, ...budgetHits.value]
-    budgets.value = enrichBudgets(budgets.value, budgetHits.value)
+    budgets.value = enrichSelectedMonthBudgets(budgets.value, budgetHits.value)
   }
 
   async function removeExpense(id: string) {
     await deleteBudgetHit(id)
     budgetHits.value = budgetHits.value.filter(h => h.id !== id)
-    budgets.value = enrichBudgets(budgets.value, budgetHits.value)
+    budgets.value = enrichSelectedMonthBudgets(budgets.value, budgetHits.value)
   }
 
   async function updateExpense(id: string, budgetId: string | null, date: string, amount: string, entity: string, accountId?: string | null, notes?: string | null) {
@@ -276,7 +267,7 @@ export const useFinanceStore = defineStore('finance', () => {
     const resolvedNotes = notes === undefined ? (existing?.notes ?? null) : notes
     const hit = await updateBudgetHit(id, budgetId, date, amount, entity, resolvedAccountId, resolvedNotes)
     budgetHits.value = budgetHits.value.map(h => h.id === id ? hit : h)
-    budgets.value = enrichBudgets(budgets.value, budgetHits.value)
+    budgets.value = enrichSelectedMonthBudgets(budgets.value, budgetHits.value)
   }
 
   // ── budgets ───────────────────────────────────────────────────────────────
