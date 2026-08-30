@@ -83,7 +83,7 @@ function handleExpenseUpdate() {
 }
 
 async function handleDeleteBudget() {
-    const confirmed = confirm(`Remove this budget from ${monthTitle.value}? Other months and the shared budget details will not be changed. This action cannot be undone.`)
+    const confirmed = confirm(`Remove this budget from ${monthTitle.value}? If this is its last budget period, the shared budget will also be deleted. This action cannot be undone.`)
     if (!confirmed) return
     const returnToIncome = isIncomeBudget.value
 
