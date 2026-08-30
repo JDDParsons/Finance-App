@@ -147,7 +147,7 @@ function formatCurrency(value: number | string | null | undefined) {
           <template #header>
             <div>
               <h2 class="text-xl font-bold">Add existing budgets to this month</h2>
-              <p class="mt-1 text-sm text-gray-500">Select one or more shared budgets to reuse their latest allocations.</p>
+              <p class="mt-1 text-sm text-gray-500">Select one or more shared budgets to reuse their nearest monthly allocations.</p>
             </div>
           </template>
 
@@ -175,7 +175,7 @@ function formatCurrency(value: number | string | null | undefined) {
               <span class="min-w-0 flex-1">
                 <span class="block truncate font-medium">{{ budget.name }}</span>
                 <span class="block text-sm text-gray-500">
-                  {{ budget.suggestedAmount ? formatCurrency(budget.suggestedAmount) : 'No previous allocation' }}
+                  {{ budget.suggestedAmount ? formatCurrency(budget.suggestedAmount) : 'No reusable allocation' }}
                 </span>
               </span>
               <UIcon

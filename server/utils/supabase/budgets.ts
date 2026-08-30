@@ -3,6 +3,7 @@ import { throwBudgetSupabaseError } from './budget-errors'
 import { buildBudgetHistory } from '../../../utils/budgetHistory'
 import { continuousMonthRange, monthStart, previousMonth } from '../../../utils/monthRange'
 import type { BudgetType } from '../budget-types'
+import { buildBudgetAmountSuggestions } from '../../../utils/budgetSuggestions'
 
 function getClient(supabase: SupabaseClient) {
   return supabase.schema('finance-app')
@@ -73,7 +74,6 @@ export async function getAvailableBudgets(
       .from('Budget_Period')
       .select('budget_id, date, amount')
       .eq('household_id', householdId)
-      .lte('date', targetDate)
       .order('date', { ascending: false }),
   ])
   if (budgetsError) throw budgetsError
@@ -82,11 +82,7 @@ export async function getAvailableBudgets(
   const targetBudgetIds = new Set(
     (periods || []).filter(period => period.date === targetDate).map(period => period.budget_id)
   )
-  const suggestionByBudget = new Map<string, number>()
-  for (const period of periods || []) {
-    if (period.date >= targetDate || !period.budget_id || suggestionByBudget.has(period.budget_id)) continue
-    suggestionByBudget.set(period.budget_id, Number(period.amount))
-  }
+  const suggestionByBudget = buildBudgetAmountSuggestions(periods || [], targetDate)
 
   return (budgets || [])
     .filter(budget => !targetBudgetIds.has(budget.id))
