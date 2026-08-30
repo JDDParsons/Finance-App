@@ -4,6 +4,7 @@ const props = defineProps<{
     incomeAmount?: number
     incomeDate?: string
     incomeEntity?: string | null
+    incomeBudgetId?: string | null
     incomeAccountId?: string | null
 }>()
 
@@ -18,6 +19,7 @@ const store = useFinanceStore()
 const amount = ref(props.incomeAmount ?? 0)
 const date = ref(props.incomeDate ? props.incomeDate.slice(0, 10) : new Date().toLocaleDateString('en-CA'))
 const entity = ref(props.incomeEntity ?? '')
+const selectedBudgetId = ref<string>(props.incomeBudgetId ?? '__none__')
 
 const loading = ref(false)
 const deleting = ref(false)
@@ -37,6 +39,10 @@ const accountOptions = computed(() => [
         label: a.name || a.institution || 'Account',
         value: a.id,
     }))
+])
+const budgetOptions = computed(() => [
+    { label: 'No income budget', value: '__none__' },
+    ...store.incomeBudgets.map((budget: any) => ({ label: budget.name, value: budget.id })),
 ])
 
 function validateForm() {
@@ -61,6 +67,7 @@ async function handleUpdate() {
             Number(amount.value),
             date.value,
             entity.value,
+            selectedBudgetId.value === '__none__' ? null : selectedBudgetId.value,
             selectedAccountId.value === '__none__' ? null : selectedAccountId.value
         )
         emit('update')
@@ -140,6 +147,10 @@ async function handleDelete() {
                 color="info"
                 style="min-width: 200px;"
             />
+        </UFormField>
+
+        <UFormField label="Income budget">
+            <USelect v-model="selectedBudgetId" :items="budgetOptions" size="xl" color="info" />
         </UFormField>
 
         <div class="flex gap-3">

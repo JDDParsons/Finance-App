@@ -11,7 +11,8 @@ const { monthTitle } = useSelectedMonthTitle()
 
 const budgetId = route.params.id as string
 
-const budget = computed(() => store.budgets.find((b: any) => b.id === budgetId))
+const budget = computed(() => [...store.budgets, ...store.incomeBudgets].find((b: any) => b.id === budgetId))
+const isIncomeBudget = computed(() => budget.value?.type === 'Income')
 const budgetHistory = computed(() => budget.value?.history ?? [])
 const hasBudgetHistory = computed(() => budgetHistory.value.length >= 3)
 const hasAverageMonthlySpending = computed(() =>
@@ -33,6 +34,7 @@ const progressBarColor = computed(() => {
     const spent = Number(budget.value?.totalHitAmount) || 0
     const percentage = amount > 0 ? (spent / amount) * 100 : 0
 
+    if (isIncomeBudget.value) return '#22c55e'
     if (percentage > 200) return '#ef4444'
     if (percentage > 100) return '#eab308'
     return '#22c55e'
@@ -83,11 +85,12 @@ function handleExpenseUpdate() {
 async function handleDeleteBudget() {
     const confirmed = confirm(`Remove this budget from ${monthTitle.value}? Other months and the shared budget details will not be changed. This action cannot be undone.`)
     if (!confirmed) return
+    const returnToIncome = isIncomeBudget.value
 
     try {
         isDeletingBudget.value = true
         await store.removeBudget(budgetId)
-        await router.push('/budgets')
+        await router.push({ path: '/budgets', query: returnToIncome ? { type: 'income' } : {} })
     } catch (error: any) {
         warningMessage.value = getBudgetErrorMessage(error, 'Unable to delete this budget. Please try again.')
         isWarningModalOpen.value = true
@@ -110,7 +113,7 @@ async function handleDeleteBudget() {
                 icon="heroicons-solid:arrow-left"
                 color="neutral"
                 variant="ghost"
-                @click="router.push('/budgets')"
+                @click="router.push({ path: '/budgets', query: isIncomeBudget ? { type: 'income' } : {} })"
                 aria-label="Back to budgets"
             />
             <div
@@ -151,15 +154,15 @@ async function handleDeleteBudget() {
                 <div>
                 <div class="grid grid-cols-3 gap-4 text-center mb-4">
                     <div>
-                        <p class="text-xs text-gray-500 mb-1">Allocated</p>
+                        <p class="text-xs text-gray-500 mb-1">{{ isIncomeBudget ? 'Planned' : 'Allocated' }}</p>
                         <p class="text-lg font-semibold">{{ formatCurrency(budget.currentPeriod?.amount) }}</p>
                     </div>
                     <div>
-                        <p class="text-xs text-gray-500 mb-1">Spent</p>
+                        <p class="text-xs text-gray-500 mb-1">{{ isIncomeBudget ? 'Received' : 'Spent' }}</p>
                         <p class="text-lg font-semibold">{{ formatCurrency(budget.totalHitAmount) }}</p>
                     </div>
                     <div>
-                        <p class="text-xs text-gray-500 mb-1">{{ isOverBudget ? 'Over budget' : 'Remaining' }}</p>
+                        <p class="text-xs text-gray-500 mb-1">{{ isIncomeBudget ? (isOverBudget ? 'Above target' : 'Still expected') : (isOverBudget ? 'Over budget' : 'Remaining') }}</p>
                         <p class="text-lg font-semibold" :style="{ color: progressBarColor }">
                             {{ formatCurrency(isOverBudget ? Math.abs(remainingAmount) : remainingAmount) }}
                         </p>
@@ -169,18 +172,19 @@ async function handleDeleteBudget() {
                     <BudgetsProgressBar
                         :value="budget.totalHitAmount"
                         :max="budget.currentPeriod?.amount"
+                        :positive-overflow="isIncomeBudget"
                     />
                     <p class="mt-1 text-center text-xs" :style="{ color: progressBarColor }">
-                        {{ budget.progress?.toFixed(1) ?? '0.0' }}% used
+                        {{ budget.progress?.toFixed(1) ?? '0.0' }}% {{ isIncomeBudget ? 'received' : 'used' }}
                     </p>
                 </div>
                 <div v-if="hasAverageMonthlySpending || hasYtdBalance" class="mt-4 grid grid-cols-2 gap-4 text-center">
                     <div v-if="hasAverageMonthlySpending">
                         <div class="mb-1 flex items-center justify-center gap-1 whitespace-nowrap text-xs text-gray-500">
-                            <span>Spending average</span>
+                            <span>{{ isIncomeBudget ? 'Income average' : 'Spending average' }}</span>
                             <UTooltip
                                 v-model:open="spendingAverageTooltipOpen"
-                                text="12-month average, including $0 months with a budget."
+                                :text="`12-month average ${isIncomeBudget ? 'received' : 'spent'}, including $0 months with a budget.`"
                                 :delay-duration="0"
                                 :content="{ side: 'top', align: 'start', sideOffset: 8, collisionPadding: 12 }"
                                 :arrow="{ width: 12, height: 6 }"
@@ -205,10 +209,10 @@ async function handleDeleteBudget() {
                     </div>
                     <div v-if="hasYtdBalance" :class="{ 'col-start-2': !hasAverageMonthlySpending }">
                         <div class="mb-1 flex items-center justify-center gap-1 whitespace-nowrap text-xs text-gray-500">
-                            <span>YTD balance</span>
+                            <span>YTD variance</span>
                             <UTooltip
                                 v-model:open="ytdBalanceTooltipOpen"
-                                text="Budgeted minus spent this year."
+                                :text="isIncomeBudget ? 'Received minus planned this year.' : 'Budgeted minus spent this year.'"
                                 :delay-duration="0"
                                 :content="{ side: 'top', align: 'end', sideOffset: 8, collisionPadding: 12 }"
                                 :arrow="{ width: 12, height: 6 }"
@@ -239,6 +243,7 @@ async function handleDeleteBudget() {
                     v-if="hasBudgetHistory"
                     :history="budgetHistory"
                     :color="budget.color"
+                    :income="isIncomeBudget"
                 />
                 </div>
             </section>
@@ -248,11 +253,18 @@ async function handleDeleteBudget() {
 
                 <!-- Expenses list -->
                 <BudgetsExpensesList
+                    v-if="!isIncomeBudget"
                     :budget-id="budgetId"
                     :budget-hits="budget.hits"
                     :budget-color="budget.color"
                     @update="handleExpenseUpdate"
                     @cancel="() => {}"
+                />
+                <BudgetsIncomeRecordsList
+                    v-else
+                    :budget-id="budgetId"
+                    :records="budget.hits"
+                    @update="handleExpenseUpdate"
                 />
 
             </div>

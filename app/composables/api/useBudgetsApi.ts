@@ -1,22 +1,22 @@
 import { apiFetch } from '~/composables/useApiToken'
 
 export function useBudgetsApi() {
-  function getBudgetsByMonth(year: number, month: number) {
-    return apiFetch<any[]>(`/api/budgets/by-month?year=${year}&month=${month}`)
+  function getBudgetsByMonth(year: number, month: number, type: 'Expense' | 'Income' = 'Expense') {
+    return apiFetch<any[]>(`/api/budgets/by-month?year=${year}&month=${month}&type=${type}`)
   }
 
   function getAvailableBudgetMonths() {
     return apiFetch<any[]>('/api/budgets/months')
   }
 
-  function getAvailableBudgets(year: number, month: number) {
-    return apiFetch<any[]>(`/api/budgets/available?year=${year}&month=${month}`)
+  function getAvailableBudgets(year: number, month: number, type: 'Expense' | 'Income' = 'Expense') {
+    return apiFetch<any[]>(`/api/budgets/available?year=${year}&month=${month}&type=${type}`)
   }
 
-  function createBudget(name: string, amount: string, color: string | undefined, icon: string | null | undefined, year: number, month: number) {
+  function createBudget(name: string, amount: string, color: string | undefined, icon: string | null | undefined, type: 'Expense' | 'Income', year: number, month: number) {
     return apiFetch<any>('/api/budgets', {
       method: 'POST',
-      body: { name, amount, color, icon, year, month },
+      body: { name, amount, color, icon, type, year, month },
     })
   }
 
@@ -45,13 +45,13 @@ export function useBudgetsApi() {
     return apiFetch<{ success: boolean }>(`/api/budgets/${id}?year=${year}&month=${month}`, { method: 'DELETE' })
   }
 
-  function getCopyPreviousPreview(year: number, month: number) {
-    return apiFetch<any>(`/api/budgets/copy-preview?year=${year}&month=${month}`)
+  function getCopyPreviousPreview(year: number, month: number, type: 'Expense' | 'Income' = 'Expense') {
+    return apiFetch<any>(`/api/budgets/copy-preview?year=${year}&month=${month}&type=${type}`)
   }
 
-  function copyPreviousBudgets(year: number, month: number) {
+  function copyPreviousBudgets(year: number, month: number, type: 'Expense' | 'Income' = 'Expense') {
     return apiFetch<{ copiedCount: number; skippedCount: number; sourceCount: number }>('/api/budgets/copy-previous', {
-      method: 'POST', body: { year, month },
+      method: 'POST', body: { year, month, type },
     })
   }
 

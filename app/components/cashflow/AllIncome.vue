@@ -7,6 +7,7 @@ const incomeRows = computed(() => store.income)
 const accountMap = computed(() =>
   new Map<string, string>(store.accounts.map((a: any) => [a.id, a.name || a.institution || 'Account']))
 )
+const budgetMap = computed(() => new Map(store.incomeBudgets.map((budget: any) => [budget.id, budget.name])))
 
 async function handleDelete(id: string) {
   if (!confirm('Delete this income record?')) return
@@ -66,6 +67,7 @@ async function handleModalDelete() {
         :date="row.date"
         :entity="row.entity"
         :account-name="row.account_id ? accountMap.get(row.account_id) ?? null : null"
+        :budget-name="row.budget_id ? budgetMap.get(row.budget_id) ?? null : null"
         @delete="handleDelete"
         @edit="handleEdit"
       />
@@ -92,6 +94,7 @@ async function handleModalDelete() {
           :income-amount="selectedIncome.amount"
           :income-date="selectedIncome.date"
           :income-entity="selectedIncome.entity"
+          :income-budget-id="selectedIncome.budget_id ?? null"
           :income-account-id="selectedIncome.account_id ?? null"
           @update="handleEditClose"
           @cancel="handleEditClose"

@@ -57,7 +57,7 @@ onBeforeUnmount(() => {
 const isIncome = computed(() => transactionType.value === 'income')
 
 const activeBudgetId = computed(() => {
-  if (isIncome.value || noBudget.value) return null
+  if (noBudget.value) return null
   return selectedBudgetId.value || null
 })
 
@@ -100,7 +100,7 @@ async function handleSubmit() {
     error.value = null
 
     if (isIncome.value) {
-      await store.addIncome(parseFloat(amount.value), date.value, entity.value, accountId.value, notes.value)
+      await store.addIncome(parseFloat(amount.value), date.value, entity.value, activeBudgetId.value, accountId.value, notes.value)
     } else {
       const budgetIdToSubmit = noBudget.value ? null : selectedBudgetId.value
       await store.addExpense(budgetIdToSubmit, date.value, amount.value, entity.value, accountId.value, notes.value)
@@ -110,7 +110,8 @@ async function handleSubmit() {
     showOverlay()
     closeTimer = setTimeout(() => navigateTo('/cashflow'), CLOSE_AFTER_SUCCESS_MS)
   } catch (err: any) {
-    const budgetName = store.budgets.find((budget: any) => budget.id === selectedBudgetId.value)?.name ?? 'This budget'
+    const budgetName = [...store.budgets, ...store.incomeBudgets]
+      .find((budget: any) => budget.id === selectedBudgetId.value)?.name ?? 'This budget'
     error.value = getMissingBudgetPeriodMessage(err, budgetName, date.value)
       || err?.message
       || (isIncome.value ? 'Error recording income' : 'Error recording budget hit')

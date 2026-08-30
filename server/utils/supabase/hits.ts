@@ -33,7 +33,7 @@ export async function createBudgetHit(
     .single()
 
   if (error) {
-    if (error.code === 'P0003') throwBudgetSupabaseError(error, 'create an expense')
+    if (error.code === 'P0003' || error.code === 'P0004') throwBudgetSupabaseError(error, 'create an expense')
     throw error
   }
   return data
@@ -101,7 +101,7 @@ export async function updateBudgetHit(
     .single()
 
   if (error) {
-    if (error.code === 'P0003') throwBudgetSupabaseError(error, 'update an expense')
+    if (error.code === 'P0003' || error.code === 'P0004') throwBudgetSupabaseError(error, 'update an expense')
     throw error
   }
   return data
@@ -126,6 +126,7 @@ export async function insertIncome(
   amount: number,
   date: string,
   entity: string,
+  budgetId: string | null = null,
   accountId: string | null = null,
   notes: string | null = null
 ) {
@@ -137,7 +138,7 @@ export async function insertIncome(
       entity,
       notes,
       type: 'Income',
-      budget_id: null,
+      budget_id: budgetId,
       account_id: accountId,
       user_id: userId,
       household_id: householdId,
@@ -145,7 +146,10 @@ export async function insertIncome(
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    if (error.code === 'P0003' || error.code === 'P0004') throwBudgetSupabaseError(error, 'create income')
+    throw error
+  }
   return data
 }
 
@@ -155,6 +159,7 @@ export async function updateIncome(
   amount: number,
   date: string,
   entity: string,
+  budgetId: string | null = null,
   accountId: string | null = null,
   notes?: string | null
 ) {
@@ -162,6 +167,7 @@ export async function updateIncome(
     amount,
     date,
     entity,
+    budget_id: budgetId,
     account_id: accountId,
   }
 
@@ -176,7 +182,10 @@ export async function updateIncome(
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    if (error.code === 'P0003' || error.code === 'P0004') throwBudgetSupabaseError(error, 'update income')
+    throw error
+  }
   return data
 }
 
@@ -219,7 +228,6 @@ export async function getDistinctEntitiesByBudget(supabase: SupabaseClient, budg
     .from('Budget_Hit')
     .select('budget_id, entity')
     .eq('budget_id', budgetId)
-    .eq('type', 'Expense')
     .not('entity', 'is', null)
     .neq('entity', '')
     .order('date', { ascending: false })
@@ -240,7 +248,6 @@ export async function getDistinctEntitiesByBudgets(
     .from('Budget_Hit')
     .select('budget_id, entity')
     .in('budget_id', normalizedBudgetIds)
-    .eq('type', 'Expense')
     .not('entity', 'is', null)
     .neq('entity', '')
     .order('date', { ascending: false })

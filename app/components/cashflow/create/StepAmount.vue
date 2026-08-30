@@ -29,16 +29,16 @@ const { budgetIcon } = useBudgetIcon()
 const isIncome = computed(() => props.transactionType === 'income')
 
 const activeBudgetId = computed(() => {
-  if (isIncome.value || props.noBudget) return null
+  if (props.noBudget) return null
   return props.selectedBudgetId || null
 })
 
 const expensePillBudget = computed(() =>
-  store.budgets.find((b: any) => b.id === activeBudgetId.value) ?? null
+  [...store.budgets, ...store.incomeBudgets].find((b: any) => b.id === activeBudgetId.value) ?? null
 )
 
 const typePillLabel = computed(() =>
-  isIncome.value ? 'Paycheck' : (expensePillBudget.value?.name ?? 'No budget')
+  expensePillBudget.value?.name ?? (isIncome.value ? 'Unassigned income' : 'No budget')
 )
 
 const typePillAriaLabel = computed(() =>
