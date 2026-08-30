@@ -35,7 +35,29 @@ If you'd like, I can perform these deletions and cleanups for you.
 
 ## Development Server
 
-Start the development server on `http://localhost:3000`:
+For local development, start Supabase in Docker and Nuxt directly on Windows:
+
+```powershell
+.\run-app.ps1 -RestartSupabase
+```
+
+The restart is needed the first time so Supabase Auth picks up the localhost URL.
+After that, use `.\run-app.ps1` for normal starts.
+
+Use `.\run-app.ps1 -OpenBrowser` to open Nuxt, Supabase Studio, and Mailpit
+after the Nuxt development server is ready.
+
+This provides:
+
+- Nuxt: `http://localhost:3000`
+- Supabase Studio: `http://localhost:54323`
+- Mailpit: `http://localhost:54324`
+
+The launcher gets the local API URL and keys from the Supabase CLI and passes them
+to Nuxt without modifying the production values in `.env`. Press Ctrl+C to stop
+Nuxt, then run `.\stop-app.ps1` when you also want to stop local Supabase.
+
+To run only the Nuxt development server using the values already in your environment:
 
 ```bash
 # npm
