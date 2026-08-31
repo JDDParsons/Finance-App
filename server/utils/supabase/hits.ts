@@ -277,6 +277,65 @@ export async function getBudgetHitsByMonth(supabase: SupabaseClient, year: numbe
   return data || []
 }
 
+export async function getDailySpendingAverage(supabase: SupabaseClient, year: number, month: number) {
+  const end = new Date(Date.UTC(year, month - 1, 1))
+  const earliestStart = new Date(Date.UTC(year, month - 13, 1))
+  const startDate = earliestStart.toISOString().slice(0, 10)
+  const endDate = end.toISOString().slice(0, 10)
+
+  const { data, error } = await getClient(supabase)
+    .from('Budget_Hit')
+    .select('date, amount')
+    .eq('type', 'Expense')
+    .gte('date', startDate)
+    .lt('date', endDate)
+    .order('date', { ascending: true })
+
+  if (error) throw error
+  if (!data?.length) return null
+
+  const firstExpense = new Date(`${data[0].date}T00:00:00Z`)
+  const firstMonth = new Date(Date.UTC(firstExpense.getUTCFullYear(), firstExpense.getUTCMonth(), 1))
+  const months = Math.min(
+    12,
+    (end.getUTCFullYear() - firstMonth.getUTCFullYear()) * 12
+      + end.getUTCMonth() - firstMonth.getUTCMonth()
+  )
+
+  // A shorter sample is too volatile to present as a normal spending pace.
+  if (months < 3) return null
+
+  const windowStart = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() - months, 1))
+  const dailyTotals = Array(31).fill(0) as number[]
+  for (const hit of data) {
+    const hitDate = new Date(`${hit.date}T00:00:00Z`)
+    if (hitDate >= windowStart) {
+      dailyTotals[hitDate.getUTCDate() - 1] += Number(hit.amount) || 0
+    }
+  }
+
+  const eligibleMonthsByDay = Array.from({ length: 31 }, (_, dayIndex) => {
+    const day = dayIndex + 1
+    let eligibleMonths = 0
+    for (let offset = 1; offset <= months; offset++) {
+      const historicalMonth = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() - offset, 1))
+      const daysInHistoricalMonth = new Date(Date.UTC(
+        historicalMonth.getUTCFullYear(),
+        historicalMonth.getUTCMonth() + 1,
+        0
+      )).getUTCDate()
+      if (daysInHistoricalMonth >= day) eligibleMonths++
+    }
+    return eligibleMonths
+  })
+
+  const dailyAverages = dailyTotals.map((total, index) =>
+    eligibleMonthsByDay[index] ? total / eligibleMonthsByDay[index] : 0
+  )
+
+  return { dailyAverages, months }
+}
+
 export async function getIncomeByMonth(supabase: SupabaseClient, householdId: string, year: number, month: number) {
   const nextMonth = month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 }
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`

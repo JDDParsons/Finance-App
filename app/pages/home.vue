@@ -218,9 +218,9 @@ const glowPlugin = {
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  cutout: '75%',
-  circumference: 200,
-  rotation: -100,
+  cutout: '90%',
+  circumference: 180,
+  rotation: -90,
   radius:'90%',
   plugins: {
     legend: {

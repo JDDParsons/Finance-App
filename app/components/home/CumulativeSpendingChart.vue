@@ -12,10 +12,28 @@ import {
   Tooltip,
 } from 'chart.js'
 import { useFinanceStore } from '~/stores/finance'
+import { useHitsApi } from '~/composables/api/useHitsApi'
 
 ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Title, Tooltip, Legend, Filler)
 
 const store = useFinanceStore()
+const { getDailySpendingAverage } = useHitsApi()
+const spendingAverage = ref<{ dailyAverages: number[]; months: number } | null>(null)
+let averageRequest = 0
+
+watch(
+  () => [store.selectedMonth.year, store.selectedMonth.month] as const,
+  async ([year, month]) => {
+    const request = ++averageRequest
+    try {
+      const result = await getDailySpendingAverage(year, month)
+      if (request === averageRequest) spendingAverage.value = result
+    } catch {
+      if (request === averageRequest) spendingAverage.value = null
+    }
+  },
+  { immediate: true }
+)
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('en-US', {
@@ -44,23 +62,18 @@ const displayedDays = computed(() => {
   return isCurrentMonth ? now.getDate() : daysInMonth.value
 })
 
-// Cumulative income based on real income records on their actual dates
-const cumulativeIncome = computed(() => {
-  const cutoffDay = displayedDays.value
-  const dailyTotals = Array(cutoffDay).fill(0)
-  for (const item of store.income) {
-    const amount = Number(item.amount) || 0
-    const day = Number(String(item.date ?? '').slice(8, 10))
-    if (!day || day > cutoffDay) continue
-    dailyTotals[day - 1] += amount
-  }
-  const cumulative: number[] = []
-  let running = 0
-  for (let i = 0; i < cutoffDay; i++) {
-    running += dailyTotals[i]
-    cumulative.push(running)
-  }
-  return cumulative
+// Spread the month's budgeted income evenly across its calendar days, then
+// accumulate it so the line remains comparable with cumulative spending.
+const cumulativeDailyBudgetedIncome = computed(() => {
+  const budgetedIncome = store.incomeBudgets.reduce(
+    (sum, budget) => sum + (Number(budget.currentPeriod?.amount) || 0),
+    0
+  )
+  const dailyBudgetedIncome = budgetedIncome / daysInMonth.value
+  return Array.from(
+    { length: displayedDays.value },
+    (_, day) => dailyBudgetedIncome * (day + 1)
+  )
 })
 
 // Spending is cumulative up to today (no nulls — chart is trimmed to today)
@@ -87,18 +100,33 @@ const cumulativeSpending = computed(() => {
 // Show a dot only at the last (today's) point on the spending line
 const spendingPointRadii = computed(() => {
   const len = cumulativeSpending.value.length
-  return [0, ...Array.from({ length: len }, (_, i) => i === len - 1 ? 4 : 0)]
+  return Array.from({ length: len }, (_, i) => i === len - 1 ? 4 : 0)
+})
+
+const cumulativeAverageSpending = computed(() => {
+  if (!spendingAverage.value) return null
+  const cumulative: number[] = []
+  let running = 0
+  for (let day = 0; day < displayedDays.value; day++) {
+    running += spendingAverage.value.dailyAverages[day] ?? 0
+    cumulative.push(running)
+  }
+  return cumulative
 })
 
 const chartData = computed(() => ({
-  labels: ['0', ...Array.from({ length: displayedDays.value }, (_, i) => `${i + 1}`)],
+  labels: Array.from({ length: displayedDays.value }, (_, i) => `${i + 1}`),
   datasets: [
     {
-      label: 'Income',
-      data: [0, ...cumulativeIncome.value],
+      label: 'Daily budgeted income',
+      data: cumulativeDailyBudgetedIncome.value,
       borderColor: '#22c55e',
-      backgroundColor: 'rgba(34, 197, 94, 0.12)',
-      fill: true,
+      backgroundColor: 'transparent',
+      fill: {
+        target: 1,
+        above: 'rgba(34, 197, 94, 0.15)',
+        below: 'transparent',
+      },
       tension: 0.3,
       pointRadius: 0,
       pointHoverRadius: 4,
@@ -107,14 +135,27 @@ const chartData = computed(() => ({
     },
     {
       label: 'Spending',
-      data: [0, ...cumulativeSpending.value],
+      data: cumulativeSpending.value,
       borderColor: '#F59E0B',
-      backgroundColor: 'rgba(245, 158, 11, 0.15)',
-      fill: true,
+      backgroundColor: 'transparent',
+      fill: false,
       tension: 0.3,
       pointRadius: spendingPointRadii.value,
       pointHoverRadius: 5,
     },
+    ...(cumulativeAverageSpending.value ? [{
+      label: 'Average spending',
+      data: cumulativeAverageSpending.value,
+      borderColor: '#9CA3AF',
+      backgroundColor: 'transparent',
+      borderDash: [6, 5],
+      borderWidth: 2,
+      fill: false,
+      tension: 0,
+      pointRadius: 0,
+      pointHoverRadius: 0,
+      order: 1,
+    }] : []),
   ],
 }))
 
@@ -124,12 +165,8 @@ watch(chartData, (newData) => {
   const chart = lineChart.value?.chart
   if (!chart) return
   chart.data.labels = newData.labels
-  chart.data.datasets.forEach((dataset: any, i: number) => {
-    dataset.data = newData.datasets[i]?.data ?? []
-    if (newData.datasets[i]?.pointRadius !== undefined) {
-      dataset.pointRadius = newData.datasets[i].pointRadius
-    }
-  })
+  // Replace the collection because the optional average dataset arrives asynchronously.
+  chart.data.datasets = newData.datasets as any
   chart.update('none')
 }, { deep: true })
 
@@ -186,14 +223,18 @@ const chartOptions = computed(() => ({
         <Line ref="lineChart" :data="chartData" :options="chartOptions" />
       </div>
       <div class="flex items-center justify-between gap-3 mb-3">
-        <div class="flex items-center gap-4 text-xs text-muted">
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted">
           <span class="flex items-center gap-1.5">
             <span class="inline-block w-4 h-0.5 bg-green-500 rounded-full"></span>
-            Income
+            Daily budgeted income
           </span>
           <span class="flex items-center gap-1.5">
             <span class="inline-block w-4 h-0.5 bg-amber-400 rounded-full"></span>
             Spending
+          </span>
+          <span v-if="spendingAverage" class="flex items-center gap-1.5">
+            <span class="inline-block w-4 border-t-2 border-dashed border-gray-400"></span>
+            Average spending
           </span>
         </div>
       </div>
