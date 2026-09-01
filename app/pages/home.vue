@@ -4,8 +4,7 @@ import { useSelectedMonthTitle } from '~/composables/useSelectedMonthTitle'
 import { useStatusMessage } from '~/composables/useStatusMessage'
 // import MonthlyExpensesChart from '~/components/home/MonthlyExpensesChart.vue'
 import CumulativeSpendingChart from '~/components/home/CumulativeSpendingChart.vue'
-import DailySpendingRatioChart from '~/components/home/DailySpendingRatioChart.vue'
-import SpendingDonutRow from '~/components/home/SpendingDonutRow.vue'
+import BudgetUsageRadarChart from '~/components/home/BudgetUsageRadarChart.vue'
 
 useHead({ title: 'Home | R&J Finance' })
 import { Doughnut } from 'vue-chartjs'
@@ -105,12 +104,42 @@ const daysRemaining = computed(() => {
 })
 
 const dailyAverage = computed(() =>
+  daysInMonth.value > 0 ? totalExpenses.value / daysInMonth.value : 0
+)
+
+const elapsedDailySpending = computed(() =>
   daysElapsed.value > 0 ? totalExpenses.value / daysElapsed.value : 0
 )
 
+const dailyBudgetedIncome = computed(() =>
+  daysInMonth.value > 0 ? totalBudgetedIncome.value / daysInMonth.value : 0
+)
+
+const today = new Date()
+const todayDay = today.getDate()
+const todayDateKey = [
+  today.getFullYear(),
+  String(today.getMonth() + 1).padStart(2, '0'),
+  String(today.getDate()).padStart(2, '0'),
+].join('-')
+
+const spentToday = computed(() => {
+  if (!isCurrentMonth.value) return null
+  return store.budgetHits
+    .filter(hit => String(hit.date ?? '').slice(0, 10) === todayDateKey)
+    .reduce((sum, hit) => sum + (Number(hit.amount) || 0), 0)
+})
+
+const earnedToday = computed(() => {
+  if (!isCurrentMonth.value) return null
+  return store.income
+    .filter(income => String(income.date ?? '').slice(0, 10) === todayDateKey)
+    .reduce((sum, income) => sum + (Number(income.amount) || 0), 0)
+})
+
 const projectedBalance = computed(() => {
   if (daysRemaining.value <= 0) return remaining.value
-  const projectedTotalExpenses = dailyAverage.value * daysInMonth.value
+  const projectedTotalExpenses = elapsedDailySpending.value * daysInMonth.value
   return totalIncome.value - projectedTotalExpenses
 })
 
@@ -218,9 +247,9 @@ const glowPlugin = {
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  cutout: '75%',
-  circumference: 200,
-  rotation: -100,
+  cutout: '90%',
+  circumference: 180,
+  rotation: -90,
   radius:'90%',
   plugins: {
     legend: {
@@ -252,54 +281,94 @@ const chartOptions = {
           class="transition-opacity duration-300"
           :class="{ 'opacity-40 pointer-events-none': store.refreshing }"
         >
-        <div class="flex flex-col items-center space-y-2">
-            <h2 class="text-md text-center font-bold pt-3">{{ statusMessage.headline }}</h2>
-            <h2 class="text-sm text-center">{{ statusMessage.subtitle }}</h2>
+        <div class="space-y-2">
+            <div class="grid grid-cols-2 gap-4 pb-20 pt-4 lg:grid-cols-3 lg:grid-rows-[auto_1fr] lg:pb-6">
+                <UCard class="col-span-2 shadow lg:col-span-1">
+                    <div class="text-center">
+                        <p class="text-2xl font-semibold">Day {{ todayDay }}</p>
+                        <p class="mt-2 text-sm font-semibold">{{ statusMessage.headline }}</p>
+                        <p class="mt-0.5 text-sm text-muted">{{ statusMessage.subtitle }}</p>
+                    </div>
+                </UCard>
 
-            <!-- Donut + daily stats side by side -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 w-full">
-                <!-- Left: donut + summary totals (2/4) -->
-                <div class="flex flex-col items-center gap-2 md:col-span-2">
-                    <div v-if="store.loading" class="w-full max-w-sm md:max-w-none h-[200px] md:h-[300px]">
+                <UCard
+                    class="shadow"
+                >
+                    <div class="text-center">
+                        <p class="font-semibold text-warning">Spending</p>
+                        <div class="mt-3 grid grid-cols-2 gap-2">
+                            <div>
+                                <p class="text-sm text-gray-500">Today</p>
+                                <p class="mt-1 font-semibold text-warning">
+                                    {{ spentToday === null ? '—' : `$${spentToday.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` }}
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Daily avg.</p>
+                                <p class="mt-1 font-semibold text-warning">${{ dailyAverage.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </UCard>
+
+                <UCard
+                    class="shadow"
+                >
+                    <div class="text-center">
+                        <p class="font-semibold text-green-500">Earning</p>
+                        <div class="mt-3 grid grid-cols-2 gap-2">
+                            <div>
+                                <p class="text-sm text-gray-500">Today</p>
+                                <p class="mt-1 font-semibold text-green-500">
+                                    {{ earnedToday === null ? '—' : `$${earnedToday.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` }}
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Daily avg.</p>
+                                <p class="mt-1 font-semibold text-green-500">${{ dailyBudgetedIncome.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </UCard>
+
+                <UCard class="col-span-2 shadow lg:col-span-1">
+                    <div class="mb-2 text-center">
+                        <p class="text-xs text-gray-400">Budgeted income</p>
+                        <p class="font-semibold">${{ totalBudgetedIncome.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
+                    </div>
+
+                    <div v-if="store.loading" class="mx-auto h-[200px] w-full max-w-sm lg:h-[300px]">
                         <USkeleton class="w-full h-full opacity-40" style="border-radius: 50% 50% 0 0 / 100% 100% 0 0;" />
                     </div>
 
-                    <div v-else class="w-full max-w-sm md:max-w-none relative h-[200px] md:h-[300px]">
+                    <div v-else class="relative mx-auto h-[200px] w-full max-w-sm lg:h-[300px]">
                         <Doughnut :data="chartData" :options="chartOptions" />
                         <GaugeNeedle :angle="needleAngle" :color="chartColors.expenses" />
                     </div>
 
-                    <div class="flex gap-8 text-center">
+                    <div class="mt-2 flex justify-center gap-10 text-center lg:gap-14">
                         <div>
-                            <p class="text-sm text-gray-400">Budgeted income</p>
-                            <p class="text-lg font-semibold">${{ totalBudgetedIncome.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-400">Expenses</p>
-                            <p class="text-lg font-semibold text-warning">${{ totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
-                            <p v-if="expenseMoMChange !== null" class="text-xs mt-0.5" :class="expenseMoMChange > 0 ? 'text-red-400' : 'text-green-400'">
-                                {{ expenseMoMChange > 0 ? '↑' : '↓' }} {{ Math.abs(expenseMoMChange).toFixed(1) }}% vs last mo.
+                            <p class="text-xs text-gray-400">Expenses</p>
+                            <p class="font-semibold text-warning">${{ totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
+                            <p v-if="expenseMoMChange !== null" class="mt-0.5 text-[11px]" :class="expenseMoMChange > 0 ? 'text-red-400' : 'text-green-400'">
+                                {{ expenseMoMChange > 0 ? '↑' : '↓' }} {{ Math.abs(expenseMoMChange).toFixed(1) }}%
                             </p>
                         </div>
                         <div>
-                            <p class="text-sm text-gray-400">Remaining</p>
-                            <p class="text-lg font-semibold text-primary">${{ chartRemaining.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
+                            <p class="text-xs text-gray-400">Remaining</p>
+                            <p class="font-semibold text-primary">${{ chartRemaining.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
                         </div>
                     </div>
-                </div>
+                </UCard>
 
-                <!-- Right: spending donut row (2/4) -->
-                <div class="w-full self-center md:col-span-2">
-                    <SpendingDonutRow />
-                </div>
+                <UCard class="col-span-2 shadow lg:col-span-1">
+                    <CumulativeSpendingChart />
+                </UCard>
+
+                <UCard class="col-span-2 shadow lg:col-span-1">
+                    <BudgetUsageRadarChart />
+                </UCard>
             </div>
-        </div>
-
-        <div class="pt-5 pb-20 lg:pb-6">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div class="md:col-span-2"><CumulativeSpendingChart /></div>
-            <div class="md:col-span-2"><DailySpendingRatioChart /></div>
-          </div>
         </div>
 
         </div> <!-- end transition wrapper -->

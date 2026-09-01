@@ -7,6 +7,12 @@ export function useHitsApi() {
     return apiFetch<any[]>(`/api/hits/by-month?year=${year}&month=${month}`)
   }
 
+  function getDailySpendingAverage(year: number, month: number) {
+    return apiFetch<{ dailyAverages: number[]; months: number } | null>(
+      `/api/hits/daily-average?year=${year}&month=${month}`
+    )
+  }
+
   function getBudgetEntities(budgetId: string) {
     return apiFetch<BudgetEntitiesByBudget>(`/api/hits/entities?budgetId=${budgetId}`)
   }
@@ -86,6 +92,7 @@ export function useHitsApi() {
 
   return {
     getBudgetHitsByMonth,
+    getDailySpendingAverage,
     getBudgetEntities,
     getBudgetEntitiesByBudgetIds,
     getIncomeByMonth,
