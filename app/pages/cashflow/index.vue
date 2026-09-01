@@ -14,14 +14,16 @@ const transactionView = useTransactionViewStore()
     <!-- Mobile/tablet: segmented transaction view -->
     <div class="pb-24 lg:pb-6 lg:hidden">
       <div class="mt-4 mb-2">
-        <div class="mb-4 grid grid-cols-2 rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
+        <div class="mb-4 grid grid-cols-3 rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
           <UButton :variant="transactionView.selectedType === 'expense' ? 'solid' : 'ghost'" block @click="transactionView.selectType('expense')">Expenses</UButton>
           <UButton :variant="transactionView.selectedType === 'income' ? 'solid' : 'ghost'" block @click="transactionView.selectType('income')">Income</UButton>
+          <UButton :variant="transactionView.selectedType === 'transfer' ? 'solid' : 'ghost'" block @click="transactionView.selectType('transfer')">Transfers</UButton>
         </div>
       </div>
 
       <CashflowAllExpenses v-if="transactionView.selectedType === 'expense'" />
-      <CashflowAllIncome v-else />
+      <CashflowAllIncome v-else-if="transactionView.selectedType === 'income'" />
+      <CashflowAllTransfers v-else />
     </div>
 
     <!-- Desktop: combined table -->

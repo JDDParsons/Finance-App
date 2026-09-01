@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { throwBudgetSupabaseError } from './budget-errors'
+import type { ValidTransferInput } from '../transfer'
 
 function getClient(supabase: SupabaseClient) {
   return supabase.schema('finance-app')
@@ -67,6 +68,7 @@ export async function deleteBudgetHit(supabase: SupabaseClient, id: string) {
     .from('Budget_Hit')
     .delete()
     .eq('id', id)
+    .eq('type', 'Expense')
 
   if (error) throw error
 }
@@ -97,6 +99,7 @@ export async function updateBudgetHit(
     .from('Budget_Hit')
     .update(updatePayload)
     .eq('id', id)
+    .eq('type', 'Expense')
     .select()
     .single()
 
@@ -179,6 +182,7 @@ export async function updateIncome(
     .from('Budget_Hit')
     .update(updatePayload)
     .eq('id', id)
+    .eq('type', 'Income')
     .select()
     .single()
 
@@ -194,6 +198,7 @@ export async function deleteIncome(supabase: SupabaseClient, id: string) {
     .from('Budget_Hit')
     .delete()
     .eq('id', id)
+    .eq('type', 'Income')
 
   if (error) throw error
 }
@@ -272,6 +277,56 @@ export async function getBudgetHitsByMonth(supabase: SupabaseClient, year: numbe
     .gte('date', startDate)
     .lt('date', endDate)
     .order('date', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
+
+export async function createTransfer(
+  supabase: SupabaseClient,
+  userId: string,
+  householdId: string,
+  input: ValidTransferInput
+) {
+  const { data, error } = await getClient(supabase)
+    .from('Budget_Hit')
+    .insert({
+      amount: input.amount,
+      date: input.date,
+      type: 'Transfer',
+      budget_id: null,
+      account_id: input.fromAccountId,
+      destination_account_id: input.toAccountId,
+      entity: null,
+      notes: null,
+      user_id: userId,
+      household_id: householdId,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function getTransfersByMonth(
+  supabase: SupabaseClient,
+  householdId: string,
+  year: number,
+  month: number
+) {
+  const nextMonth = month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 }
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`
+  const endDate = `${nextMonth.year}-${String(nextMonth.month).padStart(2, '0')}-01`
+  const { data, error } = await getClient(supabase)
+    .from('Budget_Hit')
+    .select('*')
+    .eq('household_id', householdId)
+    .eq('type', 'Transfer')
+    .gte('date', startDate)
+    .lt('date', endDate)
+    .order('date', { ascending: false })
+    .order('created_at', { ascending: false })
 
   if (error) throw error
   return data || []

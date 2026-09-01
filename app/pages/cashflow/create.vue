@@ -47,6 +47,8 @@ const notes = ref('')
 const loading = ref(false)
 const error = ref<string | null>(null)
 const accountId = ref<string | null>(null)
+const fromAccountId = ref('')
+const toAccountId = ref('')
 
 const CLOSE_AFTER_SUCCESS_MS = 1500
 let closeTimer: ReturnType<typeof setTimeout> | null = null
@@ -62,6 +64,7 @@ onBeforeUnmount(() => {
 })
 
 const isIncome = computed(() => transactionType.value === 'income')
+const isTransfer = computed(() => transactionType.value === 'transfer')
 
 const activeBudgetId = computed(() => {
   if (noBudget.value) return null
@@ -89,13 +92,20 @@ function handleBudgetSelect(selection: { budgetId: string | null; budgetName: st
   setStep('enter-amount')
 }
 
+function handleTransferSelect(selection: { fromAccountId: string; toAccountId: string }) {
+  transactionView.selectType('transfer')
+  fromAccountId.value = selection.fromAccountId
+  toAccountId.value = selection.toAccountId
+  setStep('enter-amount')
+}
+
 function goBack() {
   if (step.value === 'enter-amount') { setStep('choose-budget'); return }
   router.back()
 }
 
 async function handleSubmit() {
-  if (!isIncome.value && !noBudget.value && !selectedBudgetId.value) {
+  if (!isTransfer.value && !isIncome.value && !noBudget.value && !selectedBudgetId.value) {
     alert('Please select a budget')
     return
   }
@@ -106,7 +116,9 @@ async function handleSubmit() {
     loading.value = true
     error.value = null
 
-    if (isIncome.value) {
+    if (isTransfer.value) {
+      await store.addTransfer(fromAccountId.value, toAccountId.value, parseFloat(amount.value), date.value)
+    } else if (isIncome.value) {
       await store.addIncome(parseFloat(amount.value), date.value, entity.value, activeBudgetId.value, accountId.value, notes.value)
     } else {
       const budgetIdToSubmit = noBudget.value ? null : selectedBudgetId.value
@@ -121,7 +133,7 @@ async function handleSubmit() {
       .find((budget: any) => budget.id === selectedBudgetId.value)?.name ?? 'This budget'
     error.value = getMissingBudgetPeriodMessage(err, budgetName, date.value)
       || err?.message
-      || (isIncome.value ? 'Error recording income' : 'Error recording budget hit')
+      || (isTransfer.value ? 'Error recording transfer' : isIncome.value ? 'Error recording income' : 'Error recording budget hit')
     alert(error.value)
   } finally {
     loading.value = false
@@ -159,6 +171,19 @@ async function handleSubmit() {
             v-if="step === 'choose-budget'"
             key="choose-budget"
             @select="handleBudgetSelect"
+            @select-transfer="handleTransferSelect"
+          />
+          <CashflowCreateStepTransferAmount
+            v-else-if="isTransfer"
+            key="enter-transfer-amount"
+            v-model:amount="amount"
+            v-model:date="date"
+            :from-account-id="fromAccountId"
+            :to-account-id="toAccountId"
+            :loading="loading"
+            :error="error"
+            @change-accounts="setStep('choose-budget')"
+            @submit="handleSubmit"
           />
           <CashflowCreateStepAmount
             v-else
