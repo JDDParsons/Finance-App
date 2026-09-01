@@ -54,12 +54,15 @@ const daysInMonth = computed(() => {
   return new Date(year, month, 0).getDate()
 })
 
-// Number of days to display: up to today for the current month, full month otherwise
-const displayedDays = computed(() => {
+// Always show the selected month in full. Budget and average reference lines
+// continue through month-end, while current spending stops at today.
+const displayedDays = computed(() => daysInMonth.value)
+
+const isChartLocked = computed(() => {
   const { year, month } = store.selectedMonth
   const now = new Date()
-  const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1)
-  return isCurrentMonth ? now.getDate() : daysInMonth.value
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
+  return isCurrentMonth && now.getDate() < 3
 })
 
 // Spread the month's budgeted income evenly across its calendar days, then
@@ -97,10 +100,14 @@ const cumulativeSpending = computed(() => {
   return cumulative
 })
 
-// Show a dot only at the last (today's) point on the spending line
+// Highlight today for the current month, or the final day for past months.
 const spendingPointRadii = computed(() => {
   const len = cumulativeSpending.value.length
-  return Array.from({ length: len }, (_, i) => i === len - 1 ? 4 : 0)
+  const { year, month } = store.selectedMonth
+  const now = new Date()
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
+  const highlightedIndex = isCurrentMonth ? now.getDate() - 1 : len - 1
+  return Array.from({ length: len }, (_, index) => index === highlightedIndex ? 6 : 0)
 })
 
 const cumulativeAverageSpending = computed(() => {
@@ -114,13 +121,25 @@ const cumulativeAverageSpending = computed(() => {
   return cumulative
 })
 
+const spendingChartData = computed(() => {
+  const { year, month } = store.selectedMonth
+  const now = new Date()
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
+  if (!isCurrentMonth) return cumulativeSpending.value
+
+  return cumulativeSpending.value.map((value, index) =>
+    index < now.getDate() ? value : null
+  )
+})
+
 const chartData = computed(() => ({
   labels: Array.from({ length: displayedDays.value }, (_, i) => `${i + 1}`),
   datasets: [
     {
       label: 'Daily budgeted income',
       data: cumulativeDailyBudgetedIncome.value,
-      borderColor: '#22c55e',
+      borderColor: 'rgba(34, 197, 94, 0.55)',
+      borderDash: [6, 5],
       backgroundColor: 'transparent',
       fill: {
         target: 1,
@@ -130,18 +149,21 @@ const chartData = computed(() => ({
       tension: 0.3,
       pointRadius: 0,
       pointHoverRadius: 4,
-      borderWidth: 2,
+      borderWidth: 1.5,
       order: 2,
     },
     {
       label: 'Spending',
-      data: cumulativeSpending.value,
+      data: spendingChartData.value,
       borderColor: '#F59E0B',
       backgroundColor: 'transparent',
       fill: false,
       tension: 0.3,
       pointRadius: spendingPointRadii.value,
-      pointHoverRadius: 5,
+      pointHoverRadius: 7,
+      pointBackgroundColor: '#F59E0B',
+      pointBorderColor: '#F59E0B',
+      pointBorderWidth: 2,
     },
     ...(cumulativeAverageSpending.value ? [{
       label: 'Average spending',
@@ -214,31 +236,37 @@ const chartOptions = computed(() => ({
 
 <template>
   <div>
-    <h2 class="text-sm text-center pb-2">See how your spending has accumulated:</h2>
+    <h2 class="text-sm font-semibold text-center pb-2">This month versus previous months</h2>
 
     <USkeleton v-if="store.loading" class="w-full rounded-lg opacity-40" style="height: 205px;" />
 
     <template v-else>
-      <div class="h-44 lg:h-[264px]">
-        <Line ref="lineChart" :data="chartData" :options="chartOptions" />
+      <div v-if="isChartLocked" class="flex h-52 flex-col items-center justify-center text-gray-400 dark:text-gray-500 lg:h-[296px]">
+        <UIcon name="heroicons:lock-closed" class="h-10 w-10" />
+        <p class="mt-3 text-sm">Unlocked on the 3rd day</p>
       </div>
-      <div class="flex items-center justify-between gap-3 mb-3">
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted">
-          <span class="flex items-center gap-1.5">
-            <span class="inline-block w-4 h-0.5 bg-green-500 rounded-full"></span>
-            Daily budgeted income
-          </span>
-          <span class="flex items-center gap-1.5">
-            <span class="inline-block w-4 h-0.5 bg-amber-400 rounded-full"></span>
-            Spending
-          </span>
-          <span v-if="spendingAverage" class="flex items-center gap-1.5">
-            <span class="inline-block w-4 border-t-2 border-dashed border-gray-400"></span>
-            Average spending
-          </span>
+
+      <template v-else>
+        <div class="h-44 lg:h-[264px]">
+          <Line ref="lineChart" :data="chartData" :options="chartOptions" />
         </div>
-      </div>
-      
+        <div class="flex items-center justify-between gap-3 mb-3">
+          <div class="flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted">
+            <span class="flex items-center gap-1.5">
+              <span class="inline-block w-4 h-0.5 bg-amber-400 rounded-full"></span>
+              This month's spending
+            </span>
+            <span v-if="spendingAverage" class="flex items-center gap-1.5">
+              <span class="inline-block w-4 border-t-2 border-dashed border-gray-400"></span>
+              Average spending
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="inline-block w-4 border-t-2 border-dashed border-green-500 opacity-60"></span>
+              Projected daily budgeted income
+            </span>
+          </div>
+        </div>
+      </template>
     </template>
   </div>
 </template>
