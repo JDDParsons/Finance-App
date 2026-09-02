@@ -6,6 +6,22 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ['@nuxt/ui', '@pinia/nuxt', '@vite-pwa/nuxt'],
   css: ['@/assets/css/main.css'],
+  icon: {
+    provider: 'server',
+    fallbackToApi: false,
+    serverBundle: {
+      collections: [
+        'heroicons',
+        'heroicons-solid',
+        'ic',
+        'lucide',
+        'streamline-flex',
+        'streamline-plump',
+        'streamline-ultimate',
+        'teenyicons',
+      ],
+    },
+  },
   app: {
     head: {
       link: [

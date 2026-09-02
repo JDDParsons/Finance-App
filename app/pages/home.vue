@@ -418,6 +418,8 @@ const compactCardUi = {
                 </UCard>
 
                 <UCard class="col-span-2 shadow lg:col-span-1" :ui="compactCardUi">
+                    <h3 class="text-center font-semibold">Top budget usage</h3>
+                    <h4 class="text-center text-sm">See how much of your budgets you've used</h4>
                     <BudgetUsageRadarChart />
                 </UCard>
             </div>

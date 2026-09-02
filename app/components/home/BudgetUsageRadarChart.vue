@@ -9,6 +9,7 @@ import {
   RadialLinearScale,
   Tooltip,
 } from 'chart.js'
+import type { Chart, Plugin } from 'chart.js'
 import { useBudgetIcon } from '~/composables/useBudgetIcon'
 import { useFinanceStore } from '~/stores/finance'
 
@@ -16,8 +17,32 @@ ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, 
 
 const store = useFinanceStore()
 const { budgetIcon } = useBudgetIcon()
+const pointPositions = ref<{ x: number; y: number }[]>([])
+const budgetCount = ref(5)
+let positionUpdateFrame: number | undefined
+
+const budgetPointPositionPlugin: Plugin<'radar'> = {
+  id: 'budgetPointPositions',
+  afterRender(chart: Chart<'radar'>) {
+    const positions = chart.getDatasetMeta(0).data.map(point => ({ x: point.x, y: point.y }))
+
+    window.cancelAnimationFrame(positionUpdateFrame ?? 0)
+    positionUpdateFrame = window.requestAnimationFrame(() => {
+      const positionsChanged = positions.length !== pointPositions.value.length
+        || positions.some((position, index) => {
+          const current = pointPositions.value[index]
+          return !current || current.x !== position.x || current.y !== position.y
+        })
+
+      if (positionsChanged) pointPositions.value = positions
+    })
+  },
+}
+
+onBeforeUnmount(() => window.cancelAnimationFrame(positionUpdateFrame ?? 0))
 
 const FALLBACK_COLORS = ['#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#14B8A6']
+const MAX_CHART_BUDGETS = 10
 
 const isChartLocked = computed(() => {
   const { year, month } = store.selectedMonth
@@ -26,13 +51,12 @@ const isChartLocked = computed(() => {
   return isCurrentMonth && now.getDate() < 7
 })
 
-const topBudgets = computed(() =>
+const fundedBudgets = computed(() =>
   [...store.budgets]
     .filter(budget => (Number(budget.currentPeriod?.amount) || 0) > 0)
     .sort((a, b) =>
       (Number(b.currentPeriod?.amount) || 0) - (Number(a.currentPeriod?.amount) || 0)
     )
-    .slice(0, 5)
     .map((budget, index) => {
       const allocation = Number(budget.currentPeriod?.amount) || 0
       const spent = Number(budget.totalHitAmount) || 0
@@ -40,13 +64,20 @@ const topBudgets = computed(() =>
         id: budget.id,
         name: budget.name,
         icon: budget.icon ?? budgetIcon(budget.name),
-        color: budget.color ?? FALLBACK_COLORS[index],
+        color: budget.color ?? FALLBACK_COLORS[index % FALLBACK_COLORS.length],
         allocation,
         spent,
         percentage: allocation > 0 ? (spent / allocation) * 100 : 0,
       }
     })
 )
+
+const maximumBudgetCount = computed(() => Math.min(MAX_CHART_BUDGETS, fundedBudgets.value.length))
+const topBudgets = computed(() => fundedBudgets.value.slice(0, budgetCount.value))
+
+watch(maximumBudgetCount, (maximum) => {
+  if (maximum >= 3 && budgetCount.value > maximum) budgetCount.value = maximum
+})
 
 const radialMaximum = computed(() => {
   const largest = Math.max(100, ...topBudgets.value.map(budget => budget.percentage))
@@ -58,21 +89,21 @@ const chartData = computed(() => ({
   datasets: [{
     label: 'Budget used',
     data: topBudgets.value.map(budget => budget.percentage),
-    borderColor: '#6366F1',
-    backgroundColor: 'rgba(99, 102, 241, 0.15)',
-    pointBackgroundColor: topBudgets.value.map(budget => budget.color),
-    pointBorderColor: topBudgets.value.map(budget => budget.color),
+    borderColor: 'rgba(245, 158, 11, 0.45)',
+    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+    pointBackgroundColor: topBudgets.value.map(budget => `${budget.color}99`),
+    pointBorderColor: topBudgets.value.map(budget => `${budget.color}99`),
     pointHoverBackgroundColor: topBudgets.value.map(budget => budget.color),
-    pointRadius: 4,
-    pointHoverRadius: 6,
-    borderWidth: 2,
+    pointRadius: 12,
+    pointHoverRadius: 14,
+    borderWidth: 1,
   }],
 }))
 
 const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
-  layout: { padding: 50 },
+  layout: { padding: 20 },
   plugins: {
     legend: { display: false },
     tooltip: {
@@ -101,43 +132,48 @@ const chartOptions = computed(() => ({
     },
   },
 }))
-
-function labelPosition(index: number, count: number) {
-  const angle = (Math.PI * 2 * index) / count
-  return {
-    left: `${50 + Math.sin(angle) * 39}%`,
-    top: `${50 - Math.cos(angle) * 38}%`,
-  }
-}
 </script>
 
 <template>
   <div>
-    <h2 class="pb-2 text-center text-sm font-semibold">Your biggest budgets this month</h2>
+    <USkeleton v-if="store.loading" class="h-[220px] w-full rounded-lg opacity-40" />
 
-    <USkeleton v-if="store.loading" class="h-[360px] w-full rounded-lg opacity-40" />
-
-    <div v-else-if="isChartLocked" class="flex h-[360px] flex-col items-center justify-center text-gray-400 dark:text-gray-500 lg:h-[300px]">
+    <div v-else-if="isChartLocked" class="flex h-[220px] flex-col items-center justify-center text-gray-400 dark:text-gray-500 lg:h-[300px]">
       <UIcon name="heroicons:lock-closed" class="h-10 w-10" />
       <p class="mt-3 text-sm">Unlocked on the 7th day</p>
     </div>
 
-    <div v-else-if="topBudgets.length >= 3" class="relative mx-auto h-[360px] w-full max-w-2xl sm:h-[440px] lg:h-[300px]">
-      <Radar :data="chartData" :options="chartOptions" />
-
+    <div v-else-if="fundedBudgets.length >= 3" class="mx-auto flex h-[300px] w-full max-w-2xl sm:h-[300px] lg:h-[300px]">
       <div
-        v-for="(budget, index) in topBudgets"
-        :key="budget.id"
-        class="pointer-events-none absolute flex w-20 -translate-x-1/2 -translate-y-1/2 flex-col items-center text-center"
-        :style="labelPosition(index, topBudgets.length)"
+        v-if="maximumBudgetCount > 3"
+        class="flex w-10 shrink-0 flex-col items-center justify-center gap-1 py-8"
       >
+        <span class="text-xs font-semibold tabular-nums text-highlighted">{{ budgetCount }}</span>
+        <UIcon name="lucide:plus" class="size-3.5 text-muted" aria-hidden="true" />
+        <input
+          v-model.number="budgetCount"
+          type="range"
+          :min="3"
+          :max="maximumBudgetCount"
+          step="1"
+          orient="vertical"
+          aria-label="Number of budgets shown"
+          class="h-36 w-2 cursor-pointer accent-amber-500 [direction:rtl] [writing-mode:vertical-lr] sm:h-44 lg:h-36"
+        >
+        <UIcon name="lucide:minus" class="size-3.5 text-muted" aria-hidden="true" />
+      </div>
+
+      <div class="relative min-w-0 flex-1">
+        <Radar :data="chartData" :options="chartOptions" :plugins="[budgetPointPositionPlugin]" />
+
         <span
-          class="flex h-7 w-7 items-center justify-center rounded-full"
-          :style="{ color: budget.color, backgroundColor: `${budget.color}20` }"
+          v-for="(budget, index) in topBudgets"
+          :key="budget.id"
+          class="pointer-events-none absolute z-10 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center text-white"
+          :style="pointPositions[index] ? { left: `${pointPositions[index].x}px`, top: `${pointPositions[index].y}px` } : { display: 'none' }"
         >
           <UIcon :name="budget.icon" class="h-4 w-4" />
         </span>
-        <span class="mt-0.5 text-[11px] font-small leading-tight text-highlighted">{{ budget.name }}</span>
       </div>
     </div>
 
