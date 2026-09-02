@@ -383,7 +383,8 @@ const compactCardUi = {
                 </UCard>
 
                 <UCard class="col-span-2 shadow lg:col-span-1" :ui="compactCardUi">
-                    <h3 class="text-center font-semibold">Total expenses and income this month</h3>
+                    <h3 class="text-center font-semibold">Total expenses and income</h3>
+                    <h4 class="text-center text-sm">Track your financial well-being this month</h4>
 
                     <div v-if="store.loading" class="mx-auto h-[200px] w-full max-w-sm">
                         <USkeleton class="w-full h-full opacity-40" style="border-radius: 50% 50% 0 0 / 100% 100% 0 0;" />
@@ -411,6 +412,8 @@ const compactCardUi = {
                 </UCard>
 
                 <UCard class="col-span-2 shadow lg:col-span-1" :ui="compactCardUi">
+                    <h3 class="text-center font-semibold">Cumulative trends</h3>
+                    <h4 class="text-center text-sm">Compare your spending to previous months</h4>
                     <CumulativeSpendingChart />
                 </UCard>
 

@@ -236,8 +236,6 @@ const chartOptions = computed(() => ({
 
 <template>
   <div>
-    <h2 class="text-sm font-semibold text-center pb-2">This month versus previous months</h2>
-
     <USkeleton v-if="store.loading" class="w-full rounded-lg opacity-40" style="height: 205px;" />
 
     <template v-else>
@@ -247,7 +245,7 @@ const chartOptions = computed(() => ({
       </div>
 
       <template v-else>
-        <div class="h-44 lg:h-[264px]">
+        <div class="h-44 lg:h-[215px]">
           <Line ref="lineChart" :data="chartData" :options="chartOptions" />
         </div>
         <div class="flex items-center justify-between gap-3 mb-3">

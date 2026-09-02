@@ -10,7 +10,7 @@ test('uses actual income for previous months', () => {
     budgetedIncome: 5000,
   }), {
     amount: 4200,
-    label: 'Income',
+    label: 'Real income',
   })
 })
 
@@ -21,7 +21,7 @@ test('uses actual income when it exceeds current-month budgeted income', () => {
     budgetedIncome: 5000,
   }), {
     amount: 5200,
-    label: 'Income',
+    label: 'Real income',
   })
 })
 
@@ -32,6 +32,6 @@ test('uses budgeted income when current-month actual income does not exceed it',
     budgetedIncome: 5000,
   }), {
     amount: 5000,
-    label: 'Budgeted income',
+    label: 'Planned income',
   })
 })

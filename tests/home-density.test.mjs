@@ -5,6 +5,7 @@ import test from 'node:test'
 test('home dashboard uses compact spacing between and within cards', async () => {
   const homePage = await readFile(new URL('../app/pages/home.vue', import.meta.url), 'utf8')
   const gaugeNeedle = await readFile(new URL('../app/components/GaugeNeedle.vue', import.meta.url), 'utf8')
+  const cumulativeChart = await readFile(new URL('../app/components/home/CumulativeSpendingChart.vue', import.meta.url), 'utf8')
 
   assert.match(homePage, /grid grid-cols-2 gap-3 pb-20 pt-3/)
   assert.match(homePage, /body: 'p-3 sm:p-4'/)
@@ -12,7 +13,7 @@ test('home dashboard uses compact spacing between and within cards', async () =>
   assert.match(homePage, /\{\{ periodLabel \}\}/)
   assert.match(homePage, /donutIncome\.value\.amount - totalExpenses\.value/)
   assert.match(homePage, /totalExpenses\.value \/ Math\.max\(donutIncome\.value\.amount, 1\)/)
-  assert.match(homePage, />Expenses and income this month<\/h3>/)
+  assert.match(homePage, />Total expenses and income this month<\/h3>/)
   assert.match(homePage, /grid grid-cols-3 gap-2 text-center/)
   assert.doesNotMatch(homePage, /expenseMoMChange/)
   assert.match(homePage, /categoryLabels: \['Expenses', 'Remaining'\]/)
@@ -26,4 +27,5 @@ test('home dashboard uses compact spacing between and within cards', async () =>
   assert.doesNotMatch(homePage, /lg:h-\[300px\]/)
   assert.match(gaugeNeedle, /bottom-\[22px\]/)
   assert.doesNotMatch(gaugeNeedle, /lg:bottom/)
+  assert.match(cumulativeChart, /h-44 lg:h-\[192px\]/)
 })
