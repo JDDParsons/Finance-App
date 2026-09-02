@@ -163,7 +163,10 @@ function toggleExpenseFromTotal(expenseId) {
   excludedExpenseIds.value = [...excludedExpenseIds.value, expenseId]
 }
 
-const chartColors = ref({ remaining: '#22c55e' })
+const chartColors = ref({
+  expenses: '#f59e0b',
+  remaining: '#22c55e',
+})
 const NO_BUDGET_COLOR = '#9CA3AF'
 
 const FALLBACK_PALETTE = [
@@ -174,7 +177,9 @@ const FALLBACK_PALETTE = [
 function resolveChartColors() {
   const style = getComputedStyle(document.documentElement)
   const primary = style.getPropertyValue('--ui-primary').trim()
+  const warning = style.getPropertyValue('--ui-warning').trim()
   if (primary && primary.startsWith('#')) chartColors.value.remaining = primary
+  if (warning && warning.startsWith('#')) chartColors.value.expenses = warning
 }
 
 const chartData = computed(() => {
@@ -195,8 +200,6 @@ const chartData = computed(() => {
   const labels = []
   const data = []
   const backgroundColors = []
-  const borderColors = []
-  const borderWidths = []
 
   for (const [budgetId, total] of sorted) {
     const budget = budgetId !== '__none__' ? store.budgets.find(b => b.id === budgetId) : null
@@ -204,13 +207,9 @@ const chartData = computed(() => {
     data.push(total)
     if (budgetId === '__none__') {
       backgroundColors.push(`${NO_BUDGET_COLOR}60`)
-      borderColors.push(NO_BUDGET_COLOR)
-      borderWidths.push(1)
     } else {
       const color = budget?.color ?? FALLBACK_PALETTE[fallbackIdx++ % FALLBACK_PALETTE.length]
       backgroundColors.push(`${color}60`)
-      borderColors.push(color)
-      borderWidths.push(1)
     }
   }
 
@@ -218,17 +217,26 @@ const chartData = computed(() => {
   labels.push('Remaining')
   data.push(chartRemaining.value)
   backgroundColors.push(`${chartColors.value.remaining}99`)
-  borderColors.push(chartColors.value.remaining)
-  borderWidths.push(1)
 
   return {
     labels,
-    datasets: [{
-      backgroundColor: backgroundColors,
-      borderColor: borderColors,
-      borderWidth: borderWidths,
-      data,
-    }],
+    datasets: [
+      {
+        categoryLabels: ['Expenses', 'Remaining'],
+        backgroundColor: [
+          `${chartColors.value.expenses}99`,
+          `${chartColors.value.remaining}99`,
+        ],
+        borderWidth: 0,
+        data: [totalExpenses.value, chartRemaining.value],
+      },
+      {
+        categoryLabels: labels,
+        backgroundColor: backgroundColors,
+        borderWidth: 0,
+        data,
+      },
+    ],
   }
 })
 
@@ -245,10 +253,42 @@ const glowPlugin = {
   },
 }
 
+let activeDonutTooltip = null
+
+function toggleDonutTooltip(event, elements, chart) {
+  const activeElement = elements[0] ?? chart.tooltip?.getActiveElements()?.[0]
+  if (!activeElement) return
+
+  const key = `${activeElement.datasetIndex}:${activeElement.index}`
+  const position = { x: event.x ?? 0, y: event.y ?? 0 }
+
+  if (activeDonutTooltip === key) {
+    activeDonutTooltip = null
+    // Chart.js also handles click events internally. Clear after that handler
+    // finishes so it cannot immediately restore the tooltip we just closed.
+    setTimeout(() => {
+      chart.tooltip?.setActiveElements([], position)
+      chart.setActiveElements([])
+      chart.update('none')
+    }, 0)
+    return
+  }
+
+  activeDonutTooltip = key
+  const selectedElement = [{
+    datasetIndex: activeElement.datasetIndex,
+    index: activeElement.index,
+  }]
+  chart.tooltip?.setActiveElements(selectedElement, position)
+  chart.setActiveElements(selectedElement)
+  chart.update()
+}
+
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  cutout: '90%',
+  onClick: toggleDonutTooltip,
+  cutout: '78%',
   circumference: 180,
   rotation: -90,
   radius:'90%',
@@ -262,6 +302,10 @@ const chartOptions = {
     },
     tooltip: {
       callbacks: {
+        title: (items) => {
+          const item = items[0]
+          return item?.dataset.categoryLabels?.[item.dataIndex] ?? ''
+        },
         label: (ctx) => {
           const value = ctx.parsed
           return ` $${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -339,20 +383,20 @@ const compactCardUi = {
                 </UCard>
 
                 <UCard class="col-span-2 shadow lg:col-span-1" :ui="compactCardUi">
-                    <h3 class="text-center font-semibold">Expenses and income this month</h3>
+                    <h3 class="text-center font-semibold">Total expenses and income this month</h3>
 
-                    <div v-if="store.loading" class="mx-auto h-[200px] w-full max-w-sm lg:h-[300px]">
+                    <div v-if="store.loading" class="mx-auto h-[200px] w-full max-w-sm">
                         <USkeleton class="w-full h-full opacity-40" style="border-radius: 50% 50% 0 0 / 100% 100% 0 0;" />
                     </div>
 
-                    <div v-else class="relative mx-auto h-[200px] w-full max-w-sm lg:h-[300px]">
-                        <Doughnut :data="chartData" :options="chartOptions" />
+                    <div v-else class="relative mx-auto h-[200px] w-full max-w-sm">
+                        <Doughnut class="relative z-20" :data="chartData" :options="chartOptions" />
                         <GaugeNeedle :angle="needleAngle" :color="chartColors.expenses" />
                     </div>
 
                     <div class="mt-2 grid grid-cols-3 gap-2 text-center">
                         <div>
-                            <p class="text-xs text-gray-400">Expenses</p>
+                            <p class="text-xs text-gray-400">Total expenses</p>
                             <p class="font-semibold text-warning">${{ totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
                         </div>
                         <div>
@@ -360,7 +404,7 @@ const compactCardUi = {
                             <p class="font-semibold">${{ donutIncome.amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
                         </div>
                         <div>
-                            <p class="text-xs text-gray-400">Remaining</p>
+                            <p class="text-xs text-gray-400">Remaining funds</p>
                             <p class="font-semibold text-primary">${{ chartRemaining.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
                         </div>
                     </div>

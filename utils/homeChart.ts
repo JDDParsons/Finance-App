@@ -13,6 +13,6 @@ export function resolveDonutIncome({
 
   return {
     amount: usesActualIncome ? actualIncome : budgetedIncome,
-    label: usesActualIncome ? 'Income' : 'Budgeted income',
+    label: usesActualIncome ? 'Real income' : 'Planned income',
   }
 }
