@@ -121,12 +121,12 @@ ON CONFLICT (id) DO NOTHING;
 -- ---------------------------------------------------------------
 INSERT INTO "finance-app"."Budgets" (id, name, household_id, user_id, color, icon, created_at)
 VALUES
-  ('a1b2c3d4-1234-5678-abcd-000000001001', 'Groceries',     'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#4CAF50', '🛒', now()),
-  ('a1b2c3d4-1234-5678-abcd-000000001002', 'Dining Out',    'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#FF9800', '🍽️', now()),
-  ('a1b2c3d4-1234-5678-abcd-000000001003', 'Gas',           'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#2196F3', '⛽', now()),
-  ('a1b2c3d4-1234-5678-abcd-000000001004', 'Utilities',     'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#9C27B0', '💡', now()),
-  ('a1b2c3d4-1234-5678-abcd-000000001005', 'Entertainment', 'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#E91E63', '🎬', now()),
-  ('a1b2c3d4-1234-5678-abcd-000000001006', 'Rent',          'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#607D8B', '🏠', now())
+  ('a1b2c3d4-1234-5678-abcd-000000001001', 'Groceries',     'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#4CAF50', 'heroicons:shopping-cart-solid', now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001002', 'Dining Out',    'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#FF9800', 'heroicons:cake-solid', now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001003', 'Gas',           'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#2196F3', 'streamline-ultimate:car-3-bold', now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001004', 'Utilities',     'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#9C27B0', 'heroicons:bolt-solid', now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001005', 'Entertainment', 'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#E91E63', 'heroicons:film-solid', now()),
+  ('a1b2c3d4-1234-5678-abcd-000000001006', 'Rent',          'a1b2c3d4-1234-5678-abcd-000000000002', 'a1b2c3d4-1234-5678-abcd-000000000001', '#607D8B', 'heroicons:home-solid', now())
 ON CONFLICT (id) DO NOTHING;
 
 -- ---------------------------------------------------------------

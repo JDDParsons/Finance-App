@@ -17,29 +17,29 @@ ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, 
 
 const store = useFinanceStore()
 const { budgetIcon } = useBudgetIcon()
-const pointPositions = ref<{ x: number; y: number }[]>([])
 const budgetCount = ref(5)
-let positionUpdateFrame: number | undefined
 
 const budgetPointPositionPlugin: Plugin<'radar'> = {
   id: 'budgetPointPositions',
-  afterRender(chart: Chart<'radar'>) {
-    const positions = chart.getDatasetMeta(0).data.map(point => ({ x: point.x, y: point.y }))
+  afterDatasetsDraw(chart: Chart<'radar'>) {
+    const pointIcons = chart.canvas.parentElement
+      ?.querySelectorAll<HTMLElement>('[data-budget-point-icon]')
+    if (!pointIcons) return
 
-    window.cancelAnimationFrame(positionUpdateFrame ?? 0)
-    positionUpdateFrame = window.requestAnimationFrame(() => {
-      const positionsChanged = positions.length !== pointPositions.value.length
-        || positions.some((position, index) => {
-          const current = pointPositions.value[index]
-          return !current || current.x !== position.x || current.y !== position.y
-        })
+    const points = chart.getDatasetMeta(0).data
+    pointIcons.forEach((icon, index) => {
+      const point = points[index]
+      if (!point) {
+        icon.style.display = 'none'
+        return
+      }
 
-      if (positionsChanged) pointPositions.value = positions
+      icon.style.display = 'flex'
+      icon.style.left = `${point.x}px`
+      icon.style.top = `${point.y}px`
     })
   },
 }
-
-onBeforeUnmount(() => window.cancelAnimationFrame(positionUpdateFrame ?? 0))
 
 const FALLBACK_COLORS = ['#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#14B8A6']
 const MAX_CHART_BUDGETS = 10
@@ -167,10 +167,11 @@ const chartOptions = computed(() => ({
         <Radar :data="chartData" :options="chartOptions" :plugins="[budgetPointPositionPlugin]" />
 
         <span
-          v-for="(budget, index) in topBudgets"
+          v-for="budget in topBudgets"
           :key="budget.id"
+          data-budget-point-icon
           class="pointer-events-none absolute z-10 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center text-white"
-          :style="pointPositions[index] ? { left: `${pointPositions[index].x}px`, top: `${pointPositions[index].y}px` } : { display: 'none' }"
+          style="display: none"
         >
           <UIcon :name="budget.icon" class="h-4 w-4" />
         </span>

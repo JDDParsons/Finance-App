@@ -90,7 +90,7 @@ const relativeHeading = computed(() => {
         :aria-label="`Select month: ${monthLabel} (${relativeHeading})`"
         :title="`${monthLabel} (${relativeHeading})`"
       >
-        <UIcon v-if="(props.iconOnly || props.plain) && !store.loading" name="heroicons-solid:calendar-days" class="size-6" />
+        <UIcon v-if="(props.iconOnly || props.plain) && !store.loading" name="heroicons:calendar-days-solid" class="size-6" />
         <div v-if="!props.iconOnly && !props.plain" class="flex flex-col items-center leading-tight px-3 py-2">
           <span class="text-xl font-semibold text-highlighted">
             {{ relativeHeading }}

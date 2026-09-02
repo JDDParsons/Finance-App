@@ -26,7 +26,7 @@
           @touchend="isPressing = false"
           aria-label="Add expense"
         >
-          <UIcon name="fa-solid:plus" class="text-white size-6" />
+          <UIcon name="heroicons:plus-solid" class="text-white size-6" />
         </button>
       </div>
 
@@ -47,8 +47,8 @@
 
 <script setup lang="ts">
 const leftNav = [
-  { label: 'Home', icon: 'si:meter-fill', to: '/home' },
-  { label: 'Budgets', icon: 'material-symbols:stack-hexagon-rounded', to: '/budgets' },
+  { label: 'Home', icon: 'heroicons:home-solid', to: '/home' },
+  { label: 'Budgets', icon: 'heroicons:rectangle-stack-solid', to: '/budgets' },
 ]
 
 const rightNav = [
