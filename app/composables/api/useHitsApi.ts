@@ -37,6 +37,17 @@ export function useHitsApi() {
     })
   }
 
+  function updateTransfer(id: string, fromAccountId: string, toAccountId: string, amount: number, date: string) {
+    return apiFetch<any>(`/api/transfers/${id}`, {
+      method: 'PUT',
+      body: { fromAccountId, toAccountId, amount, date },
+    })
+  }
+
+  function deleteTransfer(id: string) {
+    return apiFetch<{ success: boolean }>(`/api/transfers/${id}`, { method: 'DELETE' })
+  }
+
   function insertIncome(amount: number, date: string, entity: string, budgetId: string | null = null, accountId: string | null = null, notes: string | null = null) {
     return apiFetch<any>('/api/income', {
       method: 'POST',
@@ -109,6 +120,8 @@ export function useHitsApi() {
     getIncomeByMonth,
     getTransfersByMonth,
     insertTransfer,
+    updateTransfer,
+    deleteTransfer,
     insertIncome,
     deleteIncome,
     updateIncome,

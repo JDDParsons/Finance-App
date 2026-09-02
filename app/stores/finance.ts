@@ -3,6 +3,7 @@ import { useBudgetsApi } from '~/composables/api/useBudgetsApi'
 import { useHitsApi } from '~/composables/api/useHitsApi'
 import { useAccountsStore } from './accounts'
 import { enrichBudgets } from '../../utils/budgetEnrichment'
+import { reconcileTransferUpdate, removeTransferRow, sortTransferRows } from '../../utils/transferRows'
 
 export const useFinanceStore = defineStore('finance', () => {
   const accountsStore = useAccountsStore()
@@ -13,7 +14,7 @@ export const useFinanceStore = defineStore('finance', () => {
   } = useBudgetsApi()
   const {
     getBudgetHitsByMonth, getIncomeByMonth,
-    getTransfersByMonth, insertTransfer,
+    getTransfersByMonth, insertTransfer, updateTransfer: apiUpdateTransfer, deleteTransfer,
     getBudgetEntities, getBudgetEntitiesByBudgetIds,
     insertIncome, deleteIncome, updateIncome: apiUpdateIncome,
     createBudgetHit, deleteBudgetHit, updateBudgetHit,
@@ -278,11 +279,19 @@ export const useFinanceStore = defineStore('finance', () => {
 
   async function addTransfer(fromAccountId: string, toAccountId: string, amount: number, date: string) {
     const row = await insertTransfer(fromAccountId, toAccountId, amount, date)
-    transfers.value = [row, ...transfers.value].sort((a, b) => {
-      const dateOrder = String(b.date ?? '').localeCompare(String(a.date ?? ''))
-      return dateOrder || String(b.created_at ?? '').localeCompare(String(a.created_at ?? ''))
-    })
+    transfers.value = sortTransferRows([row, ...transfers.value])
     return row
+  }
+
+  async function updateTransfer(id: string, fromAccountId: string, toAccountId: string, amount: number, date: string) {
+    const row = await apiUpdateTransfer(id, fromAccountId, toAccountId, amount, date)
+    transfers.value = reconcileTransferUpdate(transfers.value, row, selectedMonth.value)
+    return row
+  }
+
+  async function removeTransfer(id: string) {
+    await deleteTransfer(id)
+    transfers.value = removeTransferRow(transfers.value, id)
   }
 
   // ── budgets ───────────────────────────────────────────────────────────────
@@ -378,6 +387,8 @@ export const useFinanceStore = defineStore('finance', () => {
     removeExpense,
     updateExpense,
     addTransfer,
+    updateTransfer,
+    removeTransfer,
     addBudget,
     addExistingBudget,
     addExistingBudgets,

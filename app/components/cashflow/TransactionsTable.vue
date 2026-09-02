@@ -161,8 +161,6 @@ function handleRowClick(row: any) {
     return
   }
 
-  if (row.original.type === 'transfer') return
-
   selectedTransaction.value = row.original
   isEditingTransaction.value = true
 }
@@ -173,11 +171,13 @@ function handleEditClose() {
 }
 
 async function handleDelete(row: any) {
-  const label = row.type === 'income' ? 'income record' : 'expense'
+  const label = row.type === 'income' ? 'income record' : row.type === 'transfer' ? 'transfer' : 'expense'
   if (!confirm(`Are you sure you want to delete this ${label}? This action cannot be undone.`)) return
   try {
     if (row.type === 'income') {
       await store.removeIncome(row.id)
+    } else if (row.type === 'transfer') {
+      await store.removeTransfer(row.id)
     } else {
       await store.removeExpense(row.id)
     }
@@ -303,7 +303,7 @@ async function handleModalDelete() {
           <template #header>
             <div class="flex items-center justify-between">
               <h2 class="text-2xl font-bold">
-                {{ selectedTransaction.type === 'income' ? 'Edit Income' : 'Edit Expense' }}
+                {{ selectedTransaction.type === 'income' ? 'Edit Income' : selectedTransaction.type === 'transfer' ? 'Edit Transfer' : 'Edit Expense' }}
               </h2>
               <UButton
                 icon="heroicons-solid:trash"
@@ -329,7 +329,7 @@ async function handleModalDelete() {
             @delete="handleEditClose"
           />
           <IncomeEdit
-            v-else
+            v-else-if="selectedTransaction.type === 'income'"
             :income-id="selectedTransaction.id"
             :income-amount="selectedTransaction.amount"
             :income-date="selectedTransaction.date"
@@ -339,6 +339,16 @@ async function handleModalDelete() {
             @update="handleEditClose"
             @cancel="handleEditClose"
             @delete="handleEditClose"
+          />
+          <TransferEdit
+            v-else
+            :transfer-id="selectedTransaction.id"
+            :transfer-amount="selectedTransaction.amount"
+            :transfer-date="selectedTransaction.date"
+            :from-account-id="selectedTransaction.account_id"
+            :to-account-id="selectedTransaction.destination_account_id"
+            @update="handleEditClose"
+            @cancel="handleEditClose"
           />
         </UCard>
       </template>
