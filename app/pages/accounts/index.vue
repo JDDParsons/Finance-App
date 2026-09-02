@@ -226,9 +226,9 @@ function goBack() {
     </div>
 
     <!-- Accounts subheading + action -->
-    <div class="relative flex items-center justify-center mb-4">
-      <h2 class="text-2xl font-bold">Accounts</h2>
-      <UButton class="absolute right-0" icon="heroicons-solid:plus" label="Add account" @click="openCreate" />
+    <div class="mb-4">
+      <h2 class="text-center text-2xl font-bold">Accounts</h2>
+      <UButton class="mt-3" icon="heroicons-solid:plus" label="Add account" @click="openCreate" />
     </div>
 
     <!-- Error -->
