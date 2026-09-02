@@ -332,6 +332,38 @@ export async function getTransfersByMonth(
   return data || []
 }
 
+export async function updateTransfer(
+  supabase: SupabaseClient,
+  id: string,
+  input: ValidTransferInput
+) {
+  const { data, error } = await getClient(supabase)
+    .from('Budget_Hit')
+    .update({
+      amount: input.amount,
+      date: input.date,
+      account_id: input.fromAccountId,
+      destination_account_id: input.toAccountId,
+    })
+    .eq('id', id)
+    .eq('type', 'Transfer')
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteTransfer(supabase: SupabaseClient, id: string) {
+  const { error } = await getClient(supabase)
+    .from('Budget_Hit')
+    .delete()
+    .eq('id', id)
+    .eq('type', 'Transfer')
+
+  if (error) throw error
+}
+
 export async function getDailySpendingAverage(supabase: SupabaseClient, year: number, month: number) {
   const end = new Date(Date.UTC(year, month - 1, 1))
   const earliestStart = new Date(Date.UTC(year, month - 13, 1))

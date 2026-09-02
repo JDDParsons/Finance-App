@@ -26,6 +26,30 @@ function formatDate(date: string) {
 function formatCurrency(amount: number | string | null) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(amount) || 0)
 }
+
+const selectedTransfer = ref<any>(null)
+const isEditingTransfer = ref(false)
+
+function openTransfer(transfer: any) {
+  selectedTransfer.value = transfer
+  isEditingTransfer.value = true
+}
+
+function closeTransfer() {
+  isEditingTransfer.value = false
+  selectedTransfer.value = null
+}
+
+async function deleteSelectedTransfer() {
+  if (!selectedTransfer.value) return
+  if (!confirm('Are you sure you want to delete this transfer? This action cannot be undone.')) return
+  try {
+    await store.removeTransfer(selectedTransfer.value.id)
+    closeTransfer()
+  } catch (err: any) {
+    alert(err?.message || 'Failed to delete transfer')
+  }
+}
 </script>
 
 <template>
@@ -39,7 +63,17 @@ function formatCurrency(amount: number | string | null) {
     </div>
     <section v-for="section in sections" v-else :key="section.date" class="flex flex-col gap-2">
       <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300">{{ formatDate(section.date) }}</h3>
-      <UCard v-for="transfer in section.transfers" :key="transfer.id">
+      <UCard
+        v-for="transfer in section.transfers"
+        :key="transfer.id"
+        class="cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-900"
+        role="button"
+        tabindex="0"
+        :aria-label="`Edit transfer from ${accountMap.get(transfer.account_id) ?? 'unknown account'} to ${accountMap.get(transfer.destination_account_id) ?? 'unknown account'}`"
+        @click="openTransfer(transfer)"
+        @keydown.enter="openTransfer(transfer)"
+        @keydown.space.prevent="openTransfer(transfer)"
+      >
         <div class="flex items-center gap-3">
           <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
             <UIcon name="heroicons:arrows-right-left" class="size-5" />
@@ -57,4 +91,26 @@ function formatCurrency(amount: number | string | null) {
       </UCard>
     </section>
   </div>
+
+  <UModal v-if="selectedTransfer" v-model:open="isEditingTransfer" @update:open="(open) => { if (!open) closeTransfer() }">
+    <template #content>
+      <UCard>
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h2 class="text-2xl font-bold">Edit Transfer</h2>
+            <UButton icon="heroicons-solid:trash" color="error" variant="ghost" size="sm" @click="deleteSelectedTransfer" />
+          </div>
+        </template>
+        <TransferEdit
+          :transfer-id="selectedTransfer.id"
+          :transfer-amount="selectedTransfer.amount"
+          :transfer-date="selectedTransfer.date"
+          :from-account-id="selectedTransfer.account_id"
+          :to-account-id="selectedTransfer.destination_account_id"
+          @update="closeTransfer"
+          @cancel="closeTransfer"
+        />
+      </UCard>
+    </template>
+  </UModal>
 </template>
