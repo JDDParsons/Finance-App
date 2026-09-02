@@ -84,14 +84,18 @@ async function deleteSelectedTransfer() {
             <UIcon name="heroicons:arrows-right-left" class="size-5" />
           </div>
           <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-1 text-sm font-medium">
-              <AccountVisual :account="accountMap.get(transfer.account_id)" size="sm" />
-              <span class="truncate">{{ accountName(transfer.account_id) }}</span>
-              <UIcon name="heroicons:arrow-right" class="size-4 shrink-0 text-gray-400" />
-              <AccountVisual :account="accountMap.get(transfer.destination_account_id)" size="sm" />
-              <span class="truncate">{{ accountName(transfer.destination_account_id) }}</span>
+            <div class="space-y-1 text-sm font-medium">
+              <div class="flex items-start gap-1.5">
+                <span class="w-8 shrink-0 text-xs font-normal text-gray-400">From</span>
+                <AccountVisual :account="accountMap.get(transfer.account_id)" size="sm" />
+                <span class="min-w-0 break-words">{{ accountName(transfer.account_id) }}</span>
+              </div>
+              <div class="flex items-start gap-1.5">
+                <span class="w-8 shrink-0 text-xs font-normal text-gray-400">To</span>
+                <AccountVisual :account="accountMap.get(transfer.destination_account_id)" size="sm" />
+                <span class="min-w-0 break-words">{{ accountName(transfer.destination_account_id) }}</span>
+              </div>
             </div>
-            <p class="mt-0.5 text-xs text-gray-400">Transfer</p>
           </div>
           <p class="shrink-0 font-semibold text-gray-900 dark:text-white">{{ formatCurrency(transfer.amount) }}</p>
         </div>
