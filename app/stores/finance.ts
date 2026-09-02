@@ -13,6 +13,7 @@ export const useFinanceStore = defineStore('finance', () => {
   } = useBudgetsApi()
   const {
     getBudgetHitsByMonth, getIncomeByMonth,
+    getTransfersByMonth, insertTransfer,
     getBudgetEntities, getBudgetEntitiesByBudgetIds,
     insertIncome, deleteIncome, updateIncome: apiUpdateIncome,
     createBudgetHit, deleteBudgetHit, updateBudgetHit,
@@ -29,6 +30,7 @@ export const useFinanceStore = defineStore('finance', () => {
   const budgetHits = ref<any[]>([])
   const prevMonthBudgetHits = ref<any[]>([])
   const income = ref<any[]>([])
+  const transfers = ref<any[]>([])
   const accounts = computed(() => accountsStore.accounts)
   const loading = ref(false)
   const refreshing = ref(false)
@@ -96,12 +98,13 @@ export const useFinanceStore = defineStore('finance', () => {
       const { year, month } = selectedMonth.value
       const prevYear = month === 1 ? year - 1 : year
       const prevMonth = month === 1 ? 12 : month - 1
-      const [rawBudgets, rawIncomeBudgets, hits, prevHits, inc, avail] = await Promise.all([
+      const [rawBudgets, rawIncomeBudgets, hits, prevHits, inc, transferRows, avail] = await Promise.all([
         getBudgetsByMonth(year, month, 'Expense'),
         getBudgetsByMonth(year, month, 'Income'),
         getBudgetHitsByMonth(year, month),
         getBudgetHitsByMonth(prevYear, prevMonth),
         getIncomeByMonth(year, month),
+        getTransfersByMonth(year, month),
         getAvailableBudgetMonths(),
         accountsStore.fetchAccounts(false, silent),
       ])
@@ -109,6 +112,7 @@ export const useFinanceStore = defineStore('finance', () => {
       budgetHits.value = hits
       prevMonthBudgetHits.value = prevHits
       income.value = inc
+      transfers.value = transferRows
       budgets.value = enrichSelectedMonthBudgets(rawBudgets, hits)
       incomeBudgets.value = enrichSelectedMonthBudgets(rawIncomeBudgets, inc)
       const budgetIds = [...rawBudgets, ...rawIncomeBudgets]
@@ -270,6 +274,17 @@ export const useFinanceStore = defineStore('finance', () => {
     budgets.value = enrichSelectedMonthBudgets(budgets.value, budgetHits.value)
   }
 
+  // ── transfers ─────────────────────────────────────────────────────────────
+
+  async function addTransfer(fromAccountId: string, toAccountId: string, amount: number, date: string) {
+    const row = await insertTransfer(fromAccountId, toAccountId, amount, date)
+    transfers.value = [row, ...transfers.value].sort((a, b) => {
+      const dateOrder = String(b.date ?? '').localeCompare(String(a.date ?? ''))
+      return dateOrder || String(b.created_at ?? '').localeCompare(String(a.created_at ?? ''))
+    })
+    return row
+  }
+
   // ── budgets ───────────────────────────────────────────────────────────────
 
   async function addBudget(name: string, amount: string, color?: string, icon?: string | null, type: 'Expense' | 'Income' = 'Expense') {
@@ -339,6 +354,7 @@ export const useFinanceStore = defineStore('finance', () => {
     prevMonthBudgetHits,
     budgetAllEntities,
     income,
+    transfers,
     accounts,
     userProfiles,
     defaultExpenseAccount,
@@ -361,6 +377,7 @@ export const useFinanceStore = defineStore('finance', () => {
     addExpense,
     removeExpense,
     updateExpense,
+    addTransfer,
     addBudget,
     addExistingBudget,
     addExistingBudgets,

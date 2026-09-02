@@ -2,7 +2,7 @@
 import { useFinanceStore } from '~/stores/finance'
 import { useBudgetIcon } from '~/composables/useBudgetIcon'
 
-type TransactionType = 'expense' | 'income'
+type TransactionType = 'expense' | 'income' | 'transfer'
 
 type TransactionRow = {
   id: string
@@ -12,6 +12,7 @@ type TransactionRow = {
   entity?: string | null
   budget_id?: string | null
   account_id?: string | null
+  destination_account_id?: string | null
   notes?: string | null
   kind: 'transaction'
   [key: string]: any
@@ -45,7 +46,7 @@ const accountMap = computed(() =>
   new Map<string, string>(store.accounts.map((a: any) => [a.id, a.name || a.institution || 'Account']))
 )
 
-// Combine expenses and income into one sorted, tagged list
+// Combine expenses, income, and transfers into one sorted, tagged list
 const transactions = computed(() => {
   const expenseRows = store.budgetHits.map((hit: any) => ({
     ...hit,
@@ -57,8 +58,13 @@ const transactions = computed(() => {
     type: 'income' as TransactionType,
     kind: 'transaction' as const,
   }))
+  const transferRows = store.transfers.map((row: any) => ({
+    ...row,
+    type: 'transfer' as TransactionType,
+    kind: 'transaction' as const,
+  }))
 
-  return [...expenseRows, ...incomeRows].sort((a: any, b: any) => {
+  return [...expenseRows, ...incomeRows, ...transferRows].sort((a: any, b: any) => {
     const da = (a.date ?? '').slice(0, 10)
     const db = (b.date ?? '').slice(0, 10)
     return da < db ? 1 : da > db ? -1 : 0
@@ -130,6 +136,7 @@ const tableColumns = [
           const row = cell.row.original as TableRow
           if (isDateGroup(row)) return { borderLeft: '4px solid #4b5563' }
           if (row.type === 'income') return { borderLeft: '4px solid #86efac' }
+          if (row.type === 'transfer') return { borderLeft: '4px solid #60a5fa' }
           if (!row.budget_id) return {}
 
           const color = budgetColorMap.value.get(row.budget_id)
@@ -153,6 +160,8 @@ function handleRowClick(row: any) {
     toggleDate(row.original.date)
     return
   }
+
+  if (row.original.type === 'transfer') return
 
   selectedTransaction.value = row.original
   isEditingTransaction.value = true
@@ -234,15 +243,15 @@ async function handleModalDelete() {
         </span>
         <UBadge
           v-else
-          :color="row.original.type === 'income' ? 'success' : 'warning'"
+          :color="row.original.type === 'income' ? 'success' : row.original.type === 'transfer' ? 'info' : 'warning'"
           variant="subtle"
         >
-          {{ row.original.type === 'income' ? 'Income' : 'Expense' }}
+          {{ row.original.type === 'income' ? 'Income' : row.original.type === 'transfer' ? 'Transfer' : 'Expense' }}
         </UBadge>
       </template>
 
       <template #entity-cell="{ row }">
-        <span v-if="!isDateGroup(row.original)">{{ row.original.entity || '-' }}</span>
+        <span v-if="!isDateGroup(row.original)">{{ row.original.entity || '—' }}</span>
       </template>
 
       <template #budget-cell="{ row }">
@@ -264,7 +273,14 @@ async function handleModalDelete() {
 
       <template #account-cell="{ row }">
         <template v-if="!isDateGroup(row.original)">
-          {{ row.original.account_id ? accountMap.get(row.original.account_id) ?? '-' : '-' }}
+          <span v-if="row.original.type === 'transfer'" class="inline-flex items-center gap-1">
+            {{ row.original.account_id ? accountMap.get(row.original.account_id) ?? 'Unknown' : 'Unknown' }}
+            <UIcon name="heroicons:arrow-right" class="size-4 text-gray-400" />
+            {{ row.original.destination_account_id ? accountMap.get(row.original.destination_account_id) ?? 'Unknown' : 'Unknown' }}
+          </span>
+          <template v-else>
+            {{ row.original.account_id ? accountMap.get(row.original.account_id) ?? '-' : '-' }}
+          </template>
         </template>
       </template>
 

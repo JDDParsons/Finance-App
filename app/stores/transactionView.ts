@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-export type TransactionView = 'expense' | 'income'
+export type TransactionView = 'expense' | 'income' | 'transfer'
 
 export const useTransactionViewStore = defineStore('transactionView', () => {
   const selectedType = ref<TransactionView>('expense')

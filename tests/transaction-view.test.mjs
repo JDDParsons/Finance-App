@@ -17,6 +17,9 @@ test('shares the selected transaction type between page consumers', () => {
   createTransactionView.selectType('expense')
   assert.equal(cashflowView.selectedType, 'expense')
   assert.equal(budgetView.selectedType, 'expense')
+
+  budgetView.selectType('transfer')
+  assert.equal(cashflowView.selectedType, 'transfer')
 })
 
 test('defaults to the expense view for a new app session', () => {

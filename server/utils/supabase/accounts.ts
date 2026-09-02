@@ -190,15 +190,9 @@ export async function updateAccountBaseline(
 }
 
 export async function deleteAccount(supabase: SupabaseClient, id: string) {
-  const { error: accountValueError } = await getClient(supabase)
-    .from('Account_Value')
-    .delete()
-    .eq('account_id', id)
-  if (accountValueError) throw accountValueError
-
-  const { error } = await getClient(supabase)
-    .from('Account')
-    .delete()
-    .eq('id', id)
+  const { error } = await getClient(supabase).rpc('delete_account', { target_account_id: id })
+  if (error?.message?.includes('transfer history')) {
+    throw new Error('This account has transfer history and cannot be deleted.')
+  }
   if (error) throw error
 }
