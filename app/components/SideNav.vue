@@ -23,7 +23,7 @@
         @mouseleave="isPressing = false"
         aria-label="Add transaction"
       >
-        <UIcon name="fa-solid:plus" class="size-4" />
+        <UIcon name="heroicons:plus-solid" class="size-4" />
         Add Transaction
       </button>
     </div>
@@ -32,8 +32,8 @@
 
 <script setup>
 const navigation = [
-  { label: 'Home', icon: 'fa-solid-home', to: '/home' },
-  { label: 'Budgets', icon: 'pepicons-pop:dollar-circle-filled', to: '/budgets' },
+  { label: 'Home', icon: 'heroicons:home-solid', to: '/home' },
+  { label: 'Budgets', icon: 'heroicons:rectangle-stack-solid', to: '/budgets' },
   { label: 'Cashflow', icon: 'heroicons-solid:arrows-right-left', to: '/cashflow' },
   { label: 'Savings', icon: 'streamline-flex:decent-work-and-economic-growth-solid', to: '/savings' },
   { label: 'Upload', icon: 'heroicons-solid:arrow-up-tray', to: '/upload' },
