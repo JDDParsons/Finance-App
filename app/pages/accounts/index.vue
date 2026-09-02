@@ -4,10 +4,12 @@ import { useAccountsStore } from '~/stores/accounts'
 import { useProfileStore } from '~/stores/profile'
 import { useSignOut } from '~/composables/useSignOut'
 import { useInstitutionBranding } from '~/composables/useInstitutionBranding'
+import { accountDisplayName, DEFAULT_ACCOUNT_COLOR, DEFAULT_ACCOUNT_ICON, resolveAccountIcon } from '../../../utils/accountAppearance'
 
-useHead({ title: 'Profile | R&J Finance' })
+useHead({ title: 'Accounts | R&J Finance' })
 
 const { handleSignOut } = useSignOut()
+const router = useRouter()
 
 // --- Profile ---
 const profileStore = useProfileStore()
@@ -32,49 +34,39 @@ const isCreateOpen = ref(false)
 const createLoading = ref(false)
 const createName = ref('')
 const createInstitution = ref('')
-const createBaseline = ref('')
 const createCardNumber = ref('')
-const createIsCreditCard = ref(false)
 const createIsDefaultForExpenses = ref(false)
 const createIsDefaultForIncome = ref(false)
+const createColor = ref(DEFAULT_ACCOUNT_COLOR)
+const createIcon = ref(DEFAULT_ACCOUNT_ICON)
 
 // Detail / edit modal
 const isDetailOpen = ref(false)
 const selectedAccount = ref<any | null>(null)
 const editLoading = ref(false)
-const baselineLoading = ref(false)
 const deleteLoading = ref(false)
-const editTab = ref('details')
 const editName = ref('')
 const editInstitution = ref('')
-const editBaseline = ref('')
 const editCardNumber = ref('')
 const editIsCreditCard = ref(false)
 const editIsDefaultForExpenses = ref(false)
 const editIsDefaultForIncome = ref(false)
-
-const editTabItems = [
-  { label: 'Account', value: 'details', slot: 'details', icon: 'heroicons-solid:pencil-square' },
-  { label: 'Baseline', value: 'baseline', slot: 'baseline', icon: 'heroicons-solid:banknotes' },
+const editColor = ref(DEFAULT_ACCOUNT_COLOR)
+const editIcon = ref(DEFAULT_ACCOUNT_ICON)
+const iconOptions = [
+  { value: DEFAULT_ACCOUNT_ICON, label: 'Bank' },
+  { value: 'heroicons-solid:credit-card', label: 'Credit card' },
 ]
-
-const accountMenuItems = [[
-  {
-    label: 'Add account',
-    icon: 'heroicons-solid:plus-circle',
-    onSelect: () => openCreate()
-  }
-]]
 
 // --- Create ---
 function openCreate() {
   createName.value = ''
   createInstitution.value = ''
-  createBaseline.value = ''
   createCardNumber.value = ''
-  createIsCreditCard.value = false
   createIsDefaultForExpenses.value = false
   createIsDefaultForIncome.value = false
+  createColor.value = DEFAULT_ACCOUNT_COLOR
+  createIcon.value = DEFAULT_ACCOUNT_ICON
   isCreateOpen.value = true
 }
 
@@ -89,7 +81,7 @@ async function handleCreate() {
   }
   createLoading.value = true
   try {
-    await accountsStore.addAccount(createName.value, createInstitution.value, createBaseline.value, createCardNumber.value, createIsCreditCard.value, createIsDefaultForExpenses.value, createIsDefaultForIncome.value)
+    await accountsStore.addAccount(createName.value, createInstitution.value, '0', createCardNumber.value, false, createIsDefaultForExpenses.value, createIsDefaultForIncome.value, createColor.value, createIcon.value)
     closeCreate()
   } catch (e: any) {
     alert('Error creating account: ' + (e?.message || 'Unknown error'))
@@ -101,14 +93,14 @@ async function handleCreate() {
 // --- Detail / edit ---
 function openDetail(account: any) {
   selectedAccount.value = account
-  editTab.value = 'details'
   editName.value = account.name ?? ''
   editInstitution.value = account.institution ?? ''
-  editBaseline.value = account.baseline_amount != null ? String(account.baseline_amount) : ''
   editCardNumber.value = account.card_number ?? ''
   editIsCreditCard.value = account.is_credit_card ?? false
   editIsDefaultForExpenses.value = account.is_default_for_expenses ?? false
   editIsDefaultForIncome.value = account.is_default_for_income ?? false
+  editColor.value = account.color ?? DEFAULT_ACCOUNT_COLOR
+  editIcon.value = resolveAccountIcon(account.icon)
   isDetailOpen.value = true
 }
 
@@ -124,7 +116,7 @@ async function handleUpdate() {
   }
   editLoading.value = true
   try {
-    const updated = await accountsStore.editAccount(selectedAccount.value.id, editName.value, editInstitution.value, editCardNumber.value, editIsCreditCard.value, editIsDefaultForExpenses.value, editIsDefaultForIncome.value)
+    const updated = await accountsStore.editAccount(selectedAccount.value.id, editName.value, editInstitution.value, editCardNumber.value, editIsCreditCard.value, editIsDefaultForExpenses.value, editIsDefaultForIncome.value, editColor.value, editIcon.value)
     selectedAccount.value = updated
     closeDetail()
   } catch (e: any) {
@@ -134,26 +126,9 @@ async function handleUpdate() {
   }
 }
 
-async function handleBaselineUpdate() {
-  if (!selectedAccount.value) return
-  baselineLoading.value = true
-  try {
-    const updated = await accountsStore.editAccountBaseline(selectedAccount.value.id, editBaseline.value)
-    if (updated) {
-      selectedAccount.value = updated
-      editBaseline.value = updated.baseline_amount != null ? String(updated.baseline_amount) : ''
-    }
-    closeDetail()
-  } catch (e: any) {
-    alert('Error updating baseline amount: ' + (e?.message || 'Unknown error'))
-  } finally {
-    baselineLoading.value = false
-  }
-}
-
 async function handleDelete() {
   if (!selectedAccount.value) return
-  if (!confirm(`Delete "${selectedAccount.value.name || selectedAccount.value.institution || 'this account'}"?`)) return
+  if (!confirm(`Delete "${accountDisplayName(selectedAccount.value, 'this account')}"?`)) return
   deleteLoading.value = true
   try {
     await accountsStore.removeAccount(selectedAccount.value.id)
@@ -193,7 +168,7 @@ const editIncomeDisabled = computed(() =>
 
 function defaultHolderName(account: any | null): string {
   if (!account) return ''
-  return account.name || account.institution || 'another account'
+  return accountDisplayName(account, 'another account')
 }
 
 // --- Helpers ---
@@ -207,19 +182,26 @@ function maskedCard(cardNumber: string | null | undefined) {
   const last4 = cardNumber.replace(/\s/g, '').slice(-4)
   return `•••• ${last4}`
 }
-const { institutionLogo, institutionIcon, institutionBgClass } = useInstitutionBranding()
+const { institutionBgClass } = useInstitutionBranding()
+
+function goBack() {
+  if (import.meta.client && window.history.length > 1) router.back()
+  else router.push('/')
+}
 </script>
 
 <template>
   <div>
-    <AppHeader title="Profile" :show-profile="false" :show-month-selector="false">
-      <template #actions>
+    <AppHeader title="Accounts" />
+
+    <UContainer class="py-6">
+    <div class="mb-4 flex items-center justify-between">
+      <UButton icon="heroicons-solid:arrow-left" color="neutral" variant="ghost" aria-label="Go back" @click="goBack" />
+      <div class="flex items-center gap-2">
         <UColorModeSwitch />
         <UButton color="neutral" variant="ghost" size="sm" icon="heroicons-solid:arrow-right-on-rectangle" aria-label="Sign out" @click="handleSignOut" />
-      </template>
-    </AppHeader>
-
-    <UContainer>
+      </div>
+    </div>
 
     <!-- Profile Header -->
     <div class="flex flex-col items-center pt-8 pb-6 mb-2">
@@ -243,20 +225,10 @@ const { institutionLogo, institutionIcon, institutionBgClass } = useInstitutionB
       <p v-if="profile?.email" class="text-sm text-gray-400 mt-0.5">{{ profile.email }}</p>
     </div>
 
-    <!-- Accounts subheading + menu -->
-    <div class="relative flex items-center justify-center mb-4">
-      <h2 class="text-2xl font-bold">Accounts</h2>
-      <div class="absolute right-0">
-        <UDropdownMenu :items="accountMenuItems" :content="{ align: 'end' }">
-          <UButton
-            color="neutral"
-            variant="ghost"
-            icon="heroicons-solid:ellipsis-vertical"
-            size="md"
-            aria-label="Accounts menu"
-          />
-        </UDropdownMenu>
-      </div>
+    <!-- Accounts subheading + action -->
+    <div class="mb-4">
+      <h2 class="text-center text-2xl font-bold">Accounts</h2>
+      <UButton class="mt-3" icon="heroicons-solid:plus" label="Add account" @click="openCreate" />
     </div>
 
     <!-- Error -->
@@ -284,18 +256,9 @@ const { institutionLogo, institutionIcon, institutionBgClass } = useInstitutionB
         @click="openDetail(account)"
       >
         <div class="flex items-center gap-4">
-          <div :class="['shrink-0 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden', institutionBgClass(account.institution)]">
-            <img
-              v-if="institutionLogo(account.institution)"
-              :src="institutionLogo(account.institution)!.src"
-              :alt="institutionLogo(account.institution)!.alt"
-              class="w-6 h-6 object-contain"
-            />
-            <UIcon v-else :name="institutionIcon(account.institution)" class="w-5 h-5 text-primary-500" />
-          </div>
+          <AccountVisual :account="account" :fallback-class="institutionBgClass(account.institution)" />
           <div class="flex-1 min-w-0">
-            <p class="font-semibold text-sm truncate">{{ account.name || account.institution || 'Unnamed Account' }}</p>
-            <p v-if="account.institution && account.name" class="text-xs truncate">{{ account.institution }}</p>
+            <p class="font-semibold text-sm truncate">{{ accountDisplayName(account, 'Unnamed Account') }}</p>
           </div>
           <div class="text-right shrink-0">
             <p v-if="account.card_number" class="text-xs text-gray-400">{{ maskedCard(account.card_number) }}</p>
@@ -318,14 +281,18 @@ const { institutionLogo, institutionIcon, institutionBgClass } = useInstitutionB
               <UFormField label="Institution">
                 <UInput v-model="createInstitution" placeholder="e.g., BMO" size="xl" />
               </UFormField>
-              <UFormField label="Baseline Amount">
-                <UInput v-model="createBaseline" placeholder="0.00" type="number" step="0.01" size="xl" />
-              </UFormField>
               <UFormField label="Card Number (last 4 or full)">
                 <UInput v-model="createCardNumber" placeholder="e.g., 1234" size="xl" />
               </UFormField>
+              <UFormField label="Colour"><BudgetsColorPicker v-model="createColor" /></UFormField>
+              <UFormField label="Icon">
+                <div class="grid grid-cols-2 gap-3">
+                  <button v-for="option in iconOptions" :key="option.value" type="button" class="flex items-center justify-center gap-2 rounded-lg border p-3" :class="createIcon === option.value ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/40' : 'border-gray-200 dark:border-gray-700'" @click="createIcon = option.value">
+                    <UIcon :name="option.value" class="size-5" /><span>{{ option.label }}</span>
+                  </button>
+                </div>
+              </UFormField>
               <div class="space-y-3 pt-1">
-                <UCheckbox v-model="createIsCreditCard" label="Credit card" />
                 <div>
                   <UCheckbox
                     v-model="createIsDefaultForExpenses"
@@ -375,15 +342,13 @@ const { institutionLogo, institutionIcon, institutionBgClass } = useInstitutionB
               icon="heroicons-solid:trash"
               size="sm"
               :loading="deleteLoading"
-              :disabled="deleteLoading || editLoading || baselineLoading"
+              :disabled="deleteLoading || editLoading"
               @click="handleDelete"
               aria-label="Delete account"
             />
           </div>
 
-          <UTabs v-model="editTab" color="primary" :items="editTabItems">
-            <template #details>
-              <div class="space-y-5 pt-4">
+          <div class="space-y-5 pt-4">
                 <UFormField label="Account Name">
                   <UInput v-model="editName" placeholder="e.g., Chequing" size="xl" />
                 </UFormField>
@@ -393,8 +358,15 @@ const { institutionLogo, institutionIcon, institutionBgClass } = useInstitutionB
                 <UFormField label="Card Number (last 4 or full)">
                   <UInput v-model="editCardNumber" placeholder="e.g., 1234" size="xl" />
                 </UFormField>
+                <UFormField label="Colour"><BudgetsColorPicker v-model="editColor" /></UFormField>
+                <UFormField label="Icon">
+                  <div class="grid grid-cols-2 gap-3">
+                    <button v-for="option in iconOptions" :key="option.value" type="button" class="flex items-center justify-center gap-2 rounded-lg border p-3" :class="editIcon === option.value ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/40' : 'border-gray-200 dark:border-gray-700'" @click="editIcon = option.value">
+                      <UIcon :name="option.value" class="size-5" /><span>{{ option.label }}</span>
+                    </button>
+                  </div>
+                </UFormField>
                 <div class="space-y-3">
-                  <UCheckbox v-model="editIsCreditCard" label="Credit card" />
                   <div>
                     <UCheckbox
                       v-model="editIsDefaultForExpenses"
@@ -418,37 +390,14 @@ const { institutionLogo, institutionIcon, institutionBgClass } = useInstitutionB
                 </div>
 
                 <div class="flex gap-3 pt-2">
-                  <UButton color="primary" class="flex-1" size="lg" :loading="editLoading" :disabled="editLoading || deleteLoading || baselineLoading" @click="handleUpdate">
+                  <UButton color="primary" class="flex-1" size="lg" :loading="editLoading" :disabled="editLoading || deleteLoading" @click="handleUpdate">
                     Save Changes
                   </UButton>
-                  <UButton color="neutral" variant="outline" class="flex-1" size="lg" :disabled="editLoading || deleteLoading || baselineLoading" @click="closeDetail">
+                  <UButton color="neutral" variant="outline" class="flex-1" size="lg" :disabled="editLoading || deleteLoading" @click="closeDetail">
                     Cancel
                   </UButton>
                 </div>
-              </div>
-            </template>
-
-            <template #baseline>
-              <div class="space-y-5 pt-4">
-                <UFormField label="Baseline Amount">
-                  <UInput v-model="editBaseline" placeholder="0.00" type="number" step="0.01" size="xl" />
-                </UFormField>
-
-                <p class="text-sm text-gray-400">
-                  This updates only the baseline amount stored for this account.
-                </p>
-
-                <div class="flex gap-3 pt-2">
-                  <UButton color="primary" class="flex-1" size="lg" :loading="baselineLoading" :disabled="baselineLoading || deleteLoading || editLoading" @click="handleBaselineUpdate">
-                    Update Baseline
-                  </UButton>
-                  <UButton color="neutral" variant="outline" class="flex-1" size="lg" :disabled="baselineLoading || deleteLoading || editLoading" @click="closeDetail">
-                    Cancel
-                  </UButton>
-                </div>
-              </div>
-            </template>
-          </UTabs>
+          </div>
         </div>
       </template>
     </UModal>

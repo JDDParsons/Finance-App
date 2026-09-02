@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
+import { accountDisplayName } from '../../../utils/accountAppearance'
 
 const store = useFinanceStore()
-const accountMap = computed(() => new Map<string, string>(
-  store.accounts.map((account: any) => [account.id, account.name || account.institution || 'Account'])
+const accountMap = computed(() => new Map<string, any>(
+  store.accounts.map((account: any) => [account.id, account])
 ))
+const accountName = (id: string) => {
+  const account = accountMap.value.get(id)
+  return accountDisplayName(account, 'Unknown account')
+}
 
 const sections = computed(() => {
   const grouped = new Map<string, any[]>()
@@ -69,7 +74,7 @@ async function deleteSelectedTransfer() {
         class="cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-900"
         role="button"
         tabindex="0"
-        :aria-label="`Edit transfer from ${accountMap.get(transfer.account_id) ?? 'unknown account'} to ${accountMap.get(transfer.destination_account_id) ?? 'unknown account'}`"
+        :aria-label="`Edit transfer from ${accountName(transfer.account_id)} to ${accountName(transfer.destination_account_id)}`"
         @click="openTransfer(transfer)"
         @keydown.enter="openTransfer(transfer)"
         @keydown.space.prevent="openTransfer(transfer)"
@@ -79,12 +84,18 @@ async function deleteSelectedTransfer() {
             <UIcon name="heroicons:arrows-right-left" class="size-5" />
           </div>
           <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-1 text-sm font-medium">
-              <span class="truncate">{{ accountMap.get(transfer.account_id) ?? 'Unknown account' }}</span>
-              <UIcon name="heroicons:arrow-right" class="size-4 shrink-0 text-gray-400" />
-              <span class="truncate">{{ accountMap.get(transfer.destination_account_id) ?? 'Unknown account' }}</span>
+            <div class="space-y-1 text-sm font-medium">
+              <div class="flex items-start gap-1.5">
+                <span class="w-8 shrink-0 text-xs font-normal text-gray-400">From</span>
+                <AccountVisual :account="accountMap.get(transfer.account_id)" size="sm" />
+                <span class="min-w-0 break-words">{{ accountName(transfer.account_id) }}</span>
+              </div>
+              <div class="flex items-start gap-1.5">
+                <span class="w-8 shrink-0 text-xs font-normal text-gray-400">To</span>
+                <AccountVisual :account="accountMap.get(transfer.destination_account_id)" size="sm" />
+                <span class="min-w-0 break-words">{{ accountName(transfer.destination_account_id) }}</span>
+              </div>
             </div>
-            <p class="mt-0.5 text-xs text-gray-400">Transfer</p>
           </div>
           <p class="shrink-0 font-semibold text-gray-900 dark:text-white">{{ formatCurrency(transfer.amount) }}</p>
         </div>

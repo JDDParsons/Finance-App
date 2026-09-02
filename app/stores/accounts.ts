@@ -36,7 +36,9 @@ export const useAccountsStore = defineStore('accounts', () => {
     cardNumber: string,
     isCreditCard: boolean,
     isDefaultForExpenses: boolean,
-    isDefaultForIncome: boolean
+    isDefaultForIncome: boolean,
+    color: string,
+    icon: string
   ) {
     const row = await createAccount(
       name,
@@ -45,7 +47,9 @@ export const useAccountsStore = defineStore('accounts', () => {
       cardNumber,
       isCreditCard,
       isDefaultForExpenses,
-      isDefaultForIncome
+      isDefaultForIncome,
+      color,
+      icon
     )
     accounts.value = [row, ...accounts.value]
     initialized.value = true
@@ -59,7 +63,9 @@ export const useAccountsStore = defineStore('accounts', () => {
     cardNumber: string,
     isCreditCard: boolean,
     isDefaultForExpenses: boolean,
-    isDefaultForIncome: boolean
+    isDefaultForIncome: boolean,
+    color: string,
+    icon: string
   ) {
     const row = await updateAccount(
       id,
@@ -68,7 +74,9 @@ export const useAccountsStore = defineStore('accounts', () => {
       cardNumber,
       isCreditCard,
       isDefaultForExpenses,
-      isDefaultForIncome
+      isDefaultForIncome,
+      color,
+      icon
     )
     accounts.value = accounts.value.map(a => (a.id === id ? row : a))
     return row

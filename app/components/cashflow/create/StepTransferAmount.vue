@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
+import { accountDisplayName } from '../../../../utils/accountAppearance'
 
 const props = defineProps<{
   fromAccountId: string
@@ -13,9 +14,13 @@ const date = defineModel<string>('date', { default: '' })
 const emit = defineEmits<{ changeAccounts: []; submit: [] }>()
 const store = useFinanceStore()
 
+function account(id: string) {
+  return store.accounts.find((item: any) => item.id === id) ?? null
+}
+
 function accountName(id: string) {
-  const account = store.accounts.find((item: any) => item.id === id)
-  return account?.name || account?.institution || 'Account'
+  const item = account(id)
+  return accountDisplayName(item)
 }
 
 const displayAmount = computed(() => new Intl.NumberFormat('en-US', {
@@ -43,8 +48,10 @@ const displayAmount = computed(() => new Intl.NumberFormat('en-US', {
           aria-label="Change transfer accounts"
           @click="emit('changeAccounts')"
         >
+          <AccountVisual :account="account(props.fromAccountId)" size="sm" />
           <span class="max-w-28 truncate">{{ accountName(props.fromAccountId) }}</span>
           <UIcon name="heroicons:arrow-right" class="size-4 shrink-0 text-primary-500" />
+          <AccountVisual :account="account(props.toAccountId)" size="sm" />
           <span class="max-w-28 truncate">{{ accountName(props.toAccountId) }}</span>
         </button>
         <DateTagPicker v-model="date" />

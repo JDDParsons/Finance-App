@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
 import { useBudgetIcon } from '~/composables/useBudgetIcon'
+import { accountDisplayName } from '../../../utils/accountAppearance'
 
 const store = useFinanceStore()
 const { budgetIcon } = useBudgetIcon()
@@ -18,7 +19,7 @@ const budgetIconMap = computed(() =>
 )
 
 const accountMap = computed(() =>
-  new Map<string, string>(store.accounts.map((a: any) => [a.id, a.name || a.institution || 'Account']))
+  new Map<string, string>(store.accounts.map((a: any) => [a.id, accountDisplayName(a)]))
 )
 
 const accountInstitutionMap = computed(() =>

@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFinanceStore } from '~/stores/finance'
+import { accountDisplayName } from '../../../utils/accountAppearance'
 
 const props = defineProps<{
     budgetId: string
@@ -12,7 +13,7 @@ const props = defineProps<{
 const store = useFinanceStore()
 
 const accountMap = computed(() =>
-    new Map<string, string>(store.accounts.map((a: any) => [a.id, a.name || a.institution || 'Account']))
+    new Map<string, string>(store.accounts.map((a: any) => [a.id, accountDisplayName(a)]))
 )
 
 const accountInstitutionMap = computed(() =>

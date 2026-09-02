@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { normalizeAccountIcon } from '../../../utils/accountAppearance'
 
 function getClient(supabase: SupabaseClient) {
   return supabase.schema('finance-app')
@@ -111,7 +112,9 @@ export async function createAccount(
   cardNumber: string,
   isCreditCard: boolean,
   isDefaultForExpenses: boolean,
-  isDefaultForIncome: boolean
+  isDefaultForIncome: boolean,
+  color: string,
+  icon: string
 ) {
   const parsed = baselineAmount ? parseFloat(baselineAmount) : null
   const { data, error } = await getClient(supabase)
@@ -123,6 +126,8 @@ export async function createAccount(
       is_credit_card: isCreditCard,
       is_default_for_expenses: isDefaultForExpenses,
       is_default_for_income: isDefaultForIncome,
+      color: color || null,
+      icon: normalizeAccountIcon(icon),
       user_id: userId,
       household_id: householdId,
     })
@@ -147,7 +152,9 @@ export async function updateAccount(
   cardNumber: string,
   isCreditCard: boolean,
   isDefaultForExpenses: boolean,
-  isDefaultForIncome: boolean
+  isDefaultForIncome: boolean,
+  color: string,
+  icon: string
 ) {
   const { data, error } = await getClient(supabase)
     .from('Account')
@@ -158,6 +165,8 @@ export async function updateAccount(
       is_credit_card: isCreditCard,
       is_default_for_expenses: isDefaultForExpenses,
       is_default_for_income: isDefaultForIncome,
+      color: color || null,
+      icon: normalizeAccountIcon(icon),
     })
     .eq('id', id)
     .select()
