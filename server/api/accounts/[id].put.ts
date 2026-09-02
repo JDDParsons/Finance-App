@@ -3,7 +3,7 @@ export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')!
   const body = await readBody(event)
 
-  const { name, institution, cardNumber, isCreditCard, isDefaultForExpenses, isDefaultForIncome } = body
+  const { name, institution, cardNumber, isCreditCard, isDefaultForExpenses, isDefaultForIncome, color, icon } = body
 
-  return updateAccount(supabase, id, name, institution, cardNumber, isCreditCard, isDefaultForExpenses, isDefaultForIncome)
+  return updateAccount(supabase, id, name, institution, cardNumber, isCreditCard, isDefaultForExpenses, isDefaultForIncome, color, icon)
 })

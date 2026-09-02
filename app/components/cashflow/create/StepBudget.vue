@@ -11,10 +11,6 @@ const transactionType = computed({
 const visibleBudgets = computed(() => transactionType.value === 'income' ? store.incomeBudgets : store.budgets)
 const fromAccountId = ref<string | undefined>()
 const toAccountId = ref<string | undefined>()
-const accountOptions = computed(() => store.accounts.map((account: any) => ({
-  label: account.name || account.institution || 'Account',
-  value: account.id,
-})))
 const canContinueTransfer = computed(() =>
   !!fromAccountId.value && !!toAccountId.value && fromAccountId.value !== toAccountId.value
 )
@@ -52,13 +48,13 @@ function continueTransfer() {
         />
         <template v-else>
           <UFormField label="Transfer from" required>
-            <USelect v-model="fromAccountId" :items="accountOptions" placeholder="Choose source account" size="xl" class="w-full" />
+            <AccountSelect v-model="fromAccountId" :accounts="store.accounts" placeholder="Choose source account" />
           </UFormField>
           <div class="flex justify-center text-gray-400">
             <UIcon name="heroicons:arrow-down" class="size-6" />
           </div>
           <UFormField label="Transfer to" required>
-            <USelect v-model="toAccountId" :items="accountOptions" placeholder="Choose destination account" size="xl" class="w-full" />
+            <AccountSelect v-model="toAccountId" :accounts="store.accounts" placeholder="Choose destination account" />
           </UFormField>
           <UAlert
             v-if="fromAccountId && fromAccountId === toAccountId"

@@ -12,11 +12,13 @@ export function useAccountsApi() {
     cardNumber: string,
     isCreditCard: boolean,
     isDefaultForExpenses: boolean,
-    isDefaultForIncome: boolean
+    isDefaultForIncome: boolean,
+    color: string,
+    icon: string
   ) {
     return apiFetch<any>('/api/accounts', {
       method: 'POST',
-      body: { name, institution, baselineAmount, cardNumber, isCreditCard, isDefaultForExpenses, isDefaultForIncome },
+      body: { name, institution, baselineAmount, cardNumber, isCreditCard, isDefaultForExpenses, isDefaultForIncome, color, icon },
     })
   }
 
@@ -27,11 +29,13 @@ export function useAccountsApi() {
     cardNumber: string,
     isCreditCard: boolean,
     isDefaultForExpenses: boolean,
-    isDefaultForIncome: boolean
+    isDefaultForIncome: boolean,
+    color: string,
+    icon: string
   ) {
     return apiFetch<any>(`/api/accounts/${id}`, {
       method: 'PUT',
-      body: { name, institution, cardNumber, isCreditCard, isDefaultForExpenses, isDefaultForIncome },
+      body: { name, institution, cardNumber, isCreditCard, isDefaultForExpenses, isDefaultForIncome, color, icon },
     })
   }
 

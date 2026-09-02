@@ -43,8 +43,13 @@ const budgetIconMap = computed(() =>
 )
 
 const accountMap = computed(() =>
-  new Map<string, string>(store.accounts.map((a: any) => [a.id, a.name || a.institution || 'Account']))
+  new Map<string, any>(store.accounts.map((a: any) => [a.id, a]))
 )
+
+function accountName(id: string | null | undefined) {
+  const account = id ? accountMap.value.get(id) : null
+  return account?.name || account?.institution || 'Unknown'
+}
 
 // Combine expenses, income, and transfers into one sorted, tagged list
 const transactions = computed(() => {
@@ -274,12 +279,18 @@ async function handleModalDelete() {
       <template #account-cell="{ row }">
         <template v-if="!isDateGroup(row.original)">
           <span v-if="row.original.type === 'transfer'" class="inline-flex items-center gap-1">
-            {{ row.original.account_id ? accountMap.get(row.original.account_id) ?? 'Unknown' : 'Unknown' }}
+            <AccountVisual :account="accountMap.get(row.original.account_id!)" size="sm" />
+            {{ accountName(row.original.account_id) }}
             <UIcon name="heroicons:arrow-right" class="size-4 text-gray-400" />
-            {{ row.original.destination_account_id ? accountMap.get(row.original.destination_account_id) ?? 'Unknown' : 'Unknown' }}
+            <AccountVisual :account="accountMap.get(row.original.destination_account_id!)" size="sm" />
+            {{ accountName(row.original.destination_account_id) }}
           </span>
           <template v-else>
-            {{ row.original.account_id ? accountMap.get(row.original.account_id) ?? '-' : '-' }}
+            <span v-if="row.original.account_id" class="inline-flex items-center gap-1">
+              <AccountVisual :account="accountMap.get(row.original.account_id)" size="sm" />
+              {{ accountName(row.original.account_id) }}
+            </span>
+            <span v-else>-</span>
           </template>
         </template>
       </template>

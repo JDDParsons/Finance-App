@@ -3,7 +3,7 @@ export default defineEventHandler(async (event) => {
   const householdId = await resolveHouseholdId(supabase, user.id)
   const body = await readBody(event)
 
-  const { name, institution, baselineAmount, cardNumber, isCreditCard, isDefaultForExpenses, isDefaultForIncome } = body
+  const { name, institution, baselineAmount, cardNumber, isCreditCard, isDefaultForExpenses, isDefaultForIncome, color, icon } = body
 
-  return createAccount(supabase, user.id, householdId, name, institution, baselineAmount, cardNumber, isCreditCard, isDefaultForExpenses, isDefaultForIncome)
+  return createAccount(supabase, user.id, householdId, name, institution, baselineAmount, cardNumber, isCreditCard, isDefaultForExpenses, isDefaultForIncome, color, icon)
 })

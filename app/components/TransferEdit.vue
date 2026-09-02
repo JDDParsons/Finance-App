@@ -18,11 +18,6 @@ const selectedToAccountId = ref(props.toAccountId)
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-const accountOptions = computed(() => store.accounts.map((account: any) => ({
-  label: account.name || account.institution || 'Account',
-  value: account.id,
-})))
-
 function validateForm() {
   if (!selectedFromAccountId.value || !selectedToAccountId.value) return 'Select both accounts.'
   if (selectedFromAccountId.value === selectedToAccountId.value) return 'Source and destination accounts must be different.'
@@ -64,11 +59,11 @@ async function handleUpdate() {
 
   <div class="space-y-6">
     <UFormField label="Transfer from" required>
-      <USelect v-model="selectedFromAccountId" :items="accountOptions" size="xl" color="info" class="w-full" />
+      <AccountSelect v-model="selectedFromAccountId" :accounts="store.accounts" color="info" />
     </UFormField>
 
     <UFormField label="Transfer to" required>
-      <USelect v-model="selectedToAccountId" :items="accountOptions" size="xl" color="info" class="w-full" />
+      <AccountSelect v-model="selectedToAccountId" :accounts="store.accounts" color="info" />
     </UFormField>
 
     <UAlert
