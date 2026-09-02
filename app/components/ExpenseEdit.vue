@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
 import { getMissingBudgetPeriodMessage } from '~/utils/budgetErrors'
+import { accountDisplayName } from '../../utils/accountAppearance'
 
 const props = defineProps<{
     expenseId: string
@@ -56,7 +57,7 @@ const selectedAccountId = ref<string>(immutableAccountId.value ?? '__none__')
 const accountOptions = computed(() => [
     { label: 'No account', value: '__none__' },
     ...store.accounts.map((a: any) => ({
-        label: a.name || a.institution || 'Account',
+        label: accountDisplayName(a),
         value: a.id,
     }))
 ])

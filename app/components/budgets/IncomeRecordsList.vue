@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { accountDisplayName } from '../../../utils/accountAppearance'
+
 const props = defineProps<{ budgetId: string; records: any[] }>()
 const emit = defineEmits<{ update: [] }>()
 const store = useFinanceStore()
 const selected = ref<any>(null)
 const open = ref(false)
-const accountMap = computed(() => new Map(store.accounts.map((a: any) => [a.id, a.name || a.institution || 'Account'])))
+const accountMap = computed(() => new Map(store.accounts.map((a: any) => [a.id, accountDisplayName(a)])))
 
 function edit(id: string) {
   selected.value = props.records.find(row => row.id === id) ?? null

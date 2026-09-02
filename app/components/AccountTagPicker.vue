@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useInstitutionBranding } from '~/composables/useInstitutionBranding'
+import { accountDisplayName } from '../../utils/accountAppearance'
 
 interface AccountLike {
   id: string
@@ -44,7 +45,7 @@ function selectAccount(accountId: string) {
     <button
       type="button"
       class="inline-flex cursor-pointer items-center justify-center rounded-full border border-gray-200 px-2 py-1 text-sm text-gray-600 transition-colors hover:border-gray-300 dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-600"
-      :aria-label="selectedAccount ? `Change account to ${selectedAccount.name || selectedAccount.institution || 'account'}` : 'Choose account'"
+      :aria-label="selectedAccount ? `Change account to ${accountDisplayName(selectedAccount)}` : 'Choose account'"
     >
       <AccountVisual :account="selectedAccount" :fallback-class="accountBgClass(selectedAccount)" size="sm" class="size-7" />
     </button>
@@ -63,7 +64,7 @@ function selectAccount(accountId: string) {
             @click="selectAccount(account.id)"
           >
             <AccountVisual :account="account" :fallback-class="accountBgClass(account)" size="sm" />
-            <span class="truncate">{{ account.name || account.institution || 'Account' }}</span>
+            <span class="truncate">{{ accountDisplayName(account) }}</span>
           </button>
         </div>
       </div>

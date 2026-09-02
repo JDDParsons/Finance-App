@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
 import { useBudgetIcon } from '~/composables/useBudgetIcon'
+import { accountDisplayName } from '../../../utils/accountAppearance'
 
 type TransactionType = 'expense' | 'income' | 'transfer'
 
@@ -48,7 +49,7 @@ const accountMap = computed(() =>
 
 function accountName(id: string | null | undefined) {
   const account = id ? accountMap.value.get(id) : null
-  return account?.name || account?.institution || 'Unknown'
+  return accountDisplayName(account, 'Unknown')
 }
 
 // Combine expenses, income, and transfers into one sorted, tagged list

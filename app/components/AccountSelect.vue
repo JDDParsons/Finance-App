@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { accountDisplayName } from '../../utils/accountAppearance'
 const props = withDefaults(defineProps<{
   accounts: any[]
   placeholder?: string
@@ -7,7 +8,7 @@ const props = withDefaults(defineProps<{
 
 const model = defineModel<string | undefined>()
 const items = computed(() => props.accounts.map(account => ({
-  label: account.name || account.institution || 'Account',
+  label: accountDisplayName(account),
   value: account.id,
   account,
 })))

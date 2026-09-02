@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
+import { accountDisplayName } from '../../../../utils/accountAppearance'
 
 const props = defineProps<{
   fromAccountId: string
@@ -19,7 +20,7 @@ function account(id: string) {
 
 function accountName(id: string) {
   const item = account(id)
-  return item?.name || item?.institution || 'Account'
+  return accountDisplayName(item)
 }
 
 const displayAmount = computed(() => new Intl.NumberFormat('en-US', {

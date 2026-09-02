@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
+import { accountDisplayName } from '../../../utils/accountAppearance'
 
 const store = useFinanceStore()
 const incomeRows = computed(() => store.income)
 
 const accountMap = computed(() =>
-  new Map<string, string>(store.accounts.map((a: any) => [a.id, a.name || a.institution || 'Account']))
+  new Map<string, string>(store.accounts.map((a: any) => [a.id, accountDisplayName(a)]))
 )
 const budgetMap = computed(() => new Map(store.incomeBudgets.map((budget: any) => [budget.id, budget.name])))
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
+import { accountDisplayName } from '../../../utils/accountAppearance'
 
 const store = useFinanceStore()
 const accountMap = computed(() => new Map<string, any>(
@@ -7,7 +8,7 @@ const accountMap = computed(() => new Map<string, any>(
 ))
 const accountName = (id: string) => {
   const account = accountMap.value.get(id)
-  return account?.name || account?.institution || 'Unknown account'
+  return accountDisplayName(account, 'Unknown account')
 }
 
 const sections = computed(() => {

@@ -4,7 +4,7 @@ import { useAccountsStore } from '~/stores/accounts'
 import { useProfileStore } from '~/stores/profile'
 import { useSignOut } from '~/composables/useSignOut'
 import { useInstitutionBranding } from '~/composables/useInstitutionBranding'
-import { DEFAULT_ACCOUNT_COLOR, DEFAULT_ACCOUNT_ICON, resolveAccountIcon } from '../../../utils/accountAppearance'
+import { accountDisplayName, DEFAULT_ACCOUNT_COLOR, DEFAULT_ACCOUNT_ICON, resolveAccountIcon } from '../../../utils/accountAppearance'
 
 useHead({ title: 'Accounts | R&J Finance' })
 
@@ -128,7 +128,7 @@ async function handleUpdate() {
 
 async function handleDelete() {
   if (!selectedAccount.value) return
-  if (!confirm(`Delete "${selectedAccount.value.name || selectedAccount.value.institution || 'this account'}"?`)) return
+  if (!confirm(`Delete "${accountDisplayName(selectedAccount.value, 'this account')}"?`)) return
   deleteLoading.value = true
   try {
     await accountsStore.removeAccount(selectedAccount.value.id)
@@ -168,7 +168,7 @@ const editIncomeDisabled = computed(() =>
 
 function defaultHolderName(account: any | null): string {
   if (!account) return ''
-  return account.name || account.institution || 'another account'
+  return accountDisplayName(account, 'another account')
 }
 
 // --- Helpers ---
@@ -258,8 +258,7 @@ function goBack() {
         <div class="flex items-center gap-4">
           <AccountVisual :account="account" :fallback-class="institutionBgClass(account.institution)" />
           <div class="flex-1 min-w-0">
-            <p class="font-semibold text-sm truncate">{{ account.name || account.institution || 'Unnamed Account' }}</p>
-            <p v-if="account.institution && account.name" class="text-xs truncate">{{ account.institution }}</p>
+            <p class="font-semibold text-sm truncate">{{ accountDisplayName(account, 'Unnamed Account') }}</p>
           </div>
           <div class="text-right shrink-0">
             <p v-if="account.card_number" class="text-xs text-gray-400">{{ maskedCard(account.card_number) }}</p>
