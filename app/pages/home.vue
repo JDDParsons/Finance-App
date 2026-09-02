@@ -5,6 +5,8 @@ import { useStatusMessage } from '~/composables/useStatusMessage'
 // import MonthlyExpensesChart from '~/components/home/MonthlyExpensesChart.vue'
 import CumulativeSpendingChart from '~/components/home/CumulativeSpendingChart.vue'
 import BudgetUsageRadarChart from '~/components/home/BudgetUsageRadarChart.vue'
+import { formatDashboardPeriodLabel } from '../../utils/dateFormat'
+import { resolveDonutIncome } from '../../utils/homeChart'
 
 useHead({ title: 'Home | R&J Finance' })
 import { Doughnut } from 'vue-chartjs'
@@ -64,22 +66,17 @@ const totalBudgetedIncome = computed(() =>
   store.incomeBudgets.reduce((sum, budget) => sum + (Number(budget.currentPeriod?.amount) || 0), 0)
 )
 
-const { statusMessage, isCurrentMonth, rawRemaining, budgetProjectedBalance } = useStatusMessage(totalIncome, totalExpenses)
+const { statusMessage, isCurrentMonth } = useStatusMessage(totalIncome, totalExpenses)
 
 const hasData = computed(() => store.income.length > 0 || store.budgetHits.length > 0 || store.incomeBudgets.length > 0)
 
 const remaining = computed(() => Math.max(totalIncome.value - totalExpenses.value, 0))
-const chartRemaining = computed(() => Math.max(totalBudgetedIncome.value - totalExpenses.value, 0))
-
-// ── month-over-month ─────────────────────────────────────────────────────────
-const prevMonthTotalExpenses = computed(() =>
-  store.prevMonthBudgetHits.reduce((sum, h) => sum + (Number(h.amount) || 0), 0)
-)
-
-const expenseMoMChange = computed(() => {
-  if (prevMonthTotalExpenses.value === 0) return null
-  return ((totalExpenses.value - prevMonthTotalExpenses.value) / prevMonthTotalExpenses.value) * 100
-})
+const donutIncome = computed(() => resolveDonutIncome({
+  isCurrentMonth: isCurrentMonth.value,
+  actualIncome: totalIncome.value,
+  budgetedIncome: totalBudgetedIncome.value,
+}))
+const chartRemaining = computed(() => Math.max(donutIncome.value.amount - totalExpenses.value, 0))
 
 // ── daily average & projection ───────────────────────────────────────────────
 const daysElapsed = computed(() => {
@@ -116,7 +113,11 @@ const dailyBudgetedIncome = computed(() =>
 )
 
 const today = new Date()
-const todayDay = today.getDate()
+const periodLabel = computed(() => formatDashboardPeriodLabel(
+  store.selectedMonth.year,
+  store.selectedMonth.month,
+  today,
+))
 const todayDateKey = [
   today.getFullYear(),
   String(today.getMonth() + 1).padStart(2, '0'),
@@ -145,7 +146,7 @@ const projectedBalance = computed(() => {
 
 // ── gauge needle ─────────────────────────────────────────────────────────────
 const needleAngle = computed(() => {
-  const ratio = Math.min(totalExpenses.value / Math.max(totalBudgetedIncome.value, 1), 1)
+  const ratio = Math.min(totalExpenses.value / Math.max(donutIncome.value.amount, 1), 1)
   return -90 + ratio * 180
 })
 
@@ -162,7 +163,10 @@ function toggleExpenseFromTotal(expenseId) {
   excludedExpenseIds.value = [...excludedExpenseIds.value, expenseId]
 }
 
-const chartColors = ref({ remaining: '#22c55e' })
+const chartColors = ref({
+  expenses: '#f59e0b',
+  remaining: '#22c55e',
+})
 const NO_BUDGET_COLOR = '#9CA3AF'
 
 const FALLBACK_PALETTE = [
@@ -173,7 +177,9 @@ const FALLBACK_PALETTE = [
 function resolveChartColors() {
   const style = getComputedStyle(document.documentElement)
   const primary = style.getPropertyValue('--ui-primary').trim()
+  const warning = style.getPropertyValue('--ui-warning').trim()
   if (primary && primary.startsWith('#')) chartColors.value.remaining = primary
+  if (warning && warning.startsWith('#')) chartColors.value.expenses = warning
 }
 
 const chartData = computed(() => {
@@ -194,8 +200,6 @@ const chartData = computed(() => {
   const labels = []
   const data = []
   const backgroundColors = []
-  const borderColors = []
-  const borderWidths = []
 
   for (const [budgetId, total] of sorted) {
     const budget = budgetId !== '__none__' ? store.budgets.find(b => b.id === budgetId) : null
@@ -203,13 +207,9 @@ const chartData = computed(() => {
     data.push(total)
     if (budgetId === '__none__') {
       backgroundColors.push(`${NO_BUDGET_COLOR}60`)
-      borderColors.push(NO_BUDGET_COLOR)
-      borderWidths.push(1)
     } else {
       const color = budget?.color ?? FALLBACK_PALETTE[fallbackIdx++ % FALLBACK_PALETTE.length]
       backgroundColors.push(`${color}60`)
-      borderColors.push(color)
-      borderWidths.push(1)
     }
   }
 
@@ -217,17 +217,26 @@ const chartData = computed(() => {
   labels.push('Remaining')
   data.push(chartRemaining.value)
   backgroundColors.push(`${chartColors.value.remaining}99`)
-  borderColors.push(chartColors.value.remaining)
-  borderWidths.push(1)
 
   return {
     labels,
-    datasets: [{
-      backgroundColor: backgroundColors,
-      borderColor: borderColors,
-      borderWidth: borderWidths,
-      data,
-    }],
+    datasets: [
+      {
+        categoryLabels: ['Expenses', 'Remaining'],
+        backgroundColor: [
+          `${chartColors.value.expenses}99`,
+          `${chartColors.value.remaining}99`,
+        ],
+        borderWidth: 0,
+        data: [totalExpenses.value, chartRemaining.value],
+      },
+      {
+        categoryLabels: labels,
+        backgroundColor: backgroundColors,
+        borderWidth: 0,
+        data,
+      },
+    ],
   }
 })
 
@@ -244,10 +253,42 @@ const glowPlugin = {
   },
 }
 
+let activeDonutTooltip = null
+
+function toggleDonutTooltip(event, elements, chart) {
+  const activeElement = elements[0] ?? chart.tooltip?.getActiveElements()?.[0]
+  if (!activeElement) return
+
+  const key = `${activeElement.datasetIndex}:${activeElement.index}`
+  const position = { x: event.x ?? 0, y: event.y ?? 0 }
+
+  if (activeDonutTooltip === key) {
+    activeDonutTooltip = null
+    // Chart.js also handles click events internally. Clear after that handler
+    // finishes so it cannot immediately restore the tooltip we just closed.
+    setTimeout(() => {
+      chart.tooltip?.setActiveElements([], position)
+      chart.setActiveElements([])
+      chart.update('none')
+    }, 0)
+    return
+  }
+
+  activeDonutTooltip = key
+  const selectedElement = [{
+    datasetIndex: activeElement.datasetIndex,
+    index: activeElement.index,
+  }]
+  chart.tooltip?.setActiveElements(selectedElement, position)
+  chart.setActiveElements(selectedElement)
+  chart.update()
+}
+
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  cutout: '90%',
+  onClick: toggleDonutTooltip,
+  cutout: '78%',
   circumference: 180,
   rotation: -90,
   radius:'90%',
@@ -261,6 +302,10 @@ const chartOptions = {
     },
     tooltip: {
       callbacks: {
+        title: (items) => {
+          const item = items[0]
+          return item?.dataset.categoryLabels?.[item.dataIndex] ?? ''
+        },
         label: (ctx) => {
           const value = ctx.parsed
           return ` $${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -268,6 +313,10 @@ const chartOptions = {
       },
     },
   },
+}
+
+const compactCardUi = {
+  body: 'p-3 sm:p-4',
 }
 </script>
 
@@ -282,10 +331,10 @@ const chartOptions = {
           :class="{ 'opacity-40 pointer-events-none': store.refreshing }"
         >
         <div class="space-y-2">
-            <div class="grid grid-cols-2 gap-4 pb-20 pt-4 lg:grid-cols-3 lg:grid-rows-[auto_1fr] lg:pb-6">
-                <UCard class="col-span-2 shadow lg:col-span-1">
+            <div class="grid grid-cols-2 gap-3 pb-20 pt-3 lg:grid-cols-3 lg:grid-rows-[auto_1fr] lg:pb-6">
+                <UCard class="col-span-2 shadow lg:col-span-1" :ui="compactCardUi">
                     <div class="text-center">
-                        <p class="text-2xl font-semibold">Day {{ todayDay }}</p>
+                        <p class="text-2xl font-semibold">{{ periodLabel }}</p>
                         <p class="mt-2 text-sm font-semibold">{{ statusMessage.headline }}</p>
                         <p class="mt-0.5 text-sm text-muted">{{ statusMessage.subtitle }}</p>
                     </div>
@@ -293,6 +342,7 @@ const chartOptions = {
 
                 <UCard
                     class="shadow"
+                    :ui="compactCardUi"
                 >
                     <div class="text-center">
                         <p class="font-semibold text-warning">Spending</p>
@@ -313,6 +363,7 @@ const chartOptions = {
 
                 <UCard
                     class="shadow"
+                    :ui="compactCardUi"
                 >
                     <div class="text-center">
                         <p class="font-semibold text-green-500">Earning</p>
@@ -331,41 +382,44 @@ const chartOptions = {
                     </div>
                 </UCard>
 
-                <UCard class="col-span-2 shadow lg:col-span-1">
-                    <div class="mb-2 text-center">
-                        <p class="text-xs text-gray-400">Budgeted income</p>
-                        <p class="font-semibold">${{ totalBudgetedIncome.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
-                    </div>
+                <UCard class="col-span-2 shadow lg:col-span-1" :ui="compactCardUi">
+                    <h3 class="text-center font-semibold">Total expenses and income</h3>
+                    <h4 class="text-center text-sm">Track your financial well-being this month</h4>
 
-                    <div v-if="store.loading" class="mx-auto h-[200px] w-full max-w-sm lg:h-[300px]">
+                    <div v-if="store.loading" class="mx-auto h-[200px] w-full max-w-sm">
                         <USkeleton class="w-full h-full opacity-40" style="border-radius: 50% 50% 0 0 / 100% 100% 0 0;" />
                     </div>
 
-                    <div v-else class="relative mx-auto h-[200px] w-full max-w-sm lg:h-[300px]">
-                        <Doughnut :data="chartData" :options="chartOptions" />
+                    <div v-else class="relative mx-auto h-[200px] w-full max-w-sm">
+                        <Doughnut class="relative z-20" :data="chartData" :options="chartOptions" />
                         <GaugeNeedle :angle="needleAngle" :color="chartColors.expenses" />
                     </div>
 
-                    <div class="mt-2 flex justify-center gap-10 text-center lg:gap-14">
+                    <div class="mt-2 grid grid-cols-3 gap-2 text-center">
                         <div>
-                            <p class="text-xs text-gray-400">Expenses</p>
+                            <p class="text-xs text-gray-400">Total expenses</p>
                             <p class="font-semibold text-warning">${{ totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
-                            <p v-if="expenseMoMChange !== null" class="mt-0.5 text-[11px]" :class="expenseMoMChange > 0 ? 'text-red-400' : 'text-green-400'">
-                                {{ expenseMoMChange > 0 ? '↑' : '↓' }} {{ Math.abs(expenseMoMChange).toFixed(1) }}%
-                            </p>
                         </div>
                         <div>
-                            <p class="text-xs text-gray-400">Remaining</p>
+                            <p class="text-xs text-gray-400">{{ donutIncome.label }}</p>
+                            <p class="font-semibold">${{ donutIncome.amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">Remaining funds</p>
                             <p class="font-semibold text-primary">${{ chartRemaining.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
                         </div>
                     </div>
                 </UCard>
 
-                <UCard class="col-span-2 shadow lg:col-span-1">
+                <UCard class="col-span-2 shadow lg:col-span-1" :ui="compactCardUi">
+                    <h3 class="text-center font-semibold">Cumulative trends</h3>
+                    <h4 class="text-center text-sm">Compare your spending to previous months</h4>
                     <CumulativeSpendingChart />
                 </UCard>
 
-                <UCard class="col-span-2 shadow lg:col-span-1">
+                <UCard class="col-span-2 shadow lg:col-span-1" :ui="compactCardUi">
+                    <h3 class="text-center font-semibold">Top budget usage</h3>
+                    <h4 class="text-center text-sm">See how much of your budgets you've used</h4>
                     <BudgetUsageRadarChart />
                 </UCard>
             </div>

@@ -24,7 +24,7 @@ watch(() => props.angle, (newAngle) => {
 
 <template>
   <!-- Zero-size pivot anchored at bottom-center of parent -->
-  <div class="absolute pointer-events-none" style="bottom: 22px; left: 50%; width: 0; height: 0; z-index: 10;">
+  <div class="absolute bottom-[22px] left-1/2 z-10 h-0 w-0 pointer-events-none">
     <!-- Needle rotating around the pivot -->
     <div :style="`
       position: absolute;
