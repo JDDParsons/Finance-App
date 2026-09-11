@@ -1,4 +1,5 @@
 import { apiFetch } from '~/composables/useApiToken'
+import { createOrQueueOffline } from '~/utils/offlineCreateQueue.client'
 
 export function useHitsApi() {
   type BudgetEntitiesByBudget = Record<string, string[]>
@@ -31,10 +32,7 @@ export function useHitsApi() {
   }
 
   function insertTransfer(fromAccountId: string, toAccountId: string, amount: number, date: string) {
-    return apiFetch<any>('/api/transfers', {
-      method: 'POST',
-      body: { fromAccountId, toAccountId, amount, date },
-    })
+    return createOrQueueOffline('transfer', { fromAccountId, toAccountId, amount, date })
   }
 
   function updateTransfer(id: string, fromAccountId: string, toAccountId: string, amount: number, date: string) {
@@ -49,10 +47,7 @@ export function useHitsApi() {
   }
 
   function insertIncome(amount: number, date: string, entity: string, budgetId: string | null = null, accountId: string | null = null, notes: string | null = null) {
-    return apiFetch<any>('/api/income', {
-      method: 'POST',
-      body: { amount, date, entity, budgetId, accountId, notes },
-    })
+    return createOrQueueOffline('income', { amount, date, entity, budgetId, accountId, notes })
   }
 
   function deleteIncome(id: string) {
@@ -82,10 +77,7 @@ export function useHitsApi() {
     accountId: string | null = null,
     notes: string | null = null
   ) {
-    return apiFetch<any>('/api/hits', {
-      method: 'POST',
-      body: { budgetId, date, amount, entity, accountId, notes },
-    })
+    return createOrQueueOffline('expense', { budgetId, date, amount, entity, accountId, notes })
   }
 
   function deleteBudgetHit(id: string) {

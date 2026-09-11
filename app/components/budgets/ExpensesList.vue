@@ -30,6 +30,11 @@ const isEditingHit = ref(false)
 
 function handleEditHit(id: string) {
     selectedHit.value = props.budgetHits?.find((h: any) => h.id === id) ?? null
+    if (selectedHit.value?.pending_sync || selectedHit.value?.sync_error) {
+        alert('This offline expense must sync before it can be edited.')
+        selectedHit.value = null
+        return
+    }
     if (selectedHit.value) isEditingHit.value = true
 }
 
@@ -46,6 +51,11 @@ const emit = defineEmits<{
 
 
 async function handleDeleteHit(id: string) {
+    const hit = props.budgetHits?.find((row: any) => row.id === id)
+    if (hit?.pending_sync || hit?.sync_error) {
+        alert('Use the sync status controls to retry or discard this offline expense.')
+        return
+    }
     if (!confirm('Are you sure you want to delete this budget hit?')) return
     try {
         await store.removeExpense(id)

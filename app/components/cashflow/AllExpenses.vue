@@ -100,6 +100,11 @@ const isEditingExpense = ref(false)
 
 function handleEdit(id: string) {
   selectedExpense.value = expenses.value.find((h: any) => h.id === id) ?? null
+  if (selectedExpense.value?.pending_sync || selectedExpense.value?.sync_error) {
+    alert('This offline expense must sync before it can be edited.')
+    selectedExpense.value = null
+    return
+  }
   if (selectedExpense.value) isEditingExpense.value = true
 }
 
@@ -109,6 +114,11 @@ function handleEditClose() {
 }
 
 async function handleDelete(id: string) {
+  const expense = expenses.value.find((hit: any) => hit.id === id)
+  if (expense?.pending_sync || expense?.sync_error) {
+    alert('Use the sync status controls to retry or discard this offline expense.')
+    return
+  }
   if (!confirm('Are you sure you want to delete this expense?')) return
   try {
     await store.removeExpense(id)
@@ -149,9 +159,8 @@ async function handleModalDelete() {
             <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ section.title }}</h3>
             <p class="text-xs text-gray-500">{{ section.dateLabel }}</p>
           </div>
-          <ExpenseCard
-            v-for="hit in section.items"
-            :key="hit.id"
+          <div v-for="hit in section.items" :key="hit.id">
+            <ExpenseCard
             :id="hit.id"
             :amount="hit.amount"
             :date="hit.date"
@@ -166,7 +175,11 @@ async function handleModalDelete() {
             :user-avatar-link="hit.user_id ? store.userProfiles.get(hit.user_id)?.avatarLink ?? null : null"
             @delete="handleDelete"
             @edit="handleEdit"
-          />
+            />
+            <p v-if="hit.pending_sync || hit.sync_error" class="mt-1 text-right text-xs" :class="hit.sync_error ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'">
+              {{ hit.sync_error || 'Waiting to sync' }}
+            </p>
+          </div>
         </section>
       </div>
     </div>

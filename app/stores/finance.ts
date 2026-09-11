@@ -5,6 +5,8 @@ import { useAccountsStore } from './accounts'
 import { enrichBudgets } from '../../utils/budgetEnrichment'
 import { reconcileTransferUpdate, removeTransferRow, sortTransferRows } from '../../utils/transferRows'
 import type { FinanceBootstrapData } from '~/types/bootstrap'
+import type { OfflineCreateOperation, OfflineCreateKind } from '~/types/offline'
+import { buildOptimisticRow } from '../../utils/offlineRows'
 
 export const useFinanceStore = defineStore('finance', () => {
   const accountsStore = useAccountsStore()
@@ -67,6 +69,16 @@ export const useFinanceStore = defineStore('finance', () => {
     }
 
     return normalized
+  }
+
+  function isInSelectedMonth(row: any) {
+    const [year, month] = String(row?.date ?? '').slice(0, 10).split('-').map(Number)
+    return year === selectedMonth.value.year && month === selectedMonth.value.month
+  }
+
+  function replaceOfflineRow(rows: any[], id: string, row: any) {
+    const withoutOperation = rows.filter(existing => existing.id !== id)
+    return isInSelectedMonth(row) ? [row, ...withoutOperation] : withoutOperation
   }
 
   function createBudgetEntityMap(budgetIds: string[], entitiesByBudget: Record<string, string[]>) {
@@ -189,6 +201,58 @@ export const useFinanceStore = defineStore('finance', () => {
     budgetAllEntities.value = new Map()
     initialized.value = false
     error.value = null
+  }
+
+  function restoreOfflineCreate(operation: OfflineCreateOperation) {
+    const row = buildOptimisticRow(
+      operation.kind,
+      operation.id,
+      operation.userId,
+      operation.payload,
+      operation.status === 'failed' ? operation.error : null
+    )
+    if (!isInSelectedMonth(row)) return
+    if (operation.kind === 'expense' && !budgetHits.value.some(hit => hit.id === operation.id)) {
+      budgetHits.value = [row, ...budgetHits.value]
+      budgets.value = enrichSelectedMonthBudgets(budgets.value, budgetHits.value)
+    } else if (operation.kind === 'income' && !income.value.some(hit => hit.id === operation.id)) {
+      income.value = [row, ...income.value]
+      incomeBudgets.value = enrichSelectedMonthBudgets(incomeBudgets.value, income.value)
+    } else if (operation.kind === 'transfer' && !transfers.value.some(hit => hit.id === operation.id)) {
+      transfers.value = sortTransferRows([row, ...transfers.value])
+    }
+  }
+
+  function reconcileOfflineCreate(kind: OfflineCreateKind, operationId: string, row: any) {
+    if (kind === 'expense') {
+      budgetHits.value = replaceOfflineRow(budgetHits.value, operationId, row)
+      budgets.value = enrichSelectedMonthBudgets(budgets.value, budgetHits.value)
+    } else if (kind === 'income') {
+      income.value = replaceOfflineRow(income.value, operationId, row).sort(
+        (a, b) => String(b.date).localeCompare(String(a.date))
+      )
+      incomeBudgets.value = enrichSelectedMonthBudgets(incomeBudgets.value, income.value)
+    } else {
+      transfers.value = sortTransferRows(replaceOfflineRow(transfers.value, operationId, row))
+    }
+  }
+
+  function markOfflineCreateFailed(kind: OfflineCreateKind, operationId: string, message: string) {
+    const mark = (row: any) => row.id === operationId
+      ? { ...row, pending_sync: false, sync_error: message }
+      : row
+    if (kind === 'expense') budgetHits.value = budgetHits.value.map(mark)
+    if (kind === 'income') income.value = income.value.map(mark)
+    if (kind === 'transfer') transfers.value = transfers.value.map(mark)
+  }
+
+  function removeOfflineCreates(operationIds: string[]) {
+    const ids = new Set(operationIds)
+    budgetHits.value = budgetHits.value.filter(row => !ids.has(row.id))
+    income.value = income.value.filter(row => !ids.has(row.id))
+    transfers.value = transfers.value.filter(row => !ids.has(row.id))
+    budgets.value = enrichSelectedMonthBudgets(budgets.value, budgetHits.value)
+    incomeBudgets.value = enrichSelectedMonthBudgets(incomeBudgets.value, income.value)
   }
 
   async function refreshBudgets() {
@@ -423,6 +487,10 @@ export const useFinanceStore = defineStore('finance', () => {
     hydrate,
     snapshot,
     clear,
+    restoreOfflineCreate,
+    reconcileOfflineCreate,
+    markOfflineCreateFailed,
+    removeOfflineCreates,
     refreshBudgets,
     fetchAvailableBudgets,
     fetchBudgetEntities,

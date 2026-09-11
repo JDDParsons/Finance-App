@@ -36,6 +36,10 @@ const selectedTransfer = ref<any>(null)
 const isEditingTransfer = ref(false)
 
 function openTransfer(transfer: any) {
+  if (transfer.pending_sync || transfer.sync_error) {
+    alert('This offline transfer must sync before it can be edited.')
+    return
+  }
   selectedTransfer.value = transfer
   isEditingTransfer.value = true
 }
@@ -99,6 +103,9 @@ async function deleteSelectedTransfer() {
           </div>
           <p class="shrink-0 font-semibold text-gray-900 dark:text-white">{{ formatCurrency(transfer.amount) }}</p>
         </div>
+        <p v-if="transfer.pending_sync || transfer.sync_error" class="mt-2 text-right text-xs" :class="transfer.sync_error ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'">
+          {{ transfer.sync_error || 'Waiting to sync' }}
+        </p>
       </UCard>
     </section>
   </div>
