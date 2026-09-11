@@ -7,6 +7,43 @@ function getClient(supabase: SupabaseClient) {
   return supabase.schema('finance-app')
 }
 
+export interface IdempotentBudgetHitInput {
+  operationId: string
+  type: 'Expense' | 'Income' | 'Transfer'
+  amount: number | string
+  date: string
+  entity?: string | null
+  notes?: string | null
+  accountId?: string | null
+  destinationAccountId?: string | null
+  budgetId?: string | null
+}
+
+export async function createBudgetHitIdempotent(
+  supabase: SupabaseClient,
+  input: IdempotentBudgetHitInput
+) {
+  const { data, error } = await getClient(supabase).rpc('create_budget_hit_idempotent', {
+    operation_id: input.operationId,
+    transaction_type: input.type,
+    transaction_amount: Number(input.amount),
+    transaction_date: input.date,
+    transaction_entity: input.entity ?? null,
+    transaction_notes: input.notes ?? null,
+    source_account_id: input.accountId ?? null,
+    destination_account_id: input.destinationAccountId ?? null,
+    target_budget_id: input.budgetId ?? null,
+  })
+
+  if (error) {
+    if (error.code === 'P0003' || error.code === 'P0004') {
+      throwBudgetSupabaseError(error, `create ${input.type.toLowerCase()}`)
+    }
+    throw error
+  }
+  return data
+}
+
 export async function createBudgetHit(
   supabase: SupabaseClient,
   userId: string,

@@ -11,6 +11,11 @@ const accountMap = computed(() =>
 const budgetMap = computed(() => new Map(store.incomeBudgets.map((budget: any) => [budget.id, budget.name])))
 
 async function handleDelete(id: string) {
+  const income = incomeRows.value.find((row: any) => row.id === id)
+  if (income?.pending_sync || income?.sync_error) {
+    alert('Use the sync status controls to retry or discard this offline income.')
+    return
+  }
   if (!confirm('Delete this income record?')) return
   try {
     await store.removeIncome(id)
@@ -24,6 +29,11 @@ const isEditingIncome = ref(false)
 
 function handleEdit(id: string) {
   selectedIncome.value = incomeRows.value.find((r: any) => r.id === id) ?? null
+  if (selectedIncome.value?.pending_sync || selectedIncome.value?.sync_error) {
+    alert('This offline income must sync before it can be edited.')
+    selectedIncome.value = null
+    return
+  }
   if (selectedIncome.value) isEditingIncome.value = true
 }
 
@@ -60,9 +70,8 @@ async function handleModalDelete() {
     </div>
 
     <div v-else class="flex flex-col gap-3">
-      <CashflowIncomeCard
-        v-for="row in incomeRows"
-        :key="row.id"
+      <div v-for="row in incomeRows" :key="row.id">
+        <CashflowIncomeCard
         :id="row.id"
         :amount="row.amount"
         :date="row.date"
@@ -71,7 +80,11 @@ async function handleModalDelete() {
         :budget-name="row.budget_id ? budgetMap.get(row.budget_id) ?? null : null"
         @delete="handleDelete"
         @edit="handleEdit"
-      />
+        />
+        <p v-if="row.pending_sync || row.sync_error" class="mt-1 text-right text-xs" :class="row.sync_error ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'">
+          {{ row.sync_error || 'Waiting to sync' }}
+        </p>
+      </div>
     </div>
   </div>
 

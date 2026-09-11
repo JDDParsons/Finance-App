@@ -4,12 +4,16 @@ import { useProfileStore } from '~/stores/profile'
 import { useAccountsStore } from '~/stores/accounts'
 import { useFinanceStore } from '~/stores/finance'
 import { useSavingsStore } from '~/stores/savings'
+import { discardFailedOfflineCreates, replayOfflineCreates } from '~/utils/offlineCreateQueue.client'
 import type { BootstrapResponse, OfflineFinanceSnapshot } from '~/types/bootstrap'
 import {
   clearOfflineFinanceCache,
   getOfflineFinanceSnapshot,
   getOfflineFinanceSnapshotForMonth,
   saveOfflineFinanceSnapshot,
+  getOfflineCreates,
+  markOfflineCreateFailedInSnapshots,
+  reconcileOfflineCreateSnapshots,
 } from '~/utils/offlineFinanceCache.client'
 
 const WRITE_ACTIONS = new Set([
@@ -35,12 +39,16 @@ export function useAppData() {
   const lastSyncedAt = useState<string | null>('app-data-last-synced-at', () => null)
   const activeUserId = useState<string | null>('app-data-user-id', () => null)
   const actionsRegistered = useState('app-data-actions-registered', () => false)
+  const pendingSyncCount = useState('app-data-pending-sync-count', () => 0)
+  const failedSyncCount = useState('app-data-failed-sync-count', () => 0)
+  const syncing = useState('app-data-syncing', () => false)
   let pollingTimer: ReturnType<typeof setInterval> | null = null
   let persistTimer: ReturnType<typeof setTimeout> | null = null
   let visibilityHandler: (() => void) | null = null
   let onlineHandler: (() => void) | null = null
   let offlineHandler: (() => void) | null = null
   let refreshPromise: Promise<void> | null = null
+  let outboxHandler: (() => void) | null = null
 
   function applyPayload(payload: BootstrapResponse) {
     if (payload.userId !== activeUserId.value) throw new Error('Cached data belongs to another user')
@@ -59,6 +67,8 @@ export function useAppData() {
     savingsStore.invalidateCache()
     isReady.value = false
     lastSyncedAt.value = null
+    pendingSyncCount.value = 0
+    failedSyncCount.value = 0
   }
 
   function buildSnapshot(): OfflineFinanceSnapshot | null {
@@ -79,6 +89,62 @@ export function useAppData() {
   async function persist() {
     const snapshot = buildSnapshot()
     if (snapshot) await saveOfflineFinanceSnapshot(snapshot)
+  }
+
+  async function refreshOutboxState(restoreRows = false) {
+    if (!activeUserId.value) return
+    const operations = await getOfflineCreates(activeUserId.value)
+    pendingSyncCount.value = operations.filter(operation => operation.status === 'pending').length
+    failedSyncCount.value = operations.filter(operation => operation.status === 'failed').length
+    if (restoreRows) operations.forEach(financeStore.restoreOfflineCreate)
+  }
+
+  async function syncOutbox(retryFailed = false) {
+    if (!activeUserId.value || !navigator.onLine || syncing.value) return
+    syncing.value = true
+    try {
+      const results = await replayOfflineCreates(activeUserId.value, retryFailed)
+      for (const result of results) {
+        if (result.row) {
+          financeStore.reconcileOfflineCreate(result.operation.kind, result.operation.id, result.row)
+          await reconcileOfflineCreateSnapshots(activeUserId.value, result.operation.id, result.row)
+        } else if (result.error) {
+          financeStore.markOfflineCreateFailed(result.operation.kind, result.operation.id, result.error)
+          await markOfflineCreateFailedInSnapshots(activeUserId.value, result.operation.id, result.error)
+        }
+      }
+      await refreshOutboxState()
+      await persist()
+    } catch (error: any) {
+      const status = error?.statusCode ?? error?.status ?? error?.response?.status
+      if (status === 401) {
+        await clearOfflineFinanceCache()
+        clearStores()
+        activeUserId.value = null
+        await navigateTo('/')
+        return
+      }
+      isOffline.value = !navigator.onLine
+      throw error
+    } finally {
+      syncing.value = false
+    }
+  }
+
+  async function discardFailed() {
+    if (!activeUserId.value) return
+    const discarded = await discardFailedOfflineCreates(activeUserId.value)
+    financeStore.removeOfflineCreates(discarded.map(operation => operation.id))
+    for (const operation of discarded) {
+      await reconcileOfflineCreateSnapshots(activeUserId.value, operation.id)
+    }
+    await refreshOutboxState()
+    await persist()
+  }
+
+  async function retryFailed() {
+    await syncOutbox(true)
+    await revalidate()
   }
 
   function schedulePersist() {
@@ -106,6 +172,7 @@ export function useAppData() {
         const { year, month } = financeStore.selectedMonth
         const payload = await getBootstrap(year, month)
         applyPayload(payload)
+        await refreshOutboxState(true)
         isOffline.value = false
         await persist()
       } catch (error) {
@@ -149,14 +216,25 @@ export function useAppData() {
         console.warn('Could not read the offline finance cache:', error)
       }
 
-      if (isReady.value) void revalidate()
-      else await revalidate()
+      await refreshOutboxState(true)
+
+      if (isReady.value) {
+        void syncOutbox().then(revalidate)
+      } else {
+        await revalidate()
+        await refreshOutboxState(true)
+        if (pendingSyncCount.value) {
+          await syncOutbox()
+          await revalidate()
+        }
+      }
     } finally {
       isLoading.value = false
     }
   }
 
   async function refresh() {
+    await syncOutbox()
     await revalidate()
   }
 
@@ -177,6 +255,7 @@ export function useAppData() {
     try {
       const payload = await getBootstrap(year, month)
       applyPayload(payload)
+      await refreshOutboxState(true)
       isOffline.value = false
       await persist()
     } catch (error) {
@@ -203,6 +282,8 @@ export function useAppData() {
     document.addEventListener('visibilitychange', visibilityHandler)
     window.addEventListener('online', onlineHandler)
     window.addEventListener('offline', offlineHandler)
+    outboxHandler = () => { void refreshOutboxState() }
+    window.addEventListener('budgify-outbox-changed', outboxHandler)
   }
 
   function stopPolling() {
@@ -211,7 +292,8 @@ export function useAppData() {
     if (visibilityHandler) document.removeEventListener('visibilitychange', visibilityHandler)
     if (onlineHandler) window.removeEventListener('online', onlineHandler)
     if (offlineHandler) window.removeEventListener('offline', offlineHandler)
-    visibilityHandler = onlineHandler = offlineHandler = null
+    if (outboxHandler) window.removeEventListener('budgify-outbox-changed', outboxHandler)
+    visibilityHandler = onlineHandler = offlineHandler = outboxHandler = null
   }
 
   return {
@@ -220,9 +302,15 @@ export function useAppData() {
     refreshing: readonly(refreshing),
     isOffline: readonly(isOffline),
     lastSyncedAt: readonly(lastSyncedAt),
+    pendingSyncCount: readonly(pendingSyncCount),
+    failedSyncCount: readonly(failedSyncCount),
+    syncing: readonly(syncing),
     load,
     refresh,
     selectMonth,
+    syncOutbox,
+    retryFailed,
+    discardFailed,
     startPolling,
     stopPolling,
   }

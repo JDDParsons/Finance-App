@@ -1,8 +1,16 @@
 export default defineEventHandler(async (event) => {
-  const { user, supabase } = await requireAuth(event)
-  const householdId = await resolveHouseholdId(supabase, user.id)
+  const { supabase } = await requireAuth(event)
   const body = await readBody(event)
 
-  const { amount, date, entity, budgetId, accountId, notes } = body
-  return insertIncome(supabase, user.id, householdId, amount, date, entity, budgetId ?? null, accountId ?? null, notes ?? null)
+  const { operationId, amount, date, entity, budgetId, accountId, notes } = body
+  return createBudgetHitIdempotent(supabase, {
+    operationId: requireOperationId(operationId),
+    type: 'Income',
+    amount,
+    date,
+    entity,
+    budgetId: budgetId ?? null,
+    accountId: accountId ?? null,
+    notes: notes ?? null,
+  })
 })

@@ -10,10 +10,20 @@ const accountMap = computed(() => new Map(store.accounts.map((a: any) => [a.id, 
 
 function edit(id: string) {
   selected.value = props.records.find(row => row.id === id) ?? null
+  if (selected.value?.pending_sync || selected.value?.sync_error) {
+    alert('This offline income must sync before it can be edited.')
+    selected.value = null
+    return
+  }
   open.value = Boolean(selected.value)
 }
 
 async function remove(id: string) {
+  const row = props.records.find(record => record.id === id)
+  if (row?.pending_sync || row?.sync_error) {
+    alert('Use the sync status controls to retry or discard this offline income.')
+    return
+  }
   if (!confirm('Delete this income record?')) return
   await store.removeIncome(id)
   emit('update')
