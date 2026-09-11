@@ -29,6 +29,18 @@ export const useAccountsStore = defineStore('accounts', () => {
     await fetchAccounts(false)
   }
 
+  function hydrate(rows: any[]) {
+    accounts.value = rows
+    initialized.value = true
+    error.value = null
+  }
+
+  function clear() {
+    accounts.value = []
+    initialized.value = false
+    error.value = null
+  }
+
   async function addAccount(
     name: string,
     institution: string,
@@ -109,6 +121,8 @@ export const useAccountsStore = defineStore('accounts', () => {
     initialized,
     fetchAccounts,
     ensureLoaded,
+    hydrate,
+    clear,
     addAccount,
     editAccount,
     editAccountBaseline,

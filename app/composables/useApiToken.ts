@@ -8,6 +8,10 @@ export async function getApiToken(): Promise<string> {
 }
 
 export async function apiFetch<T>(path: string, opts: Parameters<typeof $fetch>[1] = {}): Promise<T> {
+  const method = String(opts.method ?? 'GET').toUpperCase()
+  if (import.meta.client && method !== 'GET' && !navigator.onLine) {
+    throw new Error('You are offline. Changes can be saved once you reconnect.')
+  }
   const token = await getApiToken()
   return $fetch<T>(path, {
     ...opts,

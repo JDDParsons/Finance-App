@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { throwBudgetSupabaseError } from './budget-errors'
 import type { ValidTransferInput } from '../transfer'
+import { buildTrailingSavingsTotals } from '../../../utils/savingsTotals'
 
 function getClient(supabase: SupabaseClient) {
   return supabase.schema('finance-app')
@@ -439,6 +440,26 @@ export async function getIncomeByMonth(supabase: SupabaseClient, householdId: st
 
   if (error) throw error
   return data || []
+}
+
+export async function getTrailingSavingsTotals(
+  supabase: SupabaseClient,
+  householdId: string,
+  year: number,
+  month: number
+) {
+  const start = new Date(Date.UTC(year, month - 12, 1)).toISOString().slice(0, 10)
+  const end = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10)
+  const { data, error } = await getClient(supabase)
+    .from('Budget_Hit')
+    .select('date, amount, type')
+    .eq('household_id', householdId)
+    .in('type', ['Expense', 'Income'])
+    .gte('date', start)
+    .lt('date', end)
+
+  if (error) throw error
+  return buildTrailingSavingsTotals(data || [], year, month)
 }
 
 export async function getUserProfiles(

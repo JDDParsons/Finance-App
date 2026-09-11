@@ -1,4 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+const baseURL = process.env.NUXT_APP_BASE_URL || '/Finance-App/'
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   srcDir: 'app',
@@ -23,14 +25,14 @@ export default defineNuxtConfig({
     },
   },
   app: {
+    baseURL,
     head: {
       link: [
-        { rel: 'manifest', href: '/manifest.webmanifest' },
-        { rel: 'icon', type: 'image/png', href: '/Budgify.png' },
-        { rel: 'apple-touch-icon', href: '/Budgify.png' },
+        { rel: 'icon', type: 'image/png', href: `${baseURL}Budgify.png` },
+        { rel: 'apple-touch-icon', href: `${baseURL}Budgify.png` },
         // Single fallback startup image for iOS standalone mode.
         // iOS does not support manifest-driven splash reliably across versions.
-        { rel: 'apple-touch-startup-image', href: '/BudgifyWithLabel.png' },
+        { rel: 'apple-touch-startup-image', href: `${baseURL}BudgifyWithLabel.png` },
       ],
       meta: [
         { name: 'theme-color', content: '#22c55e' },
@@ -47,26 +49,26 @@ export default defineNuxtConfig({
       name: 'Budgify',
       short_name: 'Budgify',
       description: 'Personal finance & budget tracker',
-      id: '/',
-      start_url: '/',
-      scope: '/',
+      id: baseURL,
+      start_url: baseURL,
+      scope: baseURL,
       theme_color: '#22c55e',
       background_color: '#22c55e',
       display: 'standalone',
       orientation: 'portrait',
       icons: [
         {
-          src: '/icons/icon-192.png',
+          src: `${baseURL}icons/icon-192.png`,
           sizes: '192x192',
           type: 'image/png',
         },
         {
-          src: '/icons/icon-512.png',
+          src: `${baseURL}icons/icon-512.png`,
           sizes: '512x512',
           type: 'image/png',
         },
         {
-          src: '/icons/icon-512-maskable.png',
+          src: `${baseURL}icons/icon-512-maskable.png`,
           sizes: '512x512',
           type: 'image/png',
           purpose: 'maskable',
@@ -75,18 +77,8 @@ export default defineNuxtConfig({
     },
     workbox: {
       globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-      runtimeCaching: [
-        {
-          // Nuxt server API — network first, fallback to last cached response
-          urlPattern: /\/api\/.*/i,
-          handler: 'NetworkFirst' as const,
-          options: {
-            cacheName: 'nuxt-api',
-            expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
-            networkTimeoutSeconds: 10,
-          },
-        },
-      ],
+      navigateFallback: baseURL,
+      cleanupOutdatedCaches: true,
     },
   },
   runtimeConfig: {

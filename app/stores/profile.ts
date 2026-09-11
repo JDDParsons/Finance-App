@@ -33,5 +33,9 @@ export const useProfileStore = defineStore('profile', () => {
     profile.value = null
   }
 
-  return { profile, isReady, householdId, init, clear }
+  function hydrate(data: UserProfile) {
+    profile.value = data
+  }
+
+  return { profile, isReady, householdId, init, clear, hydrate }
 })
