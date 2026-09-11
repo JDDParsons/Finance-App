@@ -1,5 +1,9 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 const baseURL = process.env.NUXT_APP_BASE_URL || '/Finance-App/'
+const appShellRevision = process.env.GITHUB_SHA
+  || process.env.VERCEL_GIT_COMMIT_SHA
+  || process.env.COMMIT_SHA
+  || Date.now().toString()
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -77,6 +81,9 @@ export default defineNuxtConfig({
     },
     workbox: {
       globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+      additionalManifestEntries: [
+        { url: baseURL, revision: appShellRevision },
+      ],
       navigateFallback: baseURL,
       cleanupOutdatedCaches: true,
     },

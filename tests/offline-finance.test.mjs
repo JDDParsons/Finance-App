@@ -34,6 +34,7 @@ test('authenticated API responses are not cached by the service worker', async (
   const middleware = await readFile(new URL('../server/middleware/01.api-cache-control.ts', import.meta.url), 'utf8')
 
   assert.doesNotMatch(config, /cacheName:\s*'nuxt-api'/)
+  assert.match(config, /additionalManifestEntries:\s*\[[\s\S]*url: baseURL, revision: appShellRevision/)
   assert.match(config, /navigateFallback: baseURL/)
   assert.match(middleware, /private, no-store/)
 })
