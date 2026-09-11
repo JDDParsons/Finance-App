@@ -10,6 +10,8 @@ const props = withDefaults(defineProps<{
 })
 
 const store = useFinanceStore()
+const appData = useAppData()
+const selectionError = ref<string | null>(null)
 
 const MONTHS_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const MONTHS_FULL = [
@@ -48,10 +50,15 @@ function isSelected(year: number, month: number) {
   return store.selectedMonth.year === year && store.selectedMonth.month === month
 }
 
-function selectMonth(year: number, month: number) {
+async function selectMonth(year: number, month: number) {
   if (!isAvailable(year, month)) return
-  store.setMonth(year, month)
-  open.value = false
+  selectionError.value = null
+  try {
+    await appData.selectMonth(year, month)
+    open.value = false
+  } catch (error: any) {
+    selectionError.value = error?.message || 'Could not load that month.'
+  }
 }
 
 const monthLabel = computed(() => {
@@ -139,6 +146,9 @@ const relativeHeading = computed(() => {
               {{ abbr }}
             </button>
           </div>
+          <p v-if="selectionError" class="mt-2 text-xs text-red-600 dark:text-red-400">
+            {{ selectionError }}
+          </p>
         </div>
       </template>
     </UPopover>

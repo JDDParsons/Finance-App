@@ -1,4 +1,9 @@
 import { getSupabase } from './client'
+import { clearOfflineFinanceCache } from '~/utils/offlineFinanceCache.client'
+import { useProfileStore } from '~/stores/profile'
+import { useAccountsStore } from '~/stores/accounts'
+import { useFinanceStore } from '~/stores/finance'
+import { useSavingsStore } from '~/stores/savings'
 
 export async function validateCode(email: string, code: string) {
   try {
@@ -17,6 +22,12 @@ export async function validateCode(email: string, code: string) {
 
 export async function signOut() {
   const supabase = getSupabase()
+  await clearOfflineFinanceCache()
+  useProfileStore().clear()
+  useAccountsStore().clear()
+  useFinanceStore().clear()
+  useSavingsStore().invalidateCache()
+  clearNuxtState()
   const { error } = await supabase.auth.signOut()
   if (error) throw error
   await navigateTo('/')

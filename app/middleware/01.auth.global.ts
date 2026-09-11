@@ -1,5 +1,4 @@
 import { getSupabase } from '~/composables/supabase/client'
-import { useProfileStore } from '~/stores/profile'
 
 export default defineNuxtRouteMiddleware(async (to) => {
     // Skip auth middleware during prerendering to avoid 500 errors
@@ -18,16 +17,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
             if (to.path === '/') {
                 return navigateTo('/home');
             }
-            // Ensure profile (and household_id) is resolved and cached for all authenticated routes
-            const profileStore = useProfileStore()
-            if (!profileStore.isReady) {
-                try {
-                    await profileStore.init()
-                } catch {
-                    console.warn('No profile found for user, redirecting to login.')
-                    return navigateTo('/')
-                }
-            }
+            // Profile data is hydrated by useAppData. A session-only route gate
+            // lets a previously loaded account open while the device is offline.
         }
     } catch (error) {
         // Handle auth errors gracefully during build

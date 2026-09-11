@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { useHitsApi } from '~/composables/api/useHitsApi'
 import { useFinanceStore } from './finance'
+import type { SavingsTotal } from '~/types/bootstrap'
 
 const MONTH_NAMES = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -27,6 +28,7 @@ export const useSavingsStore = defineStore('savings', () => {
   const loadingKeys = ref<Set<string>>(new Set())
   const error = ref<string | null>(null)
   const initialized = ref(false)
+  let suppressNextMonthRefresh = false
 
   // The 12 month slots (newest first)
   const trailingMonths = computed(() => {
@@ -129,11 +131,36 @@ export const useSavingsStore = defineStore('savings', () => {
   }
 
   // Re-fetch when selected month changes
-  watch(() => financeStore.selectedMonth, () => fetchAll(), { deep: true })
+  watch(() => financeStore.selectedMonth, () => {
+    if (suppressNextMonthRefresh) {
+      suppressNextMonthRefresh = false
+      return
+    }
+    fetchAll()
+  }, { deep: true })
 
   function invalidateCache() {
     cache.value = {}
     initialized.value = false
+  }
+
+  function hydrate(totals: SavingsTotal[]) {
+    suppressNextMonthRefresh = true
+    cache.value = Object.fromEntries(totals.map(total => [
+      cacheKey(total.year, total.month),
+      { income: total.income, expenses: total.expenses },
+    ]))
+    initialized.value = true
+    error.value = null
+  }
+
+  function snapshot(): SavingsTotal[] {
+    return months.value.map(month => ({
+      year: month.year,
+      month: month.month,
+      income: month.income,
+      expenses: month.expenses,
+    }))
   }
 
   return {
@@ -143,6 +170,8 @@ export const useSavingsStore = defineStore('savings', () => {
     error,
     fetchAll,
     ensureLoaded,
-    invalidateCache
+    invalidateCache,
+    hydrate,
+    snapshot,
   }
 })

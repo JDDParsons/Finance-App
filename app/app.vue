@@ -20,6 +20,13 @@ const loadError = ref(false)
 const isAuthenticated = computed(() => route.path !== '/')
 const showMonthShortcut = computed(() => false)
 const showProfileShortcut = computed(() => false)
+const syncStatus = computed(() => {
+  if (appData.isOffline.value) {
+    if (!appData.lastSyncedAt.value) return 'Offline'
+    return `Offline · read only · saved ${new Date(appData.lastSyncedAt.value).toLocaleString()}`
+  }
+  return appData.refreshing.value ? 'Updating…' : null
+})
 
 async function loadAndStart() {
   isLoading.value = true
@@ -91,6 +98,14 @@ watch(() => route.path, async (newPath, oldPath) => {
         </div>
       </div>
     </Transition>
+
+    <div
+      v-if="isAuthenticated && syncStatus && !isLoading && !loadError"
+      class="fixed left-1/2 z-50 -translate-x-1/2 rounded-b-lg bg-gray-900/90 px-3 py-1.5 text-xs font-medium text-white shadow-lg top-safe dark:bg-gray-100/90 dark:text-gray-900"
+      role="status"
+    >
+      {{ syncStatus }}
+    </div>
 
     <SideNav v-if="isAuthenticated" class="hidden lg:flex" />
     <div :class="isAuthenticated ? 'lg:pl-56' : ''" class="relative">

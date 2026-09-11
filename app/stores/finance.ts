@@ -4,6 +4,7 @@ import { useHitsApi } from '~/composables/api/useHitsApi'
 import { useAccountsStore } from './accounts'
 import { enrichBudgets } from '../../utils/budgetEnrichment'
 import { reconcileTransferUpdate, removeTransferRow, sortTransferRows } from '../../utils/transferRows'
+import type { FinanceBootstrapData } from '~/types/bootstrap'
 
 export const useFinanceStore = defineStore('finance', () => {
   const accountsStore = useAccountsStore()
@@ -143,6 +144,51 @@ export const useFinanceStore = defineStore('finance', () => {
 
   async function ensureLoaded() {
     if (!initialized.value) await fetchAll()
+  }
+
+  function hydrate(data: FinanceBootstrapData) {
+    selectedMonth.value = data.selectedMonth
+    availableMonths.value = data.availableMonths
+    budgetHits.value = data.budgetHits
+    prevMonthBudgetHits.value = data.prevMonthBudgetHits
+    income.value = data.income
+    transfers.value = data.transfers
+    budgets.value = enrichSelectedMonthBudgets(data.budgets, data.budgetHits)
+    incomeBudgets.value = enrichSelectedMonthBudgets(data.incomeBudgets, data.income)
+    userProfiles.value = new Map(Object.entries(data.userProfiles))
+    budgetAllEntities.value = new Map(Object.entries(data.budgetEntities))
+    initialized.value = true
+    error.value = null
+  }
+
+  function snapshot(): FinanceBootstrapData {
+    return {
+      selectedMonth: { ...selectedMonth.value },
+      availableMonths: [...availableMonths.value],
+      budgets: budgets.value,
+      incomeBudgets: incomeBudgets.value,
+      budgetHits: budgetHits.value,
+      prevMonthBudgetHits: prevMonthBudgetHits.value,
+      income: income.value,
+      transfers: transfers.value,
+      userProfiles: Object.fromEntries(userProfiles.value),
+      budgetEntities: Object.fromEntries(budgetAllEntities.value),
+    }
+  }
+
+  function clear() {
+    availableMonths.value = []
+    budgets.value = []
+    incomeBudgets.value = []
+    availableBudgets.value = []
+    budgetHits.value = []
+    prevMonthBudgetHits.value = []
+    income.value = []
+    transfers.value = []
+    userProfiles.value = new Map()
+    budgetAllEntities.value = new Map()
+    initialized.value = false
+    error.value = null
   }
 
   async function refreshBudgets() {
@@ -374,6 +420,9 @@ export const useFinanceStore = defineStore('finance', () => {
     initialized,
     fetchAll,
     ensureLoaded,
+    hydrate,
+    snapshot,
+    clear,
     refreshBudgets,
     fetchAvailableBudgets,
     fetchBudgetEntities,
