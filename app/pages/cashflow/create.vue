@@ -2,6 +2,7 @@
 import { useFinanceStore } from '~/stores/finance'
 import { useTransactionViewStore } from '~/stores/transactionView'
 import { getMissingBudgetPeriodMessage } from '~/utils/budgetErrors'
+import { transactionDateFromQuery } from '../../../utils/cashflowDates'
 
  // app/pages/cashflow/create.vue
  useHead({ title: 'Create Transaction | Budgify',
@@ -13,6 +14,7 @@ import { getMissingBudgetPeriodMessage } from '~/utils/budgetErrors'
 const store = useFinanceStore()
 const transactionView = useTransactionViewStore()
 const router = useRouter()
+const route = useRoute()
 const { show: showOverlay } = useSuccessOverlay()
 
 const step = ref<'choose-budget' | 'enter-amount'>('choose-budget')
@@ -39,7 +41,8 @@ const transactionType = computed({
 })
 const selectedBudgetId = ref('')
 const noBudget = ref(false)
-const date = ref(new Date().toLocaleDateString('en-CA'))
+const today = new Date().toLocaleDateString('en-CA')
+const date = ref(transactionDateFromQuery(route.query.date, today))
 const amount = ref('')
 const entity = ref('')
 const selectedEntity = ref<string | null>(null)
