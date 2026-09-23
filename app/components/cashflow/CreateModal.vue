@@ -164,9 +164,17 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <UModal default-open fullscreen :dismissible="!loading" @update:open="(value) => { if (!value) close() }">
+  <UModal
+    default-open
+    fullscreen
+    :dismissible="!loading"
+    :ui="{
+      content: 'lg:inset-auto lg:top-1/2 lg:left-1/2 lg:h-[min(52rem,calc(100dvh-4rem))] lg:w-[min(42rem,calc(100vw-4rem))] lg:-translate-x-1/2 lg:-translate-y-1/2 lg:overflow-hidden lg:rounded-xl lg:shadow-2xl lg:ring lg:ring-default',
+    }"
+    @update:open="(value) => { if (!value) close() }"
+  >
     <template #content>
-      <div class="mx-auto flex h-svh w-full max-w-2xl flex-col bg-white dark:bg-gray-950">
+      <div class="mx-auto flex h-svh w-full max-w-2xl flex-col bg-white dark:bg-gray-950 lg:h-full">
         <div
           class="border-b-4 bg-green-50 border-b-green-300 dark:bg-green-900/40 dark:border-green-900 px-2 py-2 pt-safe sm:px-4"
           style="margin-top: calc(-1 * env(safe-area-inset-top));"

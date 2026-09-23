@@ -35,5 +35,7 @@ test('mounts an already-open modal when transaction creation is requested', asyn
   ])
 
   assert.match(appShell, /v-if="isAuthenticated && transactionModal\.isOpen"/)
-  assert.match(modalComponent, /<UModal default-open/)
+  assert.match(modalComponent, /default-open/)
+  assert.match(modalComponent, /lg:w-\[min\(42rem,calc\(100vw-4rem\)\)\]/)
+  assert.match(modalComponent, /lg:h-full/)
 })
