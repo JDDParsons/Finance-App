@@ -18,13 +18,13 @@
         <button
           class="fab flex items-center justify-center w-14 h-14 rounded-full bg-primary-500 hover:bg-primary-600 transition-transform shadow-lg shadow-black/40 -mt-6"
           :class="{ 'fab--pressing': isPressing }"
-          @click="openCreateRoute"
+          @click="openTransactionModal"
           @mousedown="isPressing = true"
           @mouseup="isPressing = false"
           @mouseleave="isPressing = false"
           @touchstart.passive="isPressing = true"
           @touchend="isPressing = false"
-          aria-label="Add expense"
+          aria-label="Add transaction"
         >
           <UIcon name="heroicons:plus-solid" class="text-white size-6" />
         </button>
@@ -58,9 +58,11 @@ const rightNav = [
 
 const isPressing = ref(false)
 
-function openCreateRoute() {
-  navigateTo('/cashflow/create')
+function openTransactionModal() {
+  transactionModal.open()
 }
+
+const transactionModal = useTransactionCreateModalStore()
 </script>
 
 <style scoped>

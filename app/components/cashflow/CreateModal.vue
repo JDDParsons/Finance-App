@@ -2,19 +2,19 @@
 import { useFinanceStore } from '~/stores/finance'
 import { useTransactionViewStore } from '~/stores/transactionView'
 import { getMissingBudgetPeriodMessage } from '~/utils/budgetErrors'
-import { transactionDateFromQuery } from '../../../utils/cashflowDates'
 
- // app/pages/cashflow/create.vue
- useHead({ title: 'Create Transaction | Budgify',
-  meta: [
-     { name: 'theme-color', content: '#f0fdf4' }, // or your exact green
-   ]
- })
+const props = defineProps<{
+  open: boolean
+  initialDate?: string | null
+}>()
+
+const emit = defineEmits<{
+  'update:open': [value: boolean]
+  closed: []
+}>()
 
 const store = useFinanceStore()
 const transactionView = useTransactionViewStore()
-const router = useRouter()
-const route = useRoute()
 const { show: showOverlay } = useSuccessOverlay()
 
 const step = ref<'choose-budget' | 'enter-amount'>('choose-budget')
@@ -42,7 +42,7 @@ const transactionType = computed({
 const selectedBudgetId = ref('')
 const noBudget = ref(false)
 const today = new Date().toLocaleDateString('en-CA')
-const date = ref(transactionDateFromQuery(route.query.date, today))
+const date = ref(props.initialDate ?? today)
 const amount = ref('')
 const entity = ref('')
 const selectedEntity = ref<string | null>(null)
@@ -56,11 +56,28 @@ const toAccountId = ref('')
 const CLOSE_AFTER_SUCCESS_MS = 1500
 let closeTimer: ReturnType<typeof setTimeout> | null = null
 
-onMounted(() => {
+function resetForm() {
+  step.value = 'choose-budget'
+  transitionDirection.value = 'forward'
+  isStepTransitioning.value = false
+  selectedBudgetId.value = ''
+  noBudget.value = false
+  date.value = props.initialDate ?? today
+  amount.value = ''
+  entity.value = ''
+  selectedEntity.value = null
+  notes.value = ''
+  error.value = null
+  fromAccountId.value = ''
+  toAccountId.value = ''
   accountId.value = transactionType.value === 'income'
     ? (store.defaultIncomeAccount?.id ?? null)
     : (store.defaultExpenseAccount?.id ?? null)
-})
+}
+
+watch(() => props.open, (open) => {
+  if (open) resetForm()
+}, { immediate: true })
 
 onBeforeUnmount(() => {
   if (closeTimer) clearTimeout(closeTimer)
@@ -104,7 +121,12 @@ function handleTransferSelect(selection: { fromAccountId: string; toAccountId: s
 
 function goBack() {
   if (step.value === 'enter-amount') { setStep('choose-budget'); return }
-  router.back()
+  close()
+}
+
+function close() {
+  emit('update:open', false)
+  emit('closed')
 }
 
 async function handleSubmit() {
@@ -130,7 +152,7 @@ async function handleSubmit() {
 
     await store.fetchAll()
     showOverlay()
-    closeTimer = setTimeout(() => navigateTo('/cashflow'), CLOSE_AFTER_SUCCESS_MS)
+    closeTimer = setTimeout(close, CLOSE_AFTER_SUCCESS_MS)
   } catch (err: any) {
     const budgetName = [...store.budgets, ...store.incomeBudgets]
       .find((budget: any) => budget.id === selectedBudgetId.value)?.name ?? 'This budget'
@@ -145,71 +167,71 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="bg-white dark:bg-gray-950">
-    <div class="mx-auto flex h-[calc(107.5svh_-_env(safe-area-inset-top))] max-w-2xl flex-col bg-white dark:bg-gray-950">
-      <div 
-        class="border-b-4 bg-green-50 border-b-green-300 dark:bg-green-900/40 dark:border-green-900 px-2 py-2 pt-safe sm:px-4"
-        style="margin-top: calc(-1 * env(safe-area-inset-top));"
-      >
-        <UButton
-          class="mt-1"
-          color="primary"
-          variant="ghost"
-          size="xl"
-          icon="heroicons:arrow-left"
-          aria-label="Back"
-          @click="goBack"
+  <UModal :open="open" fullscreen :dismissible="!loading" @update:open="(value) => { if (!value) close() }">
+    <template #content>
+      <div class="mx-auto flex h-svh w-full max-w-2xl flex-col bg-white dark:bg-gray-950">
+        <div
+          class="border-b-4 bg-green-50 border-b-green-300 dark:bg-green-900/40 dark:border-green-900 px-2 py-2 pt-safe sm:px-4"
+          style="margin-top: calc(-1 * env(safe-area-inset-top));"
         >
-        </UButton>
-        
-      </div>
+          <UButton
+            class="mt-1"
+            color="primary"
+            variant="ghost"
+            size="xl"
+            icon="heroicons:arrow-left"
+            aria-label="Back"
+            @click="goBack"
+          />
+        </div>
 
-      <div class="relative flex-1 min-h-0 overflow-hidden">
-        <Transition
-          :name="transitionDirection === 'forward' ? 'slide-forward' : 'slide-back'"
-          @after-enter="finishStepTransition"
-          @enter-cancelled="finishStepTransition"
-        >
-          <CashflowCreateStepBudget
-            v-if="step === 'choose-budget'"
-            key="choose-budget"
-            @select="handleBudgetSelect"
-            @select-transfer="handleTransferSelect"
-          />
-          <CashflowCreateStepTransferAmount
-            v-else-if="isTransfer"
-            key="enter-transfer-amount"
-            v-model:amount="amount"
-            v-model:date="date"
-            :from-account-id="fromAccountId"
-            :to-account-id="toAccountId"
-            :loading="loading"
-            :error="error"
-            @change-accounts="setStep('choose-budget')"
-            @submit="handleSubmit"
-          />
-          <CashflowCreateStepAmount
-            v-else
-            key="enter-amount"
-            v-model:amount="amount"
-            v-model:date="date"
-            v-model:account-id="accountId"
-            v-model:entity="entity"
-            v-model:selected-entity="selectedEntity"
-            v-model:notes="notes"
-            :transaction-type="transactionType"
-            :selected-budget-id="selectedBudgetId"
-            :no-budget="noBudget"
-            :suggestions="allEntitySuggestions"
-            :loading="loading"
-            :error="error"
-            @change-budget="setStep('choose-budget')"
-            @submit="handleSubmit"
-          />
-        </Transition>
+        <div class="relative flex-1 min-h-0 overflow-hidden">
+          <Transition
+            :name="transitionDirection === 'forward' ? 'slide-forward' : 'slide-back'"
+            @after-enter="finishStepTransition"
+            @enter-cancelled="finishStepTransition"
+          >
+            <CashflowCreateStepBudget
+              v-if="step === 'choose-budget'"
+              key="choose-budget"
+              @select="handleBudgetSelect"
+              @select-transfer="handleTransferSelect"
+            />
+            <CashflowCreateStepTransferAmount
+              v-else-if="isTransfer"
+              key="enter-transfer-amount"
+              v-model:amount="amount"
+              v-model:date="date"
+              :from-account-id="fromAccountId"
+              :to-account-id="toAccountId"
+              :loading="loading"
+              :error="error"
+              @change-accounts="setStep('choose-budget')"
+              @submit="handleSubmit"
+            />
+            <CashflowCreateStepAmount
+              v-else
+              key="enter-amount"
+              v-model:amount="amount"
+              v-model:date="date"
+              v-model:account-id="accountId"
+              v-model:entity="entity"
+              v-model:selected-entity="selectedEntity"
+              v-model:notes="notes"
+              :transaction-type="transactionType"
+              :selected-budget-id="selectedBudgetId"
+              :no-budget="noBudget"
+              :suggestions="allEntitySuggestions"
+              :loading="loading"
+              :error="error"
+              @change-budget="setStep('choose-budget')"
+              @submit="handleSubmit"
+            />
+          </Transition>
+        </div>
       </div>
-    </div>
-  </div>
+    </template>
+  </UModal>
 </template>
 
 <style scoped>

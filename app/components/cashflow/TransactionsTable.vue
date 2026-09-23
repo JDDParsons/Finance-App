@@ -30,6 +30,7 @@ type DateGroupRow = {
 type TableRow = TransactionRow | DateGroupRow
 
 const store = useFinanceStore()
+const transactionModal = useTransactionCreateModalStore()
 const { budgetIcon } = useBudgetIcon()
 
 const budgetMap = computed(() =>
@@ -108,7 +109,7 @@ function isDateGroup(row: TableRow): row is DateGroupRow {
 }
 
 function addTransactionForDate(date: string) {
-  navigateTo({ path: '/cashflow/create', query: { date } })
+  transactionModal.open(date)
 }
 
 function formatDate(dateString: string | null) {
