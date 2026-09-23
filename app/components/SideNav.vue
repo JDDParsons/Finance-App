@@ -17,7 +17,7 @@
       <button
         class="fab w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary-500 hover:bg-primary-600 transition-colors text-white font-medium text-sm"
         :class="{ 'fab--pressing': isPressing }"
-        @click="navigateTo('/cashflow/create')"
+        @click="transactionModal.open()"
         @mousedown="isPressing = true"
         @mouseup="isPressing = false"
         @mouseleave="isPressing = false"
@@ -31,6 +31,10 @@
 </template>
 
 <script setup>
+import { useTransactionCreateModalStore } from '~/stores/transactionCreateModal'
+
+const transactionModal = useTransactionCreateModalStore()
+
 const navigation = [
   { label: 'Home', icon: 'heroicons:home-solid', to: '/home' },
   { label: 'Budgets', icon: 'heroicons:rectangle-stack-solid', to: '/budgets' },

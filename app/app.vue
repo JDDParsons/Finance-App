@@ -6,6 +6,7 @@ const route = useRoute()
 const router = useRouter()
 const runtimeConfig = useRuntimeConfig()
 const colorMode = useColorMode()
+const transactionModal = useTransactionCreateModalStore()
 
 // Dynamically update theme-color so the iOS PWA status bar matches dark/light mode
 useHead(() => ({
@@ -141,7 +142,12 @@ watch(() => route.path, async (newPath, oldPath) => {
     >
       <UIcon name="heroicons-solid:user-circle" class="size-6" />
     </NuxtLink>
-    <BottomNav v-if="isAuthenticated && !isLoading && !loadError && route.path !== '/cashflow/create'" class="lg:hidden" />
+    <BottomNav v-if="isAuthenticated && !isLoading && !loadError" class="lg:hidden" />
+    <CashflowCreateModal
+      v-if="isAuthenticated && transactionModal.isOpen"
+      :initial-date="transactionModal.initialDate"
+      @closed="transactionModal.close()"
+    />
     <SuccessOverlay />
   </UApp>
 </template>
