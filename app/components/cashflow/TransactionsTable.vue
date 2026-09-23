@@ -125,8 +125,8 @@ function formatCurrency(value: number | null) {
 
 const tableColumns = [
   { accessorKey: 'entity', header: '', id: 'entity' },
-  { accessorKey: 'notes',  header: 'Notes',  id: 'notes'  },
   { accessorKey: 'amount', header: 'Amount', id: 'amount' },
+  { accessorKey: 'notes',  header: 'Notes',  id: 'notes'  },
   { accessorKey: 'type',   header: 'Type',   id: 'type'   },
   { accessorKey: 'budget', header: 'Budget', id: 'budget' },
   { accessorKey: 'account',header: 'Account',id: 'account'},
