@@ -144,8 +144,7 @@ watch(() => route.path, async (newPath, oldPath) => {
     </NuxtLink>
     <BottomNav v-if="isAuthenticated && !isLoading && !loadError" class="lg:hidden" />
     <CashflowCreateModal
-      v-if="isAuthenticated"
-      v-model:open="transactionModal.isOpen"
+      v-if="isAuthenticated && transactionModal.isOpen"
       :initial-date="transactionModal.initialDate"
       @closed="transactionModal.close()"
     />

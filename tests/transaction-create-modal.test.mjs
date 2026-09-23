@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { createPinia, setActivePinia } from 'pinia'
 
@@ -25,4 +26,14 @@ test('falls back to today for an invalid selected date and clears it on close', 
   modal.close()
   assert.equal(modal.isOpen, false)
   assert.equal(modal.initialDate, null)
+})
+
+test('mounts an already-open modal when transaction creation is requested', async () => {
+  const [appShell, modalComponent] = await Promise.all([
+    readFile(new URL('../app/app.vue', import.meta.url), 'utf8'),
+    readFile(new URL('../app/components/cashflow/CreateModal.vue', import.meta.url), 'utf8'),
+  ])
+
+  assert.match(appShell, /v-if="isAuthenticated && transactionModal\.isOpen"/)
+  assert.match(modalComponent, /<UModal default-open/)
 })

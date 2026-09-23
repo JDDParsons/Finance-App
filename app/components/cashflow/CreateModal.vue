@@ -4,12 +4,10 @@ import { useTransactionViewStore } from '~/stores/transactionView'
 import { getMissingBudgetPeriodMessage } from '~/utils/budgetErrors'
 
 const props = defineProps<{
-  open: boolean
   initialDate?: string | null
 }>()
 
 const emit = defineEmits<{
-  'update:open': [value: boolean]
   closed: []
 }>()
 
@@ -125,7 +123,6 @@ function goBack() {
 }
 
 function close() {
-  emit('update:open', false)
   emit('closed')
 }
 
@@ -167,7 +164,7 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <UModal :open="open" fullscreen :dismissible="!loading" @update:open="(value) => { if (!value) close() }">
+  <UModal default-open fullscreen :dismissible="!loading" @update:open="(value) => { if (!value) close() }">
     <template #content>
       <div class="mx-auto flex h-svh w-full max-w-2xl flex-col bg-white dark:bg-gray-950">
         <div
