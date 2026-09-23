@@ -75,6 +75,23 @@ bun run dev
 
 ## Production
 
+### Supabase keep-alive cron
+
+The Vercel deployment runs `GET /api/cron/keep-alive` daily at 05:00 UTC to
+generate Supabase database activity. The route is configured in `vercel.json`
+and uses the existing server-side Supabase service-role credentials.
+
+Add a random secret of at least 16 characters to the Vercel project as the
+`CRON_SECRET` environment variable. Vercel sends it to the route as
+`Authorization: Bearer <CRON_SECRET>`. Requests without the matching secret are
+rejected.
+
+The deployment also requires `NUXT_PUBLIC_SUPABASE_URL` and
+`NUXT_SUPABASE_SERVICE_ROLE_KEY`.
+
+Supabase inactivity detection is usage-based, so this cron is a best-effort
+keep-alive rather than a guarantee that a Free Plan project will never pause.
+
 Build the application for production:
 
 ```bash
