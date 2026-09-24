@@ -5,6 +5,7 @@ import { useStatusMessage } from '~/composables/useStatusMessage'
 // import MonthlyExpensesChart from '~/components/home/MonthlyExpensesChart.vue'
 import CumulativeSpendingChart from '~/components/home/CumulativeSpendingChart.vue'
 import BudgetUsageRadarChart from '~/components/home/BudgetUsageRadarChart.vue'
+import DailySpendingFigure from '~/components/home/DailySpendingFigure.vue'
 import { formatDashboardPeriodLabel } from '../../utils/dateFormat'
 import { resolveDonutIncome } from '../../utils/homeChart'
 
@@ -111,6 +112,11 @@ const elapsedDailySpending = computed(() =>
 const dailyBudgetedIncome = computed(() =>
   daysInMonth.value > 0 ? totalBudgetedIncome.value / daysInMonth.value : 0
 )
+
+const dailySpendingHits = computed(() => [
+  ...store.prevMonthBudgetHits,
+  ...store.budgetHits,
+])
 
 const today = new Date()
 const periodLabel = computed(() => formatDashboardPeriodLabel(
@@ -422,6 +428,14 @@ const compactCardUi = {
                     <h4 class="text-center text-sm">See how much of your budgets you've used</h4>
                     <BudgetUsageRadarChart />
                 </UCard>
+
+                <DailySpendingFigure
+                    :year="store.selectedMonth.year"
+                    :month="store.selectedMonth.month"
+                    :hits="dailySpendingHits"
+                    :budgets="store.budgets"
+                    :daily-budgeted-income="dailyBudgetedIncome"
+                />
             </div>
         </div>
 
