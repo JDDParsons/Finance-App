@@ -7,11 +7,12 @@ const table = await readFile(
   'utf8',
 )
 
-test('colors date groups from expense totals using the daily spending scale', () => {
+test('colors date groups and their transactions from expense totals using the daily spending scale', () => {
   assert.match(table, /import \{ dailySpendingTint \} from '\.\.\/\.\.\/\.\.\/utils\/dailySpending'/)
   assert.match(table, /\.filter\(transaction => transaction\.type === 'expense'\)/)
-  assert.match(table, /backgroundColor: dailySpendingTint\(expenseTotal, dailyBudgetedIncome\.value\)/)
-  assert.match(table, /tr: \(row: any\) => dateGroupStyle\(row\.original as TableRow\)/)
+  assert.match(table, /dateGroupTintMap = computed\(\(\) => new Map/)
+  assert.match(table, /isDateGroup\(row\) \? row\.date : \(row\.date \?\? ''\)\.slice\(0, 10\)/)
+  assert.match(table, /tr: \(row: any\) => cashflowRowStyle\(row\.original as TableRow\)/)
 })
 
 test('places the add-transaction button before the date label', () => {

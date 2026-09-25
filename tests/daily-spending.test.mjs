@@ -24,10 +24,10 @@ test('smoothly scales daily colors through green, yellow, orange, and red', () =
 })
 
 test('creates transparent table tints with a more pronounced green range', () => {
-  assert.equal(dailySpendingTint(0, 100), 'hsl(120 75% 78% / 0.42)')
-  assert.equal(dailySpendingTint(50, 100), 'hsl(85 75% 78% / 0.42)')
-  assert.equal(dailySpendingTint(100, 100), 'hsl(50 75% 78% / 0.26)')
-  assert.equal(dailySpendingTint(300, 100), 'hsl(0 75% 78% / 0.26)')
+  assert.equal(dailySpendingTint(0, 100), 'hsl(120 75% 78% / 0.22)')
+  assert.equal(dailySpendingTint(50, 100), 'hsl(85 75% 78% / 0.22)')
+  assert.equal(dailySpendingTint(100, 100), 'hsl(50 75% 78% / 0.12)')
+  assert.equal(dailySpendingTint(300, 100), 'hsl(0 75% 78% / 0.12)')
 })
 
 test('current month returns 31 days ending today and marks month changes', () => {

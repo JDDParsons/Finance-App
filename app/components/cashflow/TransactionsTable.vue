@@ -120,14 +120,20 @@ function isDateGroup(row: TableRow): row is DateGroupRow {
   return row.kind === 'date-group'
 }
 
-function dateGroupStyle(row: TableRow) {
-  if (!isDateGroup(row)) return undefined
+const dateGroupTintMap = computed(() => new Map(
+  groupedTransactions.value.map((group) => {
+    const expenseTotal = group.subRows
+      .filter(transaction => transaction.type === 'expense')
+      .reduce((sum, transaction) => sum + (Number(transaction.amount) || 0), 0)
 
-  const expenseTotal = row.subRows
-    .filter(transaction => transaction.type === 'expense')
-    .reduce((sum, transaction) => sum + (Number(transaction.amount) || 0), 0)
+    return [group.date, dailySpendingTint(expenseTotal, dailyBudgetedIncome.value)]
+  }),
+))
 
-  return { backgroundColor: dailySpendingTint(expenseTotal, dailyBudgetedIncome.value) }
+function cashflowRowStyle(row: TableRow) {
+  const date = isDateGroup(row) ? row.date : (row.date ?? '').slice(0, 10)
+  const backgroundColor = dateGroupTintMap.value.get(date)
+  return backgroundColor ? { backgroundColor } : undefined
 }
 
 function addTransactionForDate(date: string) {
@@ -238,7 +244,7 @@ async function handleModalDelete() {
           }
         },
         style: {
-          tr: (row: any) => dateGroupStyle(row.original as TableRow)
+          tr: (row: any) => cashflowRowStyle(row.original as TableRow)
         }
       }"
       :ui="{ td: 'py-2', th: 'py-2.5', separator: 'hidden' }"
