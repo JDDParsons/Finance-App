@@ -212,7 +212,6 @@ async function handleModalDelete() {
               && original.date === groupedTransactions[0]?.date
             return [
               'cursor-default',
-              startsWeek(original) ? 'cashflow-week-start' : '',
               isDateGroup(original) && !isFirstDate
                 ? 'border-x-0 border-b-0 border-t border-dotted'
                 : 'border-0',
@@ -228,6 +227,11 @@ async function handleModalDelete() {
     >
       <template #entity-cell="{ row }">
         <div v-if="isDateGroup(row.original)" class="cashflow-date -ml-2 flex w-30 items-center gap-2 whitespace-nowrap text-sm italic text-gray-400 dark:text-gray-500">
+          <span
+            v-if="startsWeek(row.original)"
+            class="w-4 shrink-0 border-t border-gray-300 dark:border-gray-700"
+            aria-hidden="true"
+          />
           <UBadge color="neutral" variant="subtle">
             {{ formatDate(row.original.date) }}
           </UBadge>
@@ -402,16 +406,4 @@ async function handleModalDelete() {
   font-family: "Georgia", serif;
 }
 
-.cashflow-table :deep(.cashflow-week-start .cashflow-date) {
-  position: relative;
-}
-
-.cashflow-table :deep(.cashflow-week-start .cashflow-date::before) {
-  position: absolute;
-  top: 50%;
-  right: calc(100% + 0.5rem);
-  width: 1.5rem;
-  border-top: 1px solid var(--ui-border-accented);
-  content: "";
-}
 </style>

@@ -13,7 +13,7 @@ test('renders cashflow dates in neutral badges', () => {
 
 test('marks Sundays with a left-side weekly separator', () => {
   assert.match(component, /getUTCDay\(\) === 0/)
-  assert.match(component, /startsWeek\(original\) \? 'cashflow-week-start'/)
-  assert.match(component, /\.cashflow-week-start \.cashflow-date::before/)
-  assert.match(component, /right: calc\(100% \+ 0\.5rem\)/)
+  assert.match(component, /v-if="startsWeek\(row\.original\)"/)
+  assert.match(component, /class="w-4 shrink-0 border-t border-gray-300 dark:border-gray-700"/)
+  assert.match(component, /aria-hidden="true"/)
 })
