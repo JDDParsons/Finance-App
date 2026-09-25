@@ -6,7 +6,6 @@ import {
   buildDailySpendingCalendarCells,
   buildDailySpendingCells,
   dailySpendingColors,
-  dailySpendingTint,
 } from '../utils/dailySpending.ts'
 
 test('smoothly scales daily colors through green, yellow, orange, and red', () => {
@@ -21,13 +20,6 @@ test('smoothly scales daily colors through green, yellow, orange, and red', () =
   assert.equal(dailySpendingColors(200, 100).backgroundColor, 'hsl(28 75% 78%)')
   assert.equal(dailySpendingColors(300, 100).backgroundColor, 'hsl(0 75% 78%)')
   assert.equal(dailySpendingColors(400, 100).backgroundColor, 'hsl(0 75% 78%)')
-})
-
-test('creates transparent table tints with a more pronounced green range', () => {
-  assert.equal(dailySpendingTint(0, 100), 'hsl(120 75% 78% / 0.22)')
-  assert.equal(dailySpendingTint(50, 100), 'hsl(85 75% 78% / 0.22)')
-  assert.equal(dailySpendingTint(100, 100), 'hsl(50 75% 78% / 0.12)')
-  assert.equal(dailySpendingTint(300, 100), 'hsl(0 75% 78% / 0.12)')
 })
 
 test('current month returns 31 days ending today and marks month changes', () => {
