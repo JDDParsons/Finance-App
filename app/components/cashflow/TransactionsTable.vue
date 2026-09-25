@@ -108,6 +108,23 @@ function isDateGroup(row: TableRow): row is DateGroupRow {
   return row.kind === 'date-group'
 }
 
+function weekdayFillStyle(row: TableRow) {
+  const date = isDateGroup(row) ? row.date : (row.date ?? '').slice(0, 10)
+  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay()
+  const progressToGreen = weekday / 6
+  const saturation = Math.round(76 * progressToGreen)
+  const lightness = Math.round(100 - (8 * progressToGreen))
+
+  return { backgroundColor: `hsl(142 ${saturation}% ${lightness}%)` }
+}
+
+function dateDividerClass(row: DateGroupRow) {
+  const isSaturday = new Date(`${row.date}T00:00:00Z`).getUTCDay() === 6
+  return isSaturday
+    ? 'border-x-0 border-b-0 border-t border-solid border-green-400'
+    : 'border-x-0 border-b-0 border-t border-dotted'
+}
+
 function addTransactionForDate(date: string) {
   transactionModal.open(date)
 }
@@ -187,7 +204,7 @@ async function handleModalDelete() {
 </script>
 
 <template>
-  <div class="w-full pr-4 sm:pr-6">
+  <div class="w-full">
     <div v-if="store.loading" class="flex justify-center py-12">
       <UIcon name="heroicons-solid:arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
     </div>
@@ -209,30 +226,33 @@ async function handleModalDelete() {
             return [
               'cursor-default',
               isDateGroup(original) && !isFirstDate
-                ? 'border-x-0 border-b-0 border-t border-dotted'
+                ? dateDividerClass(original)
                 : 'border-0',
-              isHovered ? 'bg-gray-50 dark:bg-gray-800/50' : 'bg-white dark:bg-gray-900'
+              isHovered ? 'brightness-105' : ''
             ].join(' ')
           }
+        },
+        style: {
+          tr: (row: any) => weekdayFillStyle(row.original as TableRow)
         }
       }"
-      :ui="{ td: 'py-2', th: 'py-2.5', separator: 'hidden' }"
+      :ui="{ td: 'py-2', th: 'py-2.5 bg-primary-500 text-white', separator: 'hidden' }"
       class="cashflow-table"
       @mouseover="handleTableHover"
       @mouseleave="hoveredDate = null"
     >
       <template #entity-cell="{ row }">
         <div v-if="isDateGroup(row.original)" class="cashflow-date -ml-2 flex w-30 items-center gap-2 whitespace-nowrap text-sm italic text-gray-400 dark:text-gray-500">
-          <span>{{ formatDate(row.original.date) }}</span>
           <UButton
             icon="heroicons:plus-20-solid"
             color="primary"
-            variant="soft"
+            variant="solid"
             size="xs"
-            class="cursor-pointer"
+            class="cursor-pointer bg-primary-500 text-white hover:bg-primary-600"
             :aria-label="`Add transaction for ${formatDate(row.original.date)}`"
             @click.stop="addTransactionForDate(row.original.date)"
           />
+          <span>{{ formatDate(row.original.date) }}</span>
         </div>
         <span v-else class="inline-flex items-center gap-2">
           <UIcon

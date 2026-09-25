@@ -10,7 +10,7 @@ const transactionView = useTransactionViewStore()
   <div>
     <AppHeader title="Cashflow" />
 
-    <UContainer class="max-w-none">
+    <UContainer class="max-w-none lg:px-0">
     <!-- Mobile/tablet: segmented transaction view -->
     <div class="pb-24 lg:pb-6 lg:hidden">
       <div class="mt-4 mb-2">
