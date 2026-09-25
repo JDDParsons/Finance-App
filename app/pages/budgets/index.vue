@@ -16,6 +16,7 @@ const displayBudgets = computed(() =>
   [...(selectedType.value === 'Income' ? store.incomeBudgets : store.budgets)]
     .sort((a: any, b: any) => (b.currentPeriod?.amount || 0) - (a.currentPeriod?.amount || 0))
 )
+const desktopBudgets = computed(() => [...store.budgets, ...store.incomeBudgets])
 const plannedIncome = computed(() => store.incomeBudgets.reduce((sum, b) => sum + (Number(b.currentPeriod?.amount) || 0), 0))
 const receivedIncome = computed(() => store.income.reduce((sum, row) => sum + (Number(row.amount) || 0), 0))
 const formatCurrency = (value: number) => value.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
@@ -23,6 +24,14 @@ const formatCurrency = (value: number) => value.toLocaleString('en-US', { style:
 function selectType(type: 'Expense' | 'Income') {
   transactionView.selectType(type === 'Income' ? 'income' : 'expense')
   router.replace({ path: '/budgets', query: type === 'Income' ? { type: 'income' } : {} })
+}
+
+function openBudget(budgetId: string, budgetType: 'Expense' | 'Income' = selectedType.value) {
+  router.push({ path: `/budgets/${budgetId}`, query: budgetType === 'Income' ? { type: 'income' } : {} })
+}
+
+function addBudget(budgetType: 'Expense' | 'Income' = selectedType.value) {
+  router.push({ path: '/budgets/create', query: budgetType === 'Income' ? { type: 'income' } : {} })
 }
 
 watch(
@@ -42,8 +51,8 @@ watch(
   <div class="min-h-screen">
     <AppHeader title="Budgets" />
 
-    <UContainer class="max-w-none">
-      <div class="mt-4 mb-2">
+    <UContainer class="max-w-none lg:px-0">
+      <div class="mt-4 mb-2 lg:hidden">
         <div class="mb-4 grid grid-cols-2 rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
           <UButton :variant="selectedType === 'Expense' ? 'solid' : 'ghost'" block @click="selectType('Expense')">Expenses</UButton>
           <UButton :variant="selectedType === 'Income' ? 'solid' : 'ghost'" block @click="selectType('Income')">Income</UButton>
@@ -62,15 +71,21 @@ watch(
         <p class="text-gray-400">Loading budgets...</p>
       </div>
 
-      <div v-else class="grid grid-cols-3 gap-3 pb-24 sm:grid-cols-3 lg:grid-cols-4 lg:pb-6">
-        <BudgetsBudgetCard
-          v-for="budget in displayBudgets"
-          :key="budget.id"
-          :budget="budget"
-          @select="router.push({ path: `/budgets/${budget.id}`, query: selectedType === 'Income' ? { type: 'income' } : {} })"
-        />
-        <BudgetsAddBudgetCard @select="router.push({ path: '/budgets/create', query: selectedType === 'Income' ? { type: 'income' } : {} })" />
-      </div>
+      <template v-else>
+        <div class="grid grid-cols-3 gap-3 pb-24 sm:grid-cols-3 lg:hidden">
+          <BudgetsBudgetCard
+            v-for="budget in displayBudgets"
+            :key="budget.id"
+            :budget="budget"
+            @select="openBudget"
+          />
+          <BudgetsAddBudgetCard @select="addBudget" />
+        </div>
+
+        <div class="hidden pb-6 lg:block">
+          <BudgetsTable :budgets="desktopBudgets" @select="openBudget" @add="addBudget" />
+        </div>
+      </template>
     </UContainer>
   </div>
 </template>
