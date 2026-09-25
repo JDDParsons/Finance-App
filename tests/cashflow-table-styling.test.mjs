@@ -6,6 +6,10 @@ const table = await readFile(
   new URL('../app/components/cashflow/TransactionsTable.vue', import.meta.url),
   'utf8',
 )
+const cashflowPage = await readFile(
+  new URL('../app/pages/cashflow/index.vue', import.meta.url),
+  'utf8',
+)
 
 test('grades date groups and their transactions from Sunday white to Saturday green', () => {
   assert.match(table, /isDateGroup\(row\) \? row\.date : \(row\.date \?\? ''\)\.slice\(0, 10\)/)
@@ -30,6 +34,12 @@ test('lightens an entire date group on hover', () => {
 
 test('renders the table header with a solid green fill and white text', () => {
   assert.match(table, /th: 'py-2\.5 bg-primary-500 text-white'/)
+})
+
+test('extends the desktop table from the side navigation to the viewport edge', () => {
+  assert.match(cashflowPage, /<UContainer class="max-w-none lg:px-0">/)
+  assert.match(table, /<div class="w-full">/)
+  assert.doesNotMatch(table, /<div class="w-full pr-4 sm:pr-6">/)
 })
 
 test('places the add-transaction button before the date label', () => {

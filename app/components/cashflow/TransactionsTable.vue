@@ -204,7 +204,7 @@ async function handleModalDelete() {
 </script>
 
 <template>
-  <div class="w-full pr-4 sm:pr-6">
+  <div class="w-full">
     <div v-if="store.loading" class="flex justify-center py-12">
       <UIcon name="heroicons-solid:arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
     </div>
