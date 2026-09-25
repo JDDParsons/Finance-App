@@ -99,7 +99,7 @@ function transactionLabel(transaction: { amount: number, budgetId: string | null
             />
           </div>
           <div
-            class="flex h-[4.2rem] flex-col overflow-hidden rounded-md border"
+            class="flex h-[5.04rem] flex-col overflow-hidden rounded-md border"
             :style="{ borderColor: cellColors(cell.amount).borderColor }"
             role="img"
             :aria-label="cellLabel(cell.dateKey, cell.amount, cell.budgetRatio)"
