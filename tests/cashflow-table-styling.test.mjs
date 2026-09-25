@@ -28,6 +28,10 @@ test('lightens an entire date group on hover', () => {
   assert.doesNotMatch(table, /brightness-95/)
 })
 
+test('renders the table header with a solid green fill and white text', () => {
+  assert.match(table, /th: 'py-2\.5 bg-primary-500 text-white'/)
+})
+
 test('places the add-transaction button before the date label', () => {
   const dateCell = table.match(/<template #entity-cell[\s\S]*?<template #amount-cell/)?.[0] ?? ''
   assert.ok(dateCell.indexOf('<UButton') < dateCell.indexOf('{{ formatDate(row.original.date) }}'))

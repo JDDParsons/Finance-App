@@ -236,7 +236,7 @@ async function handleModalDelete() {
           tr: (row: any) => weekdayFillStyle(row.original as TableRow)
         }
       }"
-      :ui="{ td: 'py-2', th: 'py-2.5', separator: 'hidden' }"
+      :ui="{ td: 'py-2', th: 'py-2.5 bg-primary-500 text-white', separator: 'hidden' }"
       class="cashflow-table"
       @mouseover="handleTableHover"
       @mouseleave="hoveredDate = null"
