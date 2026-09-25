@@ -37,11 +37,20 @@ function formatDate(dateKey: string) {
   }).format(new Date(year, month - 1, day))
 }
 
+function formatMonth(dateKey: string) {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  return new Intl.DateTimeFormat('en-US', { month: 'short' }).format(new Date(year, month - 1, day))
+}
+
+function formatDay(dateKey: string) {
+  return Number(dateKey.slice(-2))
+}
+
 function cellLabel(dateKey: string, amount: number, budgetRatio: number) {
   return `${formatDate(dateKey)}: ${currency.format(amount)} spent, ${Math.round(budgetRatio * 100)}% of projected daily income`
 }
 
-function cellStyle(amount: number) {
+function cellColors(amount: number) {
   const { backgroundColor, borderColor } = dailySpendingColors(amount, props.dailyBudgetedIncome)
   return { backgroundColor, borderColor }
 }
@@ -90,17 +99,25 @@ function transactionLabel(transaction: { amount: number, budgetId: string | null
             />
           </div>
           <div
-            class="flex h-14 items-center justify-center rounded-md border px-1"
-            :style="cellStyle(cell.amount)"
+            class="h-14 overflow-hidden rounded-md border"
+            :style="{ borderColor: cellColors(cell.amount).borderColor }"
             role="img"
             :aria-label="cellLabel(cell.dateKey, cell.amount, cell.budgetRatio)"
             :title="cellLabel(cell.dateKey, cell.amount, cell.budgetRatio)"
           >
-            <span class="truncate text-sm font-semibold text-gray-950">
-              {{ currency.format(cell.amount) }}
-            </span>
+            <div class="flex h-5 items-center justify-center bg-white text-[10px] font-medium text-gray-600">
+              {{ formatMonth(cell.dateKey) }}
+            </div>
+            <div
+              class="flex h-9 items-center justify-center px-1"
+              :style="{ backgroundColor: cellColors(cell.amount).backgroundColor }"
+            >
+              <span class="text-sm font-semibold text-gray-950">{{ formatDay(cell.dateKey) }}</span>
+            </div>
           </div>
-          <p class="mt-1 text-center text-xs text-muted">{{ formatDate(cell.dateKey) }}</p>
+          <p class="mt-1 truncate text-center text-xs text-muted" :title="currency.format(cell.amount)">
+            {{ currency.format(cell.amount) }}
+          </p>
         </div>
       </div>
 
