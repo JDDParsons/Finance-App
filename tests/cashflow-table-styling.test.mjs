@@ -7,13 +7,13 @@ const table = await readFile(
   'utf8',
 )
 
-test('alternates date groups and their transactions between green and white', () => {
-  assert.match(table, /dateGroupIndexMap = computed\(\(\) => new Map/)
+test('grades date groups and their transactions from Sunday green to Saturday white', () => {
   assert.match(table, /isDateGroup\(row\) \? row\.date : \(row\.date \?\? ''\)\.slice\(0, 10\)/)
-  assert.match(table, /index % 2 === 0/)
-  assert.match(table, /bg-green-50\/70 dark:bg-green-950\/20/)
-  assert.match(table, /bg-white dark:bg-gray-900/)
-  assert.doesNotMatch(table, /dailySpendingTint/)
+  assert.match(table, /getUTCDay\(\)/)
+  assert.match(table, /progressToWhite = weekday \/ 6/)
+  assert.match(table, /saturation = Math\.round\(76 \* \(1 - progressToWhite\)\)/)
+  assert.match(table, /lightness = Math\.round\(92 \+ \(8 \* progressToWhite\)\)/)
+  assert.match(table, /tr: \(row: any\) => weekdayFillStyle\(row\.original as TableRow\)/)
 })
 
 test('places the add-transaction button before the date label', () => {

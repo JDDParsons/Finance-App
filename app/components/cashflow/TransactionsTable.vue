@@ -108,16 +108,14 @@ function isDateGroup(row: TableRow): row is DateGroupRow {
   return row.kind === 'date-group'
 }
 
-const dateGroupIndexMap = computed(() => new Map(
-  groupedTransactions.value.map((group, index) => [group.date, index]),
-))
-
-function dateGroupFillClass(row: TableRow) {
+function weekdayFillStyle(row: TableRow) {
   const date = isDateGroup(row) ? row.date : (row.date ?? '').slice(0, 10)
-  const index = dateGroupIndexMap.value.get(date) ?? 0
-  return index % 2 === 0
-    ? 'bg-green-50/70 dark:bg-green-950/20'
-    : 'bg-white dark:bg-gray-900'
+  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay()
+  const progressToWhite = weekday / 6
+  const saturation = Math.round(76 * (1 - progressToWhite))
+  const lightness = Math.round(92 + (8 * progressToWhite))
+
+  return { backgroundColor: `hsl(142 ${saturation}% ${lightness}%)` }
 }
 
 function addTransactionForDate(date: string) {
@@ -223,9 +221,12 @@ async function handleModalDelete() {
               isDateGroup(original) && !isFirstDate
                 ? 'border-x-0 border-b-0 border-t border-dotted'
                 : 'border-0',
-              isHovered ? 'bg-gray-50 dark:bg-gray-800/50' : dateGroupFillClass(original)
+              isHovered ? 'brightness-95 dark:brightness-110' : ''
             ].join(' ')
           }
+        },
+        style: {
+          tr: (row: any) => weekdayFillStyle(row.original as TableRow)
         }
       }"
       :ui="{ td: 'py-2', th: 'py-2.5', separator: 'hidden' }"
