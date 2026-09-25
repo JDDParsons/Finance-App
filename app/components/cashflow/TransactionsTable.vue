@@ -246,9 +246,9 @@ async function handleModalDelete() {
           <UButton
             icon="heroicons:plus-20-solid"
             color="primary"
-            variant="soft"
+            variant="solid"
             size="xs"
-            class="cursor-pointer"
+            class="cursor-pointer bg-primary-500 text-white hover:bg-primary-600"
             :aria-label="`Add transaction for ${formatDate(row.original.date)}`"
             @click.stop="addTransactionForDate(row.original.date)"
           />

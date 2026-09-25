@@ -31,4 +31,7 @@ test('lightens an entire date group on hover', () => {
 test('places the add-transaction button before the date label', () => {
   const dateCell = table.match(/<template #entity-cell[\s\S]*?<template #amount-cell/)?.[0] ?? ''
   assert.ok(dateCell.indexOf('<UButton') < dateCell.indexOf('{{ formatDate(row.original.date) }}'))
+  assert.match(dateCell, /color="primary"/)
+  assert.match(dateCell, /variant="solid"/)
+  assert.match(dateCell, /bg-primary-500 text-white hover:bg-primary-600/)
 })
