@@ -142,6 +142,10 @@ function rowDate(row: TableRow) {
   return isDateGroup(row) ? row.date : (row.date ?? '').slice(0, 10)
 }
 
+function startsWeek(row: TableRow) {
+  return isDateGroup(row) && new Date(`${row.date}T00:00:00Z`).getUTCDay() === 0
+}
+
 function handleTableHover(event: MouseEvent) {
   const target = event.target as HTMLElement
   const rowElement = target.closest('tbody tr')
@@ -208,6 +212,7 @@ async function handleModalDelete() {
               && original.date === groupedTransactions[0]?.date
             return [
               'cursor-default',
+              startsWeek(original) ? 'cashflow-week-start' : '',
               isDateGroup(original) && !isFirstDate
                 ? 'border-x-0 border-b-0 border-t border-dotted'
                 : 'border-0',
@@ -223,7 +228,9 @@ async function handleModalDelete() {
     >
       <template #entity-cell="{ row }">
         <div v-if="isDateGroup(row.original)" class="cashflow-date -ml-2 flex w-30 items-center gap-2 whitespace-nowrap text-sm italic text-gray-400 dark:text-gray-500">
-          <span>{{ formatDate(row.original.date) }}</span>
+          <UBadge color="neutral" variant="subtle">
+            {{ formatDate(row.original.date) }}
+          </UBadge>
           <UButton
             icon="heroicons:plus-20-solid"
             color="primary"
@@ -393,5 +400,18 @@ async function handleModalDelete() {
 .cashflow-table :deep(th),
 .cashflow-date {
   font-family: "Georgia", serif;
+}
+
+.cashflow-table :deep(.cashflow-week-start .cashflow-date) {
+  position: relative;
+}
+
+.cashflow-table :deep(.cashflow-week-start .cashflow-date::before) {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 0.5rem);
+  width: 1.5rem;
+  border-top: 1px solid var(--ui-border-accented);
+  content: "";
 }
 </style>
