@@ -142,8 +142,18 @@ function rowDate(row: TableRow) {
   return isDateGroup(row) ? row.date : (row.date ?? '').slice(0, 10)
 }
 
-function startsWeek(row: TableRow) {
-  return isDateGroup(row) && new Date(`${row.date}T00:00:00Z`).getUTCDay() === 0
+function weekKey(row: TableRow) {
+  const date = new Date(`${rowDate(row)}T00:00:00Z`)
+  date.setUTCDate(date.getUTCDate() - date.getUTCDay())
+  return date.toISOString().slice(0, 10)
+}
+
+function weekRailPosition(row: TableRow, index: number) {
+  const key = weekKey(row)
+  return {
+    starts: index === 0 || weekKey(tableRows.value[index - 1]!) !== key,
+    ends: index === tableRows.value.length - 1 || weekKey(tableRows.value[index + 1]!) !== key,
+  }
 }
 
 function handleTableHover(event: MouseEvent) {
@@ -210,8 +220,12 @@ async function handleModalDelete() {
             const isHovered = hoveredDate === rowDate(original)
             const isFirstDate = isDateGroup(original)
               && original.date === groupedTransactions[0]?.date
+            const rail = weekRailPosition(original, row.index)
             return [
               'cursor-default',
+              'cashflow-week-rail',
+              rail.starts ? 'cashflow-week-rail-start' : '',
+              rail.ends ? 'cashflow-week-rail-end' : '',
               isDateGroup(original) && !isFirstDate
                 ? 'border-x-0 border-b-0 border-t border-dotted'
                 : 'border-0',
@@ -227,11 +241,6 @@ async function handleModalDelete() {
     >
       <template #entity-cell="{ row }">
         <div v-if="isDateGroup(row.original)" class="cashflow-date -ml-2 flex w-30 items-center gap-2 whitespace-nowrap text-sm italic text-gray-400 dark:text-gray-500">
-          <span
-            v-if="startsWeek(row.original)"
-            class="w-4 shrink-0 border-t border-gray-300 dark:border-gray-700"
-            aria-hidden="true"
-          />
           <UBadge color="neutral" variant="subtle">
             {{ formatDate(row.original.date) }}
           </UBadge>
@@ -404,6 +413,27 @@ async function handleModalDelete() {
 .cashflow-table :deep(th),
 .cashflow-date {
   font-family: "Georgia", serif;
+}
+
+.cashflow-table :deep(.cashflow-week-rail > td:first-child) {
+  position: relative;
+}
+
+.cashflow-table :deep(.cashflow-week-rail > td:first-child::before) {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0.25rem;
+  border-left: 1px solid var(--ui-border-accented);
+  content: "";
+}
+
+.cashflow-table :deep(.cashflow-week-rail-start > td:first-child::before) {
+  top: 50%;
+}
+
+.cashflow-table :deep(.cashflow-week-rail-end > td:first-child::before) {
+  bottom: 50%;
 }
 
 </style>

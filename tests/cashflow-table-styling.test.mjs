@@ -11,9 +11,10 @@ test('renders cashflow dates in neutral badges', () => {
   assert.match(component, /<UBadge color="neutral" variant="subtle">\s*\{\{ formatDate\(row\.original\.date\) \}\}/)
 })
 
-test('marks Sundays with a left-side weekly separator', () => {
-  assert.match(component, /getUTCDay\(\) === 0/)
-  assert.match(component, /v-if="startsWeek\(row\.original\)"/)
-  assert.match(component, /class="w-4 shrink-0 border-t border-gray-300 dark:border-gray-700"/)
-  assert.match(component, /aria-hidden="true"/)
+test('connects Sunday-to-Saturday groups with a vertical week rail', () => {
+  assert.match(component, /date\.setUTCDate\(date\.getUTCDate\(\) - date\.getUTCDay\(\)\)/)
+  assert.match(component, /'cashflow-week-rail'/)
+  assert.match(component, /rail\.starts \? 'cashflow-week-rail-start'/)
+  assert.match(component, /rail\.ends \? 'cashflow-week-rail-end'/)
+  assert.match(component, /border-left: 1px solid var\(--ui-border-accented\)/)
 })
