@@ -102,3 +102,19 @@ export function buildDailySpendingCells(
     }
   })
 }
+
+export function buildDailySpendingCalendarCells(
+  cells: DailySpendingCell[],
+): Array<DailySpendingCell | null> {
+  if (cells.length === 0) return []
+
+  const [year, month, day] = cells[0].dateKey.split('-').map(Number)
+  const leadingCellCount = new Date(year, month - 1, day).getDay()
+  const calendarCells: Array<DailySpendingCell | null> = [
+    ...Array(leadingCellCount).fill(null),
+    ...cells,
+  ]
+
+  while (calendarCells.length % 7 !== 0) calendarCells.push(null)
+  return calendarCells
+}

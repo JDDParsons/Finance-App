@@ -2,7 +2,11 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
-import { buildDailySpendingCells, dailySpendingColors } from '../utils/dailySpending.ts'
+import {
+  buildDailySpendingCalendarCells,
+  buildDailySpendingCells,
+  dailySpendingColors,
+} from '../utils/dailySpending.ts'
 
 test('smoothly scales daily colors through green, yellow, orange, and red', () => {
   assert.deepEqual(dailySpendingColors(0, 100), {
@@ -68,6 +72,19 @@ test('marks every month change in a 31-day window', () => {
   ])
 })
 
+test('aligns the 31-day spending window to complete calendar weeks', () => {
+  const cells = buildDailySpendingCells(2026, 9, [], 100, new Date(2026, 8, 25))
+  const calendarCells = buildDailySpendingCalendarCells(cells)
+
+  assert.equal(cells[0].dateKey, '2026-08-26')
+  assert.equal(new Date(2026, 7, 26).getDay(), 3)
+  assert.deepEqual(calendarCells.slice(0, 3), [null, null, null])
+  assert.equal(calendarCells[3]?.dateKey, '2026-08-26')
+  assert.equal(calendarCells.at(-2)?.dateKey, '2026-09-25')
+  assert.deepEqual(calendarCells.slice(-1), [null])
+  assert.equal(calendarCells.length % 7, 0)
+})
+
 test('home page renders the desktop-only figure across all three columns', async () => {
   const homePage = await readFile(new URL('../app/pages/home.vue', import.meta.url), 'utf8')
   const figure = await readFile(new URL('../app/components/home/DailySpendingFigure.vue', import.meta.url), 'utf8')
@@ -79,11 +96,13 @@ test('home page renders the desktop-only figure across all three columns', async
   assert.match(figure, /hidden shadow lg:col-span-3 lg:block/)
   assert.match(figure, /Array|cells/)
   assert.match(figure, /Last 31 days/)
-  assert.match(figure, /grid grid-cols-\[repeat\(31,minmax\(0,1fr\)\)\]/)
+  assert.match(figure, /mt-7 grid grid-cols-\[repeat\(31,minmax\(0,1fr\)\)\]/)
   assert.match(figure, /v-if="cell\.startsNewMonth"/)
   assert.match(figure, /border-l border-dashed border-gray-300/)
   assert.match(figure, /\{\{ formatMonth\(cell\.dateKey\) \}\}/)
   assert.match(figure, /bg-white text-\[10px\]/)
+  assert.match(figure, /class="h-14 overflow-hidden rounded-md border"/)
+  assert.match(figure, /mx-auto mt-6 max-w-xl/)
   assert.match(figure, /\{\{ formatDay\(cell\.dateKey\) \}\}/)
   assert.match(figure, /backgroundColor: cellColors\(cell\.amount\)\.backgroundColor/)
   assert.match(figure, /linear-gradient\(to right, hsl\(120 75% 78%\).*hsl\(0 75% 78%\)/)
@@ -96,4 +115,20 @@ test('home page renders the desktop-only figure across all three columns', async
   assert.doesNotMatch(figure, /group-hover:-translate-y-0\.5/)
   assert.match(figure, /truncate text-center text-xs text-muted/)
   assert.match(figure, /\{\{ currency\.format\(cell\.amount\) \}\}/)
+})
+
+test('home page renders a calendar below top budget usage on mobile and tablet', async () => {
+  const homePage = await readFile(new URL('../app/pages/home.vue', import.meta.url), 'utf8')
+  const calendar = await readFile(new URL('../app/components/home/DailySpendingCalendar.vue', import.meta.url), 'utf8')
+
+  assert.match(homePage, /import DailySpendingCalendar from '~\/components\/home\/DailySpendingCalendar\.vue'/)
+  assert.match(homePage, /<BudgetUsageRadarChart \/>[\s\S]*<DailySpendingCalendar[\s\S]*<DailySpendingFigure/)
+  assert.match(homePage, /<DailySpendingCalendar[\s\S]*:hits="dailySpendingHits"[\s\S]*:budgets="store\.budgets"/)
+  assert.match(calendar, /col-span-2 shadow lg:hidden/)
+  assert.match(calendar, /grid grid-cols-7/)
+  assert.match(calendar, /Daily spending calendar for the last 31 days/)
+  assert.match(calendar, /backgroundColor: dayStyle\(cell\.amount\)\.backgroundColor/)
+  assert.match(calendar, /v-for="transaction in cell\.transactions"/)
+  assert.match(calendar, /rounded-full ring-1 ring-white\/70/)
+  assert.match(calendar, /transactionColor\(transaction\.budgetId\)/)
 })

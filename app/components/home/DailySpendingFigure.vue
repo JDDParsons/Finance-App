@@ -76,7 +76,7 @@ function transactionLabel(transaction: { amount: number, budgetId: string | null
         </p>
       </figcaption>
 
-      <div class="mt-4 grid grid-cols-[repeat(31,minmax(0,1fr))] gap-2" aria-label="Daily spending for the last 31 days">
+      <div class="mt-7 grid grid-cols-[repeat(31,minmax(0,1fr))] gap-2" aria-label="Daily spending for the last 31 days">
         <div
           v-for="cell in cells"
           :key="cell.dateKey"
@@ -121,7 +121,7 @@ function transactionLabel(transaction: { amount: number, budgetId: string | null
         </div>
       </div>
 
-      <div class="mx-auto mt-3 max-w-xl text-xs text-muted" aria-hidden="true">
+      <div class="mx-auto mt-6 max-w-xl text-xs text-muted" aria-hidden="true">
         <div
           class="h-2 rounded-full"
           style="background: linear-gradient(to right, hsl(120 75% 78%), hsl(50 75% 78%), hsl(28 75% 78%), hsl(0 75% 78%));"
