@@ -111,11 +111,10 @@ function isDateGroup(row: TableRow): row is DateGroupRow {
 function weekdayFillStyle(row: TableRow) {
   const date = isDateGroup(row) ? row.date : (row.date ?? '').slice(0, 10)
   const weekday = new Date(`${date}T00:00:00Z`).getUTCDay()
-  const progressToWhite = weekday / 6
-  const saturation = Math.round(76 * (1 - progressToWhite))
-  const lightness = Math.round(92 + (8 * progressToWhite))
+  const progressToBlue = weekday / 6
+  const hue = Math.round(142 + ((210 - 142) * progressToBlue))
 
-  return { backgroundColor: `hsl(142 ${saturation}% ${lightness}%)` }
+  return { backgroundColor: `hsl(${hue} 76% 92%)` }
 }
 
 function addTransactionForDate(date: string) {

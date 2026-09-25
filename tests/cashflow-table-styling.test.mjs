@@ -7,12 +7,12 @@ const table = await readFile(
   'utf8',
 )
 
-test('grades date groups and their transactions from Sunday green to Saturday white', () => {
+test('grades date groups and their transactions from Sunday green to Saturday blue', () => {
   assert.match(table, /isDateGroup\(row\) \? row\.date : \(row\.date \?\? ''\)\.slice\(0, 10\)/)
   assert.match(table, /getUTCDay\(\)/)
-  assert.match(table, /progressToWhite = weekday \/ 6/)
-  assert.match(table, /saturation = Math\.round\(76 \* \(1 - progressToWhite\)\)/)
-  assert.match(table, /lightness = Math\.round\(92 \+ \(8 \* progressToWhite\)\)/)
+  assert.match(table, /progressToBlue = weekday \/ 6/)
+  assert.match(table, /hue = Math\.round\(142 \+ \(\(210 - 142\) \* progressToBlue\)\)/)
+  assert.match(table, /backgroundColor: `hsl\(\$\{hue\} 76% 92%\)`/)
   assert.match(table, /tr: \(row: any\) => weekdayFillStyle\(row\.original as TableRow\)/)
 })
 
