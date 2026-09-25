@@ -7,13 +7,20 @@ const table = await readFile(
   'utf8',
 )
 
-test('grades date groups and their transactions from Sunday green to Saturday blue', () => {
+test('grades date groups and their transactions from Sunday white to Saturday green', () => {
   assert.match(table, /isDateGroup\(row\) \? row\.date : \(row\.date \?\? ''\)\.slice\(0, 10\)/)
   assert.match(table, /getUTCDay\(\)/)
-  assert.match(table, /progressToBlue = weekday \/ 6/)
-  assert.match(table, /hue = Math\.round\(142 \+ \(\(210 - 142\) \* progressToBlue\)\)/)
-  assert.match(table, /backgroundColor: `hsl\(\$\{hue\} 76% 92%\)`/)
+  assert.match(table, /progressToGreen = weekday \/ 6/)
+  assert.match(table, /saturation = Math\.round\(76 \* progressToGreen\)/)
+  assert.match(table, /lightness = Math\.round\(100 - \(8 \* progressToGreen\)\)/)
+  assert.match(table, /backgroundColor: `hsl\(142 \$\{saturation\}% \$\{lightness\}%\)`/)
   assert.match(table, /tr: \(row: any\) => weekdayFillStyle\(row\.original as TableRow\)/)
+})
+
+test('uses a solid green divider at each Saturday-to-Sunday week boundary', () => {
+  assert.match(table, /isSaturday = new Date\(`\$\{row\.date\}T00:00:00Z`\)\.getUTCDay\(\) === 6/)
+  assert.match(table, /border-t border-solid border-green-400/)
+  assert.match(table, /\? dateDividerClass\(original\)/)
 })
 
 test('places the add-transaction button before the date label', () => {

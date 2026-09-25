@@ -111,10 +111,18 @@ function isDateGroup(row: TableRow): row is DateGroupRow {
 function weekdayFillStyle(row: TableRow) {
   const date = isDateGroup(row) ? row.date : (row.date ?? '').slice(0, 10)
   const weekday = new Date(`${date}T00:00:00Z`).getUTCDay()
-  const progressToBlue = weekday / 6
-  const hue = Math.round(142 + ((210 - 142) * progressToBlue))
+  const progressToGreen = weekday / 6
+  const saturation = Math.round(76 * progressToGreen)
+  const lightness = Math.round(100 - (8 * progressToGreen))
 
-  return { backgroundColor: `hsl(${hue} 76% 92%)` }
+  return { backgroundColor: `hsl(142 ${saturation}% ${lightness}%)` }
+}
+
+function dateDividerClass(row: DateGroupRow) {
+  const isSaturday = new Date(`${row.date}T00:00:00Z`).getUTCDay() === 6
+  return isSaturday
+    ? 'border-x-0 border-b-0 border-t border-solid border-green-400'
+    : 'border-x-0 border-b-0 border-t border-dotted'
 }
 
 function addTransactionForDate(date: string) {
@@ -218,7 +226,7 @@ async function handleModalDelete() {
             return [
               'cursor-default',
               isDateGroup(original) && !isFirstDate
-                ? 'border-x-0 border-b-0 border-t border-dotted'
+                ? dateDividerClass(original)
                 : 'border-0',
               isHovered ? 'brightness-95 dark:brightness-110' : ''
             ].join(' ')
