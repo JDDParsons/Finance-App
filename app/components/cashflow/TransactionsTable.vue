@@ -3,6 +3,7 @@ import { useFinanceStore } from '~/stores/finance'
 import { useBudgetIcon } from '~/composables/useBudgetIcon'
 import { accountDisplayName } from '../../../utils/accountAppearance'
 import { datesInMonth } from '../../../utils/cashflowDates'
+import { dailySpendingTint } from '../../../utils/dailySpending'
 
 type TransactionType = 'expense' | 'income' | 'transfer'
 
@@ -104,8 +105,29 @@ const tableRows = computed<TableRow[]>(() =>
   groupedTransactions.value.flatMap(group => [group, ...group.subRows])
 )
 
+const dailyBudgetedIncome = computed(() => {
+  const { year, month } = store.selectedMonth
+  const daysInSelectedMonth = new Date(year, month, 0).getDate()
+  const totalBudgetedIncome = store.incomeBudgets.reduce(
+    (sum: number, budget: any) => sum + (Number(budget.currentPeriod?.amount) || 0),
+    0,
+  )
+
+  return daysInSelectedMonth > 0 ? totalBudgetedIncome / daysInSelectedMonth : 0
+})
+
 function isDateGroup(row: TableRow): row is DateGroupRow {
   return row.kind === 'date-group'
+}
+
+function dateGroupStyle(row: TableRow) {
+  if (!isDateGroup(row)) return undefined
+
+  const expenseTotal = row.subRows
+    .filter(transaction => transaction.type === 'expense')
+    .reduce((sum, transaction) => sum + (Number(transaction.amount) || 0), 0)
+
+  return { backgroundColor: dailySpendingTint(expenseTotal, dailyBudgetedIncome.value) }
 }
 
 function addTransactionForDate(date: string) {
@@ -214,6 +236,9 @@ async function handleModalDelete() {
               isHovered ? 'bg-gray-50 dark:bg-gray-800/50' : 'bg-white dark:bg-gray-900'
             ].join(' ')
           }
+        },
+        style: {
+          tr: (row: any) => dateGroupStyle(row.original as TableRow)
         }
       }"
       :ui="{ td: 'py-2', th: 'py-2.5', separator: 'hidden' }"
@@ -223,7 +248,6 @@ async function handleModalDelete() {
     >
       <template #entity-cell="{ row }">
         <div v-if="isDateGroup(row.original)" class="cashflow-date -ml-2 flex w-30 items-center gap-2 whitespace-nowrap text-sm italic text-gray-400 dark:text-gray-500">
-          <span>{{ formatDate(row.original.date) }}</span>
           <UButton
             icon="heroicons:plus-20-solid"
             color="primary"
@@ -233,6 +257,7 @@ async function handleModalDelete() {
             :aria-label="`Add transaction for ${formatDate(row.original.date)}`"
             @click.stop="addTransactionForDate(row.original.date)"
           />
+          <span>{{ formatDate(row.original.date) }}</span>
         </div>
         <span v-else class="inline-flex items-center gap-2">
           <UIcon

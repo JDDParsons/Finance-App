@@ -49,6 +49,13 @@ export function dailySpendingColors(amount: number, dailyBudgetedIncome: number)
   }
 }
 
+export function dailySpendingTint(amount: number, dailyBudgetedIncome: number) {
+  const { ratio, backgroundColor } = dailySpendingColors(amount, dailyBudgetedIncome)
+  const alpha = ratio < 1 ? 0.42 : 0.26
+
+  return backgroundColor.replace(')', ` / ${alpha})`)
+}
+
 function localDateKey(date: Date) {
   return [
     date.getFullYear(),
