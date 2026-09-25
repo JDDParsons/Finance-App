@@ -228,7 +228,7 @@ async function handleModalDelete() {
               isDateGroup(original) && !isFirstDate
                 ? dateDividerClass(original)
                 : 'border-0',
-              isHovered ? 'brightness-95 dark:brightness-110' : ''
+              isHovered ? 'brightness-105' : ''
             ].join(' ')
           }
         },

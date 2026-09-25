@@ -23,6 +23,11 @@ test('uses a solid green divider at each Saturday-to-Sunday week boundary', () =
   assert.match(table, /\? dateDividerClass\(original\)/)
 })
 
+test('lightens an entire date group on hover', () => {
+  assert.match(table, /isHovered \? 'brightness-105' : ''/)
+  assert.doesNotMatch(table, /brightness-95/)
+})
+
 test('places the add-transaction button before the date label', () => {
   const dateCell = table.match(/<template #entity-cell[\s\S]*?<template #amount-cell/)?.[0] ?? ''
   assert.ok(dateCell.indexOf('<UButton') < dateCell.indexOf('{{ formatDate(row.original.date) }}'))
