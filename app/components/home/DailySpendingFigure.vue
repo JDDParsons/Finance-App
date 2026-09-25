@@ -63,16 +63,21 @@ function transactionLabel(transaction: { amount: number, budgetId: string | null
       <figcaption class="text-center">
         <h3 class="font-semibold">Daily spending</h3>
         <p class="text-sm text-muted">
-          Last 14 days compared with {{ currency.format(dailyBudgetedIncome) }} projected daily income
+          Last 31 days compared with {{ currency.format(dailyBudgetedIncome) }} projected daily income
         </p>
       </figcaption>
 
-      <div class="mt-4 grid grid-cols-[repeat(14,minmax(0,1fr))] gap-2" aria-label="Daily spending for the last 14 days">
+      <div class="mt-4 grid grid-cols-[repeat(31,minmax(0,1fr))] gap-2" aria-label="Daily spending for the last 31 days">
         <div
           v-for="cell in cells"
           :key="cell.dateKey"
           class="group relative flex flex-col transition-transform hover:-translate-y-0.5"
         >
+          <div
+            v-if="cell.startsNewMonth"
+            class="pointer-events-none absolute -left-1 inset-y-0 border-l border-dashed border-gray-300 dark:border-gray-600"
+            aria-hidden="true"
+          />
           <div class="mb-1 flex flex-1 flex-col justify-end gap-1">
             <div
               v-for="transaction in cell.transactions"

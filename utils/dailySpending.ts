@@ -18,6 +18,7 @@ export interface DailySpendingCell {
   amount: number
   budgetRatio: number
   transactions: DailySpendingTransaction[]
+  startsNewMonth: boolean
 }
 
 const COLOR_STOPS = [
@@ -85,9 +86,9 @@ export function buildDailySpendingCells(
     transactions.set(dateKey, dayTransactions)
   }
 
-  return Array.from({ length: 14 }, (_, index) => {
+  return Array.from({ length: 31 }, (_, index) => {
     const date = new Date(endDate)
-    date.setDate(endDate.getDate() - (13 - index))
+    date.setDate(endDate.getDate() - (30 - index))
     const dateKey = localDateKey(date)
     const amount = totals.get(dateKey) ?? 0
     const { ratio } = dailySpendingColors(amount, dailyBudgetedIncome)
@@ -97,6 +98,7 @@ export function buildDailySpendingCells(
       amount,
       budgetRatio: ratio,
       transactions: transactions.get(dateKey) ?? [],
+      startsNewMonth: index > 0 && date.getDate() === 1,
     }
   })
 }
