@@ -37,11 +37,20 @@ function formatDate(dateKey: string) {
   }).format(new Date(year, month - 1, day))
 }
 
+function formatMonth(dateKey: string) {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  return new Intl.DateTimeFormat('en-US', { month: 'short' }).format(new Date(year, month - 1, day))
+}
+
+function formatDay(dateKey: string) {
+  return Number(dateKey.slice(-2))
+}
+
 function cellLabel(dateKey: string, amount: number, budgetRatio: number) {
   return `${formatDate(dateKey)}: ${currency.format(amount)} spent, ${Math.round(budgetRatio * 100)}% of projected daily income`
 }
 
-function cellStyle(amount: number) {
+function cellColors(amount: number) {
   const { backgroundColor, borderColor } = dailySpendingColors(amount, props.dailyBudgetedIncome)
   return { backgroundColor, borderColor }
 }
@@ -63,16 +72,21 @@ function transactionLabel(transaction: { amount: number, budgetId: string | null
       <figcaption class="text-center">
         <h3 class="font-semibold">Daily spending</h3>
         <p class="text-sm text-muted">
-          Last 14 days compared with {{ currency.format(dailyBudgetedIncome) }} projected daily income
+          Last 31 days compared with {{ currency.format(dailyBudgetedIncome) }} projected daily income
         </p>
       </figcaption>
 
-      <div class="mt-4 grid grid-cols-[repeat(14,minmax(0,1fr))] gap-2" aria-label="Daily spending for the last 14 days">
+      <div class="mt-4 grid grid-cols-[repeat(31,minmax(0,1fr))] gap-2" aria-label="Daily spending for the last 31 days">
         <div
           v-for="cell in cells"
           :key="cell.dateKey"
           class="group relative flex flex-col transition-transform hover:-translate-y-0.5"
         >
+          <div
+            v-if="cell.startsNewMonth"
+            class="pointer-events-none absolute -left-1 inset-y-0 border-l border-dashed border-gray-300 dark:border-gray-600"
+            aria-hidden="true"
+          />
           <div class="mb-1 flex flex-1 flex-col justify-end gap-1">
             <div
               v-for="transaction in cell.transactions"
@@ -85,17 +99,25 @@ function transactionLabel(transaction: { amount: number, budgetId: string | null
             />
           </div>
           <div
-            class="flex h-14 items-center justify-center rounded-md border px-1"
-            :style="cellStyle(cell.amount)"
+            class="h-14 overflow-hidden rounded-md border"
+            :style="{ borderColor: cellColors(cell.amount).borderColor }"
             role="img"
             :aria-label="cellLabel(cell.dateKey, cell.amount, cell.budgetRatio)"
             :title="cellLabel(cell.dateKey, cell.amount, cell.budgetRatio)"
           >
-            <span class="truncate text-sm font-semibold text-gray-950">
-              {{ currency.format(cell.amount) }}
-            </span>
+            <div class="flex h-5 items-center justify-center bg-white text-[10px] font-medium text-gray-600">
+              {{ formatMonth(cell.dateKey) }}
+            </div>
+            <div
+              class="flex h-9 items-center justify-center px-1"
+              :style="{ backgroundColor: cellColors(cell.amount).backgroundColor }"
+            >
+              <span class="text-sm font-semibold text-gray-950">{{ formatDay(cell.dateKey) }}</span>
+            </div>
           </div>
-          <p class="mt-1 text-center text-xs text-muted">{{ formatDate(cell.dateKey) }}</p>
+          <p class="mt-1 truncate text-center text-xs text-muted" :title="currency.format(cell.amount)">
+            {{ currency.format(cell.amount) }}
+          </p>
         </div>
       </div>
 
