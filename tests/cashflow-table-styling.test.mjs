@@ -13,8 +13,10 @@ test('renders cashflow dates in neutral badges', () => {
 
 test('connects Sunday-to-Saturday groups with a vertical week rail', () => {
   assert.match(component, /date\.setUTCDate\(date\.getUTCDate\(\) - date\.getUTCDay\(\)\)/)
-  assert.match(component, /'cashflow-week-rail'/)
-  assert.match(component, /rail\.starts \? 'cashflow-week-rail-start'/)
-  assert.match(component, /rail\.ends \? 'cashflow-week-rail-end'/)
-  assert.match(component, /border-left: 1px solid var\(--ui-border-accented\)/)
+  assert.match(component, /id: 'weekRail'/)
+  assert.match(component, /meta: \{ class: \{ th: 'w-6 p-0', td: 'relative w-6 p-0' \} \}/)
+  assert.match(component, /#weekRail-cell="\{ row \}"/)
+  assert.match(component, /border-l-2 border-gray-400 dark:border-gray-500/)
+  assert.match(component, /\.starts \? 'top-1\/2' : 'top-0'/)
+  assert.match(component, /\.ends \? 'bottom-1\/2' : 'bottom-0'/)
 })

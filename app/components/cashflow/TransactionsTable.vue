@@ -125,6 +125,14 @@ function formatCurrency(value: number | null) {
 }
 
 const tableColumns = [
+  {
+    id: 'weekRail',
+    header: '',
+    size: 24,
+    minSize: 24,
+    maxSize: 24,
+    meta: { class: { th: 'w-6 p-0', td: 'relative w-6 p-0' } },
+  },
   { accessorKey: 'entity', header: '', id: 'entity' },
   { accessorKey: 'amount', header: 'Amount', id: 'amount' },
   { accessorKey: 'notes',  header: 'Notes',  id: 'notes'  },
@@ -220,12 +228,8 @@ async function handleModalDelete() {
             const isHovered = hoveredDate === rowDate(original)
             const isFirstDate = isDateGroup(original)
               && original.date === groupedTransactions[0]?.date
-            const rail = weekRailPosition(original, row.index)
             return [
               'cursor-default',
-              'cashflow-week-rail',
-              rail.starts ? 'cashflow-week-rail-start' : '',
-              rail.ends ? 'cashflow-week-rail-end' : '',
               isDateGroup(original) && !isFirstDate
                 ? 'border-x-0 border-b-0 border-t border-dotted'
                 : 'border-0',
@@ -239,6 +243,17 @@ async function handleModalDelete() {
       @mouseover="handleTableHover"
       @mouseleave="hoveredDate = null"
     >
+      <template #weekRail-cell="{ row }">
+        <span
+          class="absolute left-1/2 -translate-x-1/2 border-l-2 border-gray-400 dark:border-gray-500"
+          :class="[
+            weekRailPosition(row.original, row.index).starts ? 'top-1/2' : 'top-0',
+            weekRailPosition(row.original, row.index).ends ? 'bottom-1/2' : 'bottom-0',
+          ]"
+          aria-hidden="true"
+        />
+      </template>
+
       <template #entity-cell="{ row }">
         <div v-if="isDateGroup(row.original)" class="cashflow-date -ml-2 flex w-30 items-center gap-2 whitespace-nowrap text-sm italic text-gray-400 dark:text-gray-500">
           <UBadge color="neutral" variant="subtle">
@@ -413,27 +428,6 @@ async function handleModalDelete() {
 .cashflow-table :deep(th),
 .cashflow-date {
   font-family: "Georgia", serif;
-}
-
-.cashflow-table :deep(.cashflow-week-rail > td:first-child) {
-  position: relative;
-}
-
-.cashflow-table :deep(.cashflow-week-rail > td:first-child::before) {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0.25rem;
-  border-left: 1px solid var(--ui-border-accented);
-  content: "";
-}
-
-.cashflow-table :deep(.cashflow-week-rail-start > td:first-child::before) {
-  top: 50%;
-}
-
-.cashflow-table :deep(.cashflow-week-rail-end > td:first-child::before) {
-  bottom: 50%;
 }
 
 </style>
