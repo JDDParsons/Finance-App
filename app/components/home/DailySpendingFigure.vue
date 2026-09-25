@@ -99,17 +99,17 @@ function transactionLabel(transaction: { amount: number, budgetId: string | null
             />
           </div>
           <div
-            class="h-14 overflow-hidden rounded-md border"
+            class="flex h-[4.2rem] flex-col overflow-hidden rounded-md border"
             :style="{ borderColor: cellColors(cell.amount).borderColor }"
             role="img"
             :aria-label="cellLabel(cell.dateKey, cell.amount, cell.budgetRatio)"
             :title="cellLabel(cell.dateKey, cell.amount, cell.budgetRatio)"
           >
-            <div class="flex h-5 items-center justify-center bg-white text-[10px] font-medium text-gray-600">
+            <div class="flex h-6 items-center justify-center bg-white text-[10px] font-medium text-gray-600">
               {{ formatMonth(cell.dateKey) }}
             </div>
             <div
-              class="flex h-9 items-center justify-center px-1"
+              class="flex flex-1 items-center justify-center px-1"
               :style="{ backgroundColor: cellColors(cell.amount).backgroundColor }"
             >
               <span class="text-sm font-semibold text-gray-950">{{ formatDay(cell.dateKey) }}</span>

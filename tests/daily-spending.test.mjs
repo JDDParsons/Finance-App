@@ -101,6 +101,7 @@ test('home page renders the desktop-only figure across all three columns', async
   assert.match(figure, /border-l border-dashed border-gray-300/)
   assert.match(figure, /\{\{ formatMonth\(cell\.dateKey\) \}\}/)
   assert.match(figure, /bg-white text-\[10px\]/)
+  assert.match(figure, /h-\[4\.2rem\]/)
   assert.match(figure, /\{\{ formatDay\(cell\.dateKey\) \}\}/)
   assert.match(figure, /backgroundColor: cellColors\(cell\.amount\)\.backgroundColor/)
   assert.match(figure, /linear-gradient\(to right, hsl\(120 75% 78%\).*hsl\(0 75% 78%\)/)
