@@ -16,7 +16,13 @@ test('connects Sunday-to-Saturday groups with a vertical week rail', () => {
   assert.match(component, /id: 'weekRail'/)
   assert.match(component, /meta: \{ class: \{ th: 'w-6 p-0', td: 'relative w-6 p-0' \} \}/)
   assert.match(component, /#weekRail-cell="\{ row \}"/)
-  assert.match(component, /border-l-2 border-gray-400 dark:border-gray-500/)
+  assert.match(component, /border-l-4 border-gray-400 dark:border-gray-500/)
   assert.match(component, /\.starts \? 'top-1\/2' : 'top-0'/)
   assert.match(component, /\.ends \? 'bottom-1\/2' : 'bottom-0'/)
+})
+
+test('keeps date dividers out of the week-rail gutter', () => {
+  assert.match(component, /isDateGroup\(original\) && !isFirstDate\s*\? 'cashflow-date-divider'/)
+  assert.match(component, /\.cashflow-date-divider > td:not\(:first-child\)/)
+  assert.match(component, /border-top: 1px dotted var\(--ui-border\)/)
 })

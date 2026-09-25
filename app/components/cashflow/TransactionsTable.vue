@@ -231,8 +231,9 @@ async function handleModalDelete() {
             return [
               'cursor-default',
               isDateGroup(original) && !isFirstDate
-                ? 'border-x-0 border-b-0 border-t border-dotted'
-                : 'border-0',
+                ? 'cashflow-date-divider'
+                : '',
+              'border-0',
               isHovered ? 'bg-gray-50 dark:bg-gray-800/50' : 'bg-white dark:bg-gray-900'
             ].join(' ')
           }
@@ -245,7 +246,7 @@ async function handleModalDelete() {
     >
       <template #weekRail-cell="{ row }">
         <span
-          class="absolute left-1/2 -translate-x-1/2 border-l-2 border-gray-400 dark:border-gray-500"
+          class="absolute left-1/2 -translate-x-1/2 rounded-full border-l-4 border-gray-400 dark:border-gray-500"
           :class="[
             weekRailPosition(row.original, row.index).starts ? 'top-1/2' : 'top-0',
             weekRailPosition(row.original, row.index).ends ? 'bottom-1/2' : 'bottom-0',
@@ -428,6 +429,10 @@ async function handleModalDelete() {
 .cashflow-table :deep(th),
 .cashflow-date {
   font-family: "Georgia", serif;
+}
+
+.cashflow-table :deep(.cashflow-date-divider > td:not(:first-child)) {
+  border-top: 1px dotted var(--ui-border);
 }
 
 </style>
