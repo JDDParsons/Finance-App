@@ -125,14 +125,6 @@ function formatCurrency(value: number | null) {
 }
 
 const tableColumns = [
-  {
-    id: 'weekRail',
-    header: '',
-    size: 24,
-    minSize: 24,
-    maxSize: 24,
-    meta: { class: { th: 'w-6 p-0', td: 'relative w-6 p-0' } },
-  },
   { accessorKey: 'entity', header: '', id: 'entity' },
   { accessorKey: 'amount', header: 'Amount', id: 'amount' },
   { accessorKey: 'notes',  header: 'Notes',  id: 'notes'  },
@@ -148,20 +140,6 @@ const hoveredDate = ref<string | null>(null)
 
 function rowDate(row: TableRow) {
   return isDateGroup(row) ? row.date : (row.date ?? '').slice(0, 10)
-}
-
-function weekKey(row: TableRow) {
-  const date = new Date(`${rowDate(row)}T00:00:00Z`)
-  date.setUTCDate(date.getUTCDate() - date.getUTCDay())
-  return date.toISOString().slice(0, 10)
-}
-
-function weekRailPosition(row: TableRow, index: number) {
-  const key = weekKey(row)
-  return {
-    starts: index === 0 || weekKey(tableRows.value[index - 1]!) !== key,
-    ends: index === tableRows.value.length - 1 || weekKey(tableRows.value[index + 1]!) !== key,
-  }
 }
 
 function handleTableHover(event: MouseEvent) {
@@ -231,9 +209,8 @@ async function handleModalDelete() {
             return [
               'cursor-default',
               isDateGroup(original) && !isFirstDate
-                ? 'cashflow-date-divider'
-                : '',
-              'border-0',
+                ? 'border-x-0 border-b-0 border-t border-dotted'
+                : 'border-0',
               isHovered ? 'bg-gray-50 dark:bg-gray-800/50' : 'bg-white dark:bg-gray-900'
             ].join(' ')
           }
@@ -244,22 +221,9 @@ async function handleModalDelete() {
       @mouseover="handleTableHover"
       @mouseleave="hoveredDate = null"
     >
-      <template #weekRail-cell="{ row }">
-        <span
-          class="absolute left-1/2 -translate-x-1/2 rounded-full border-l-4 border-gray-400 dark:border-gray-500"
-          :class="[
-            weekRailPosition(row.original, row.index).starts ? 'top-1/2' : 'top-0',
-            weekRailPosition(row.original, row.index).ends ? 'bottom-1/2' : 'bottom-0',
-          ]"
-          aria-hidden="true"
-        />
-      </template>
-
       <template #entity-cell="{ row }">
         <div v-if="isDateGroup(row.original)" class="cashflow-date -ml-2 flex w-30 items-center gap-2 whitespace-nowrap text-sm italic text-gray-400 dark:text-gray-500">
-          <UBadge color="neutral" variant="subtle">
-            {{ formatDate(row.original.date) }}
-          </UBadge>
+          <span>{{ formatDate(row.original.date) }}</span>
           <UButton
             icon="heroicons:plus-20-solid"
             color="primary"
@@ -430,9 +394,4 @@ async function handleModalDelete() {
 .cashflow-date {
   font-family: "Georgia", serif;
 }
-
-.cashflow-table :deep(.cashflow-date-divider > td:not(:first-child)) {
-  border-top: 1px dotted var(--ui-border);
-}
-
 </style>
