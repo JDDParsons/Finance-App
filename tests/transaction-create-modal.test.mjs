@@ -37,5 +37,14 @@ test('mounts an already-open modal when transaction creation is requested', asyn
   assert.match(appShell, /v-if="isAuthenticated && transactionModal\.isOpen"/)
   assert.match(modalComponent, /default-open/)
   assert.match(modalComponent, /lg:w-\[min\(42rem,calc\(100vw-4rem\)\)\]/)
-  assert.match(modalComponent, /lg:h-full/)
+  assert.match(modalComponent, /flex h-full min-h-0/)
+})
+
+test('keeps the fullscreen modal header below the mobile safe area', async () => {
+  const modalComponent = await readFile(new URL('../app/components/cashflow/CreateModal.vue', import.meta.url), 'utf8')
+  const header = modalComponent.slice(modalComponent.indexOf('<template #content>'), modalComponent.indexOf('<div class="relative flex-1'))
+
+  assert.match(header, /shrink-0[^"\n]*pt-safe/)
+  assert.match(header, /aria-label="Back"/)
+  assert.doesNotMatch(header, /margin-top|-[mp]t-|h-svh/)
 })
