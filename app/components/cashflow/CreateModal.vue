@@ -174,10 +174,10 @@ async function handleSubmit() {
     @update:open="(value) => { if (!value) close() }"
   >
     <template #content>
-      <div class="mx-auto flex h-svh w-full max-w-2xl flex-col bg-white dark:bg-gray-950 lg:h-full">
+      <div class="mx-auto flex h-full min-h-0 w-full max-w-2xl flex-col bg-white dark:bg-gray-950">
+        <!-- The portaled modal starts at the viewport top, outside the body's safe-area padding. -->
         <div
-          class="border-b-4 bg-green-50 border-b-green-300 dark:bg-green-900/40 dark:border-green-900 px-2 py-2 pt-safe sm:px-4"
-          style="margin-top: calc(-1 * env(safe-area-inset-top));"
+          class="shrink-0 border-b-4 bg-green-50 border-b-green-300 dark:bg-green-900/40 dark:border-green-900 px-2 py-2 pt-safe sm:px-4"
         >
           <UButton
             class="mt-1"
