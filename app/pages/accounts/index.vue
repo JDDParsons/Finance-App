@@ -6,7 +6,7 @@ import { useSignOut } from '~/composables/useSignOut'
 import { useInstitutionBranding } from '~/composables/useInstitutionBranding'
 import { accountDisplayName, DEFAULT_ACCOUNT_COLOR, DEFAULT_ACCOUNT_ICON, resolveAccountIcon } from '../../../utils/accountAppearance'
 
-useHead({ title: 'Accounts | R&J Finance' })
+useHead({ title: 'Accounts | Budgify' })
 
 const { handleSignOut } = useSignOut()
 const router = useRouter()

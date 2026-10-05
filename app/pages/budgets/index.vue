@@ -2,7 +2,7 @@
 import { useFinanceStore } from '~/stores/finance'
 import { useTransactionViewStore } from '~/stores/transactionView'
 
-useHead({ title: 'Budgets | R&J Finance' })
+useHead({ title: 'Budgets | Budgify' })
 
 const store = useFinanceStore()
 const transactionView = useTransactionViewStore()

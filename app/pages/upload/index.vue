@@ -2,7 +2,7 @@
 
 import { useUploadApi } from '~/composables/api/useUploadApi'
 
-useHead({ title: 'Upload | R&J Finance' })
+useHead({ title: 'Upload | Budgify' })
 
 const { uploadFile } = useUploadApi()
 const toast = useToast();

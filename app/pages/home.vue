@@ -10,7 +10,7 @@ import DailySpendingFigure from '~/components/home/DailySpendingFigure.vue'
 import { formatDashboardPeriodLabel } from '../../utils/dateFormat'
 import { resolveDonutIncome } from '../../utils/homeChart'
 
-useHead({ title: 'Home | R&J Finance' })
+useHead({ title: 'Home | Budgify' })
 import { Doughnut } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement } from 'chart.js'
 ChartJS.register(Title, Tooltip, Legend, ArcElement)
