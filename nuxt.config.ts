@@ -1,5 +1,5 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-const baseURL = process.env.NUXT_APP_BASE_URL || '/Finance-App/'
+const baseURL = process.env.NUXT_APP_BASE_URL || '/'
 const appShellRevision = process.env.GITHUB_SHA
   || process.env.VERCEL_GIT_COMMIT_SHA
   || process.env.COMMIT_SHA

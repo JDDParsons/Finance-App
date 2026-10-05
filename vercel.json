@@ -1,4 +1,16 @@
 {
+  "redirects": [
+    {
+      "source": "/Finance-App",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/Finance-App/:path*",
+      "destination": "/:path*",
+      "permanent": true
+    }
+  ],
   "crons": [
     {
       "path": "/api/cron/keep-alive",
