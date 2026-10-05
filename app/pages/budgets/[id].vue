@@ -54,7 +54,7 @@ const budgetIconStyle = computed(() => {
     }
 })
 
-useHead(computed(() => ({ title: budget.value ? `${budget.value.name} | R&J Finance` : 'Budget | R&J Finance' })))
+useHead(computed(() => ({ title: budget.value ? `${budget.value.name} | Budgify` : 'Budget | Budgify' })))
 
 const isEditModalOpen = ref(false)
 const isDeletingBudget = ref(false)

@@ -2,7 +2,7 @@
 import { useFinanceStore } from '~/stores/finance'
 import { getBudgetErrorMessage, isDuplicateBudgetNameError, isInvalidBudgetAmountError } from '~/utils/budgetErrors'
 
-useHead({ title: 'Add Budget | R&J Finance' })
+useHead({ title: 'Add Budget | Budgify' })
 
 const store = useFinanceStore()
 const router = useRouter()

@@ -3,7 +3,7 @@ import { useFinanceStore } from '~/stores/finance'
 import { useSavingsStore } from '~/stores/savings'
 import { useSavingsTrend } from '~/composables/useSavingsTrend'
 
-useHead({ title: 'Savings | R&J Finance' })
+useHead({ title: 'Savings | Budgify' })
 import { Bar } from 'vue-chartjs'
 import {
   Chart as ChartJS,
