@@ -75,6 +75,27 @@ bun run dev
 
 ## Production
 
+### Root URLs on Vercel
+
+Budgify defaults to root hosting: login is at `https://www.budgify.ca/`
+and authenticated users land at `https://www.budgify.ca/home`.
+In Vercel, ensure `NUXT_APP_BASE_URL` is absent or set to `/` in production
+and preview environments before redeploying. The same setting is used for
+routes, public assets, and the PWA manifest and service worker at build time.
+For other hosts that require a subpath, set `NUXT_APP_BASE_URL` to that path
+with a trailing slash before building.
+
+`vercel.json` permanently redirects `/Finance-App` and its child paths to
+their root equivalents, preserving query strings. After deploying, check
+login, direct page refreshes, icons, API requests, and a legacy bookmark
+such as `/Finance-App/home?month=10` on a Vercel preview and production.
+
+The PWA identity and scope move from `/Finance-App/` to `/`. Existing
+installed apps may need to be removed and reinstalled from the root URL.
+Check launch and updates from an existing installation as well as a fresh
+installation; an old service worker may serve cached pages before the
+request reaches Vercel's redirects.
+
 ### Supabase keep-alive cron
 
 The Vercel deployment runs `GET /api/cron/keep-alive` daily at 05:00 UTC to

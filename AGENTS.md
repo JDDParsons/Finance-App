@@ -23,7 +23,7 @@
 ## Application workflow
 
 - This is a Nuxt 4 single-page app with `srcDir: 'app'` and `ssr: false`.
-- The deployed app uses `app.baseURL = '/Finance-App/'`; keep route and asset changes compatible with that base path.
+- The app defaults to `app.baseURL = '/'`; `NUXT_APP_BASE_URL` can override it for subpath deployments. Keep route, asset, and PWA URLs derived from the configured base path. Vercel redirects legacy `/Finance-App` URLs to root URLs.
 - Follow existing Nuxt and TypeScript patterns already present in the repo.
 - Keep application data access behind the existing Nuxt server API. UI components and Pinia stores should call `app/composables/api/`, which call `server/api/` routes; routes delegate Supabase work to `server/utils/supabase/`.
 - Keep feature work aligned to the existing domain split: auth, home, budgets, cashflow, savings, accounts, and upload.
