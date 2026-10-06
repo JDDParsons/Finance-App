@@ -13,6 +13,20 @@ test('opens the transaction creator with a selected date', () => {
 
   assert.equal(modal.isOpen, true)
   assert.equal(modal.initialDate, '2026-09-12')
+  assert.equal(modal.initialBudgetId, null)
+})
+
+test('opens the transaction creator with a selected budget and clears it on close', () => {
+  setActivePinia(createPinia())
+  const modal = useTransactionCreateModalStore()
+
+  modal.open(undefined, 'budget-123')
+
+  assert.equal(modal.isOpen, true)
+  assert.equal(modal.initialBudgetId, 'budget-123')
+
+  modal.close()
+  assert.equal(modal.initialBudgetId, null)
 })
 
 test('falls back to today for an invalid selected date and clears it on close', () => {
@@ -35,7 +49,9 @@ test('mounts an already-open modal when transaction creation is requested', asyn
   ])
 
   assert.match(appShell, /v-if="isAuthenticated && transactionModal\.isOpen"/)
+  assert.match(appShell, /:initial-budget-id="transactionModal\.initialBudgetId"/)
   assert.match(modalComponent, /default-open/)
+  assert.match(modalComponent, /step\.value = initialBudget \? 'enter-amount' : 'choose-budget'/)
   assert.match(modalComponent, /lg:w-\[min\(42rem,calc\(100vw-4rem\)\)\]/)
   assert.match(modalComponent, /flex h-full min-h-0/)
 })

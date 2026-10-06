@@ -46,6 +46,8 @@
 </template>
 
 <script setup lang="ts">
+const route = useRoute()
+
 const leftNav = [
   { label: 'Home', icon: 'heroicons:home-solid', to: '/home' },
   { label: 'Budgets', icon: 'heroicons:rectangle-stack-solid', to: '/budgets' },
@@ -59,7 +61,8 @@ const rightNav = [
 const isPressing = ref(false)
 
 function openTransactionModal() {
-  transactionModal.open()
+  const budgetId = route.path.match(/^\/budgets\/([^/]+)\/?$/)?.[1]
+  transactionModal.open(undefined, budgetId)
 }
 
 const transactionModal = useTransactionCreateModalStore()

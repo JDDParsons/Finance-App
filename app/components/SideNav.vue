@@ -17,7 +17,7 @@
       <button
         class="fab w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary-500 hover:bg-primary-600 transition-colors text-white font-medium text-sm"
         :class="{ 'fab--pressing': isPressing }"
-        @click="transactionModal.open()"
+        @click="openTransactionModal"
         @mousedown="isPressing = true"
         @mouseup="isPressing = false"
         @mouseleave="isPressing = false"
@@ -30,10 +30,16 @@
   </nav>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { useTransactionCreateModalStore } from '~/stores/transactionCreateModal'
 
 const transactionModal = useTransactionCreateModalStore()
+const route = useRoute()
+
+function openTransactionModal() {
+  const budgetId = route.path.match(/^\/budgets\/([^/]+)\/?$/)?.[1]
+  transactionModal.open(undefined, budgetId)
+}
 
 const navigation = [
   { label: 'Home', icon: 'heroicons:home-solid', to: '/home' },

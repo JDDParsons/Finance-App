@@ -5,6 +5,7 @@ import { getMissingBudgetPeriodMessage } from '~/utils/budgetErrors'
 
 const props = defineProps<{
   initialDate?: string | null
+  initialBudgetId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -55,10 +56,12 @@ const CLOSE_AFTER_SUCCESS_MS = 1500
 let closeTimer: ReturnType<typeof setTimeout> | null = null
 
 function resetForm() {
-  step.value = 'choose-budget'
+  const initialBudget = [...store.budgets, ...store.incomeBudgets]
+    .find((budget: any) => budget.id === props.initialBudgetId)
+  step.value = initialBudget ? 'enter-amount' : 'choose-budget'
   transitionDirection.value = 'forward'
   isStepTransitioning.value = false
-  selectedBudgetId.value = ''
+  selectedBudgetId.value = initialBudget?.id ?? ''
   noBudget.value = false
   date.value = props.initialDate ?? today
   amount.value = ''
@@ -68,14 +71,18 @@ function resetForm() {
   error.value = null
   fromAccountId.value = ''
   toAccountId.value = ''
+  if (initialBudget) {
+    transactionView.selectType(initialBudget.type === 'Income' ? 'income' : 'expense')
+    if (!store.budgetAllEntities.has(initialBudget.id)) {
+      store.fetchBudgetEntities(initialBudget.id)
+    }
+  }
   accountId.value = transactionType.value === 'income'
     ? (store.defaultIncomeAccount?.id ?? null)
     : (store.defaultExpenseAccount?.id ?? null)
 }
 
-watch(() => props.open, (open) => {
-  if (open) resetForm()
-}, { immediate: true })
+resetForm()
 
 onBeforeUnmount(() => {
   if (closeTimer) clearTimeout(closeTimer)
@@ -115,11 +122,6 @@ function handleTransferSelect(selection: { fromAccountId: string; toAccountId: s
   fromAccountId.value = selection.fromAccountId
   toAccountId.value = selection.toAccountId
   setStep('enter-amount')
-}
-
-function goBack() {
-  if (step.value === 'enter-amount') { setStep('choose-budget'); return }
-  close()
 }
 
 function close() {
@@ -186,7 +188,7 @@ async function handleSubmit() {
             size="xl"
             icon="heroicons:arrow-left"
             aria-label="Back"
-            @click="goBack"
+            @click="close"
           />
         </div>
 
