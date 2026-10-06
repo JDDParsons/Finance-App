@@ -124,11 +124,6 @@ function handleTransferSelect(selection: { fromAccountId: string; toAccountId: s
   setStep('enter-amount')
 }
 
-function goBack() {
-  if (step.value === 'enter-amount') { setStep('choose-budget'); return }
-  close()
-}
-
 function close() {
   emit('closed')
 }
@@ -193,7 +188,7 @@ async function handleSubmit() {
             size="xl"
             icon="heroicons:arrow-left"
             aria-label="Back"
-            @click="goBack"
+            @click="close"
           />
         </div>
 
