@@ -146,6 +146,7 @@ watch(() => route.path, async (newPath, oldPath) => {
     <CashflowCreateModal
       v-if="isAuthenticated && transactionModal.isOpen"
       :initial-date="transactionModal.initialDate"
+      :initial-budget-id="transactionModal.initialBudgetId"
       @closed="transactionModal.close()"
     />
     <SuccessOverlay />
