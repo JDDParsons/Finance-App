@@ -82,9 +82,7 @@ function resetForm() {
     : (store.defaultExpenseAccount?.id ?? null)
 }
 
-watch(() => props.open, (open) => {
-  if (open) resetForm()
-}, { immediate: true })
+resetForm()
 
 onBeforeUnmount(() => {
   if (closeTimer) clearTimeout(closeTimer)
