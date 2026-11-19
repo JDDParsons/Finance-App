@@ -9,6 +9,7 @@
 - Avoid ad hoc SQL for persistent schema changes unless the user explicitly asks for a one-off manual change.
 - Before proposing or applying destructive database changes, explain the impact plainly.
 - Keep `supabase/.temp/` untracked; it is local CLI state, not project source.
+- Merging to `main` runs `supabase db push` against production (GitHub Action, no approval step). PRs to `main` get a `--dry-run` check.
 
 ## Migration guidance
 
@@ -26,39 +27,54 @@
 - The app defaults to `app.baseURL = '/'`; `NUXT_APP_BASE_URL` can override it for subpath deployments. Keep route, asset, and PWA URLs derived from the configured base path. Vercel redirects legacy `/Finance-App` URLs to root URLs.
 - Follow existing Nuxt and TypeScript patterns already present in the repo.
 - Keep application data access behind the existing Nuxt server API. UI components and Pinia stores should call `app/composables/api/`, which call `server/api/` routes; routes delegate Supabase work to `server/utils/supabase/`.
-- Keep feature work aligned to the existing domain split: auth, home, budgets, cashflow, savings, accounts, and upload.
-- Use `npm run build` as the repository validation command after code changes.
+- Keep feature work aligned to the existing domain split: auth, home, budgets, cashflow, savings, and accounts.
+- Use `npm run build` and `npm test` as the validation commands after code changes.
+- Local development: `.\run-app.ps1` (see README).
+
+## Deprecated: statement upload
+
+The CSV statement upload feature (`/upload`, `/upload/transactions`) and everything that exists only for it is **scheduled for removal**. Do not extend, fix, refactor, or add tests for it, and do not use it as a pattern for new work. If a change would touch it, prefer leaving it alone. The README section "Statement upload (legacy, scheduled for removal)" lists its full footprint. When removal is requested, delete that footprint and add a forward migration for its tables rather than editing old migrations.
 
 ## Architecture overview
 
 - `app/pages/` holds route-level screens. The main authenticated areas are:
   - `/home` for summary dashboards and charts
   - `/budgets` and `/budgets/[id]` for budget management
-  - `/cashflow` for income and expense entry/history
+  - `/cashflow` for income, expense, and transfer entry and history
   - `/accounts` for account management
   - `/savings` for trailing savings summaries
-  - `/upload` for statement upload, transaction review, and reporting
-- `app/app.vue` is the shell. It loads accounts on mount and switches between `SideNav` on desktop and `BottomNav` on mobile.
-- `app/middleware/01.auth.global.ts` is the global auth gate. Unauthenticated users stay on `/`, authenticated users are redirected to `/home`, and the middleware initializes the profile store so `household_id` is cached early.
+  - `/upload` (deprecated, see above)
+- `app/app.vue` is the shell. It switches between `SideNav` on desktop and `BottomNav` on mobile. `SideNav` links to the deprecated upload page; `BottomNav` does not.
+- `app/middleware/01.auth.global.ts` is the global auth gate. It only checks for a Supabase session: unauthenticated users stay on `/`, authenticated users are redirected from `/` to `/home`. It does not load data, so a previously loaded account can still open while offline.
+- Authentication is invite-only email OTP. `POST /api/auth/send-code` checks the `is_authorized_email` RPC with the service-role key before sending a code (`shouldCreateUser: false`). The browser verifies the code with `supabase.auth.verifyOtp` (`app/composables/supabase/auth.ts`).
+
+### State and data loading
+
 - Pinia stores in `app/stores/` are the primary state layer:
-  - `profile` resolves the current user's `Profile` row and caches `household_id`
+  - `profile` holds the current user's `Profile` row and `household_id`
   - `accounts` manages accounts plus latest `Account_Value` data
   - `finance` is the central budgeting/cashflow store and owns the selected month
-  - `savings` derives trailing savings history from `finance`
+  - `savings` holds trailing savings history
+  - `transactionCreateModal` and `transactionView` hold UI state
+- `app/composables/useAppData.ts` orchestrates loading. It calls `GET /api/bootstrap?year=&month=`, which returns profile, accounts, budgets, income, expenses (budget hits), transfers, available months and savings in one response, and hydrates all stores from it. It also handles refresh/polling, online/offline state, and the offline outbox. The set of write actions it registers is listed in `WRITE_ACTIONS`.
 - Reuse stores for shared state instead of duplicating fetch logic inside pages.
 
-## Supabase data-access architecture
+### Data access layers
 
-- Supabase access is organized by domain under `app/composables/supabase/`:
-  - `client.ts` creates the browser client and caches `household_id`
-  - `auth.ts` handles magic-link / OTP login and sign-out
-  - `budgets.ts` manages `Budgets` and `Budget_Period`
-  - `hits.ts` manages `Budget_Hit` for both expenses and income
-  - `accounts.ts` manages `Account` and `Account_Value`
-  - `upload.ts` manages `Transaction`, `Transaction_Category`, `Category`, and `Transaction_Groups`
-- Prefer adding or updating logic in these domain composables instead of calling Supabase directly from many components.
-- Existing Supabase table names are capitalized (for example `Profile`, `Budgets`, `Budget_Hit`, `Account`, `Transaction`); preserve the current naming conventions in queries and migrations unless intentionally changing schema.
-- The app depends on `household_id` scoping. When creating new rows in app-managed tables, follow the existing pattern of resolving the current session user and household before insert.
+- Browser: `app/composables/supabase/` is limited to the Supabase client (`client.ts`, used for session and auth only) and auth helpers (`auth.ts`). Do not query data tables from the browser.
+- Client API: `app/composables/api/use*Api.ts` call `apiFetch` (`app/composables/useApiToken.ts`), which attaches the user's access token as a Bearer header. `apiFetch` rejects non-GET requests while offline.
+- Server routes: `server/api/<domain>/...`. Each route calls `requireAuth(event)` (`server/utils/supabase/auth.ts`), which validates the token and returns a user-scoped Supabase client (anon key plus the caller's JWT, so RLS applies). Routes then call domain helpers in `server/utils/supabase/` (`budgets.ts`, `hits.ts`, `accounts.ts`, `profile.ts`, `transactions.ts`, plus `budget-errors.ts`). The service-role key is reserved for the login-code and keep-alive routes; don't use it elsewhere without a clear need.
+- `server/middleware/01.api-cache-control.ts` sets `Cache-Control: private, no-store` on all `/api/` responses.
+- Table names are capitalized (`Profile`, `Budgets`, `Budget_Period`, `Budget_Hit`, `Account`, `Account_Value`); preserve existing naming in queries and migrations unless intentionally changing the schema. Server helpers query the `finance-app` schema (for example `transactions.ts` uses `supabase.schema('finance-app')`).
+- The app depends on `household_id` scoping. When creating rows, resolve the caller's household with `resolveHouseholdId` as existing routes do.
+
+### Offline support
+
+- `app/utils/offlineFinanceCache.client.ts` stores month snapshots, preferences and an outbox in IndexedDB (`budgify-offline`).
+- `app/utils/offlineCreateQueue.client.ts` (`createOrQueueOffline`) sends expense, income and transfer creates to `/api/hits`, `/api/income` and `/api/transfers` with a client-generated `operationId`. On a network failure it queues the operation and returns an optimistic row; queued items replay when the connection returns.
+- Idempotency: server routes validate `operationId` (`server/utils/offline-operation.ts`) and the `idempotent_budget_hit_creates` migration makes replays safe. Keep creates idempotent when changing these paths.
+- Only creates are queued. Edits and deletes require a connection.
+- The offline cache is cleared on sign-out. Cached data is tied to a user id and is rejected if it belongs to a different user.
 
 ### Persistence decision rule
 
@@ -71,6 +87,11 @@
 ## Data behavior notes
 
 - `Budget_Hit` stores both expenses and income; `type` distinguishes `Expense` from `Income`.
-- Budget month views are period-based. `Budget_Period` rows are auto-created for the current month when missing, and non-current months only show budgets with an existing period.
-- The upload flow parses CSVs in the browser with Papa Parse, normalizes them through `utils/parse.ts`, then upserts into `Transaction`.
-- Transaction categorization uses the `get_transaction_categories` RPC plus the `Transaction_Category` table; preserve that flow when adjusting upload/reporting features.
+- Budget month views are period-based. Budget periods are owned by a month (`Budget_Period`). A month only shows budgets that have a period for it; previous-month budgets can be copied forward (`copy-previous`, `copy-preview`). Treat the migrations from `month_owned_budget_periods` onward as the source of truth for the exact rules.
+- Income budgets and expense budgets share the budget model and are distinguished by type.
+- Transfers between accounts are first-class records (`/api/transfers`) and can be created, edited and deleted.
+
+## Testing
+
+- `npm test` runs `node --test --experimental-strip-types tests/*.test.mjs`. Tests cover utilities in `utils/` and `app/utils/`, store/composable helpers, UI logic and the contents of migration SQL. Add a test alongside any new utility or migration behavior.
+- There are no component, API-route, or database/RLS tests; do not assume those paths are covered.

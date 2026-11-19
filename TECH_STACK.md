@@ -1,46 +1,36 @@
-# Budgify - Tech Stack Breakdown
+# Budgify tech stack
 
-## Frontend Framework
-- **Nuxt 3** - Vue 3 framework with SSR/SSG capabilities
-- **Vue 3** - Component-based UI framework
-- **TypeScript** - Type-safe development
+Verified against `package.json`, `nuxt.config.ts` and the source tree.
 
-## Backend & Database
-- **Supabase** - Backend-as-a-Service
-  - PostgreSQL database
-  - Authentication
-  - Real-time subscriptions
-  - Storage (for uploaded statements)
+## Application
 
-## UI Components & Charting
-- **Custom Vue components** for:
-  - Charts (Doughnut, Pie, Gauge)
-  - Budget tracking
-  - Expense/inincome cards
-  - Date/category pickers
-- **Chart.js/ChartJS** - Likely used for visualizations
-- **Tailwind CSS** - Utility-first CSS (implied by Nuxt conventions)
+| Layer | Technology |
+| --- | --- |
+| Framework | Nuxt 4 (`ssr: false`, client-rendered SPA, `srcDir: 'app'`), Vue 3, TypeScript |
+| UI | `@nuxt/ui` v4 with Iconify icon collections (heroicons, lucide, streamline, etc.), bundled locally via `icon.serverBundle` |
+| State | Pinia (`profile`, `accounts`, `finance`, `savings` stores) |
+| Charts | Chart.js with vue-chartjs |
+| PWA | `@vite-pwa/nuxt` (autoUpdate service worker, standalone manifest) |
+| Offline storage | IndexedDB through `idb` (database `budgify-offline`: snapshots, preferences, outbox) |
+| Server | Nitro routes in `server/api/`, deployed as Vercel functions |
 
-## Key Directories
-- `/app` - Main Nuxt application
-  - `/components` - Reusable UI components
-  - `/pages` - Route pages
-  - `/stores` - State management (Pinia/Store)
-  - `/composables` - Vue composable functions
-  - `/assets` - Static assets (images, CSS)
-- `/supabase` - Supabase configuration & migrations
-- `/scripts` - Build/automation scripts
-- `/utils` - Helper functions
+## Backend and data
 
-## DevOps
-- **Git** - Version control
-- **GitHub Actions** (`.github/`) - CI/CD
-- **Nuxt build** - Production builds
+- **Supabase**: Postgres with RLS, email OTP auth, local stack via the Supabase CLI (`supabase` dev dependency).
+- **Access pattern**: the browser Supabase client is used for auth/session only. All data access goes through Nuxt server routes using a user-scoped client (anon key plus the caller's JWT, so RLS applies). The service-role key is used by the login-code route and the keep-alive cron; keep it out of any other path unless there is a clear need.
+- **Schema**: versioned migrations in `supabase/migrations/`. Atomic multi-table writes use security-definer PostgreSQL functions called through `rpc()`.
+- **Not used**: Prisma (an earlier design; no longer in the project).
 
-## Third-party Libraries (Common in this stack)
-- **Pinia** - Vue state management
-- **Day.js/Luxon** - Date handling
-- **Axios/Fetch** - API calls
+## Tooling and delivery
 
----
-*Concise overview for quick reference*
+- **Hosting**: Vercel (root URLs, legacy `/Finance-App` redirects, daily keep-alive cron).
+- **CI**: GitHub Actions dry-run migrations on PRs to `main` and push them to production on merge.
+- **Tests**: Node built-in test runner (`node --test --experimental-strip-types tests/*.test.mjs`).
+- **Local dev**: `run-app.ps1` (Supabase in Docker plus Nuxt on the Windows host); optional Docker Compose dev container.
+- **Node**: 22 (Dockerfile base image `node:22-alpine`).
+
+## Legacy (scheduled for removal)
+
+The statement upload feature uses `papaparse` for CSV parsing and the `Transaction*`/`Category` tables. See the README for the full footprint.
+
+Some dependencies (`pg`, `ts-node`, `csv-parse`) were not found in the code that was reviewed and may be removable; verify with a search before removing.

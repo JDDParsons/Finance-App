@@ -1,148 +1,115 @@
-# Nuxt Minimal Starter
+# Budgify
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Budgify is a household budgeting app for tracking monthly budgets, expenses, income, transfers between accounts, and savings. It is an installable PWA (Nuxt 4 single-page app) backed by Supabase, deployed on Vercel at <https://www.budgify.ca>.
 
-## Setup
+Access is invite-only: a login code is only sent to emails that the `is_authorized_email` database function approves.
 
-Make sure to install dependencies:
+Planned work is tracked in [ROADMAP.md](ROADMAP.md).
 
-```bash
-# npm
-npm install
+## Features
 
-# pnpm
-pnpm install
+| Area | Route | What it does |
+| --- | --- | --- |
+| Home | `/home` | Monthly dashboard: spending charts, daily spending calendar/figure, budget usage radar, cumulative spending |
+| Budgets | `/budgets`, `/budgets/[id]` | Month-based budgets (expense and income), copy previous month, budget history, allocation charts |
+| Cashflow | `/cashflow` | Create and review expenses, income and transfers; daily/weekly grouped table |
+| Accounts | `/accounts` | Accounts with baseline values, appearance (color/icon), and transfers between accounts |
+| Savings | `/savings` | Trailing savings summary derived from budget data |
+| Offline | (all) | Last-synced data is cached on the device; new expenses, income and transfers made offline are queued and synced on reconnect |
 
-# yarn
-yarn install
+### Deprecated: statement upload (`/upload`)
 
-# bun
-bun install
-```
+Bank-statement CSV upload and the transaction categorization screens are **legacy and planned for removal**. They are not part of the core budgeting flow, are only linked from the desktop side navigation, and are not being maintained. Don't build on them. See [Statement upload (legacy)](#statement-upload-legacy-scheduled-for-removal) for what they touch, so removal is clean.
 
----
+## Stack
 
-## Frontend-only mode ✅
+Nuxt 4 (`ssr: false`, `srcDir: 'app'`), Vue 3, TypeScript, Nuxt UI, Pinia, Chart.js via vue-chartjs, `@vite-pwa/nuxt`, `idb` (IndexedDB), Supabase (Postgres, Auth, RLS). See [TECH_STACK.md](TECH_STACK.md) for details and [AGENTS.md](AGENTS.md) for architecture and contribution rules.
 
-This project now uses client-side Supabase calls via the composable `app/composables/supabase.ts`.
-Server endpoints under `server/api` that previously used Prisma / Node have been deprecated (return 410). To remove the Node backend entirely, you can:
+## Getting started
 
-1. Delete the `server` and `prisma` folders.
-2. Remove the Prisma-related packages from `package.json` (`prisma`, `@prisma/client`, `@prisma/adapter-pg`, `pg`).
-3. Run `npm install` to update dependencies.
-
-If you'd like, I can perform these deletions and cleanups for you.
-
-## Development Server
-
-For local development, start Supabase in Docker and Nuxt directly on Windows:
+Prerequisites: Node.js 22, Docker Desktop (for local Supabase), Windows PowerShell for the launcher script.
 
 ```powershell
-.\run-app.ps1 -RestartSupabase
+npm install
+.\run-app.ps1 -RestartSupabase   # first run only, so Supabase Auth picks up the localhost URL
+.\run-app.ps1                    # normal starts
+.\run-app.ps1 -OpenBrowser       # also open Studio and Mailpit when Nuxt is ready
 ```
 
-The restart is needed the first time so Supabase Auth picks up the localhost URL.
-After that, use `.\run-app.ps1` for normal starts.
+Docker Desktop must be running before you start. If `run-app.ps1` reports that Supabase failed to start, start Docker Desktop and check that ports 54321-54329 are free.
 
-Use `.\run-app.ps1 -OpenBrowser` to open Nuxt, Supabase Studio, and Mailpit
-after the Nuxt development server is ready.
+`run-app.ps1` starts the local Supabase stack, applies pending migrations (skip with `-SkipMigrations`), reads the local API URL and keys from the Supabase CLI, passes them to Nuxt as environment variables for that process only (your `.env` production values are not modified), and runs `npm run dev` on port 3000. Press Ctrl+C to stop Nuxt, then run `.\stop-app.ps1` to stop local Supabase.
 
-This provides:
+| Service | URL |
+| --- | --- |
+| Nuxt | http://localhost:3000 |
+| Supabase API | http://localhost:54321 |
+| Supabase Studio | http://localhost:54323 |
+| Mailpit (login codes) | http://localhost:54324 |
 
-- Nuxt: `http://localhost:3000`
-- Supabase Studio: `http://localhost:54323`
-- Mailpit: `http://localhost:54324`
+To run only Nuxt with values already in your environment: `npm run dev`.
 
-The launcher gets the local API URL and keys from the Supabase CLI and passes them
-to Nuxt without modifying the production values in `.env`. Press Ctrl+C to stop
-Nuxt, then run `.\stop-app.ps1` when you also want to stop local Supabase.
+A `Dockerfile` and `docker-compose.yml` run the dev server in a container attached to the local Supabase Docker network (`supabase_network_Finance-App`). They use `.env.docker`. Start local Supabase first (for example with `run-app.ps1`), since the container joins its network. `docker-compose.yml` is listed in `.gitignore`.
 
-To run only the Nuxt development server using the values already in your environment:
+### Environment variables
 
-```bash
-# npm
-npm run dev
+There is no `.env.example`. Variables are read in `nuxt.config.ts`:
 
-# pnpm
-pnpm dev
+| Variable | Purpose |
+| --- | --- |
+| `NUXT_PUBLIC_SUPABASE_URL` | Supabase project URL (browser and server) |
+| `NUXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/publishable key |
+| `NUXT_SUPABASE_SERVICE_ROLE_KEY` | Server only. Used by the login-code route and the keep-alive cron (and, in local dev, passed in by `run-app.ps1`) |
+| `CRON_SECRET` | Server only. At least 16 random characters; guards `/api/cron/keep-alive` |
+| `NUXT_APP_BASE_URL` | Optional. Defaults to `/`. See below |
+| `NUXT_PUBLIC_IS_MOBILE` | Optional. `true` enables the mobile flag in runtime config |
 
-# yarn
-yarn dev
+## Scripts
 
-# bun
-bun run dev
-```
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Nuxt dev server |
+| `npm run build` | Production build (the repo's validation command) |
+| `npm run preview` | Preview a production build |
+| `npm test` | Node's built-in test runner over `tests/*.test.mjs` |
+
+Tests cover pure utilities, store/composable helpers, UI logic and migration SQL contents. There are no component, API-route or database/RLS tests.
+
+## Database and migrations
+
+Schema lives in `supabase/migrations/` as versioned SQL. Never edit applied migrations; add a new forward migration. The linked Supabase project is production.
+
+GitHub Actions:
+
+- **Check Supabase Migrations**: on pull requests to `main`, runs `supabase db push --dry-run`.
+- **Deploy Supabase Migrations**: on push to `main`, runs `supabase db push` against production with no approval step. Review migration PRs carefully.
 
 ## Production
 
 ### Root URLs on Vercel
 
-Budgify defaults to root hosting: login is at `https://www.budgify.ca/`
-and authenticated users land at `https://www.budgify.ca/home`.
-In Vercel, ensure `NUXT_APP_BASE_URL` is absent or set to `/` in production
-and preview environments before redeploying. The same setting is used for
-routes, public assets, and the PWA manifest and service worker at build time.
-For other hosts that require a subpath, set `NUXT_APP_BASE_URL` to that path
-with a trailing slash before building.
+Budgify is served from the root: login at `https://www.budgify.ca/`, app at `/home`. In Vercel, `NUXT_APP_BASE_URL` must be absent or `/` in production and preview. The same value drives routes, public assets, the PWA manifest and the service worker at build time. For a host that needs a subpath, set `NUXT_APP_BASE_URL` to that path with a trailing slash before building.
 
-`vercel.json` permanently redirects `/Finance-App` and its child paths to
-their root equivalents, preserving query strings. After deploying, check
-login, direct page refreshes, icons, API requests, and a legacy bookmark
-such as `/Finance-App/home?month=10` on a Vercel preview and production.
+`vercel.json` permanently redirects the legacy `/Finance-App` paths to their root equivalents, preserving query strings. After deploying, check login, direct page refreshes, icons, API requests, and a legacy bookmark such as `/Finance-App/home?month=10` on a preview and on production.
 
-The PWA identity and scope move from `/Finance-App/` to `/`. Existing
-installed apps may need to be removed and reinstalled from the root URL.
-Check launch and updates from an existing installation as well as a fresh
-installation; an old service worker may serve cached pages before the
-request reaches Vercel's redirects.
+The PWA identity and scope moved from `/Finance-App/` to `/`. Existing installs may need to be removed and reinstalled from the root URL, and an old service worker can serve cached pages before Vercel's redirects apply. Test both an existing and a fresh install.
 
 ### Supabase keep-alive cron
 
-The Vercel deployment runs `GET /api/cron/keep-alive` daily at 05:00 UTC to
-generate Supabase database activity. The route is configured in `vercel.json`
-and uses the existing server-side Supabase service-role credentials.
+Vercel calls `GET /api/cron/keep-alive` daily at 05:00 UTC (configured in `vercel.json`). The route queries the `Profile` table with the service-role key so the project registers activity. Set `CRON_SECRET` in Vercel; Vercel sends it as `Authorization: Bearer <CRON_SECRET>` and other requests get 401. The deployment also needs `NUXT_PUBLIC_SUPABASE_URL` and `NUXT_SUPABASE_SERVICE_ROLE_KEY`.
 
-Add a random secret of at least 16 characters to the Vercel project as the
-`CRON_SECRET` environment variable. Vercel sends it to the route as
-`Authorization: Bearer <CRON_SECRET>`. Requests without the matching secret are
-rejected.
+Supabase inactivity detection is usage-based, so this is a best-effort keep-alive, not a guarantee that a Free Plan project never pauses.
 
-The deployment also requires `NUXT_PUBLIC_SUPABASE_URL` and
-`NUXT_SUPABASE_SERVICE_ROLE_KEY`.
+## Statement upload (legacy, scheduled for removal)
 
-Supabase inactivity detection is usage-based, so this cron is a best-effort
-keep-alive rather than a guarantee that a Free Plan project will never pause.
+This feature is on its way out. Until it is removed, this is everything it touches:
 
-Build the application for production:
+- Pages: `app/pages/upload/` (`index.vue`, `transactions.vue`); nav entry in `app/components/SideNav.vue`
+- Components: `app/components/upload/`
+- Client API: `app/composables/api/useUploadApi.ts`, `useTransactionsApi.ts`
+- Server routes: `server/api/upload.post.ts`, `server/api/transactions/*`; data access in `server/utils/supabase/transactions.ts`
+- Parsing: `utils/parse.ts` (bank-specific CSV formats), `utils/attachCategoryLabel.ts`. The CSV is sent as text to the server and parsed there with Papa Parse
+- Database: `Transaction`, `Transaction_Category`, `Category`, `Transaction_Groups` tables and the `get_transaction_categories` function
+- Dependencies likely used only by it: `papaparse` (also externalized in `nuxt.config.ts`), `@types/papaparse`; check `csv-parse` and `uuid` before removing
 
-```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+Removing it should include a forward migration for the tables above, and an explicit decision on whether existing transaction data is kept or dropped.
