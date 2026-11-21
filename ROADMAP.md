@@ -13,7 +13,7 @@ Planned features in priority order, highest first. Started 2026-11-18. This is a
 | 3 | Recurring transactions | Not started | Idempotent creates, Vercel cron |
 | 4 | Activity history | Not started (needs definition) | `user_id` on budget hits |
 | 5 | User/household management | Not started | `Profile.household_id`, invite-only login |
-| 6 | Offline mode | Partly built | Offline cache and outbox |
+| 6 | Offline mode | Phase 1 launch fix in review (offline is a dependency of items 1 to 3) | Offline cache and outbox |
 | 7 | Remove CSV file upload | Planned removal | See README footprint |
 | 8 | Linked bank accounts | Not started | Accounts |
 | 9 | Language model integration for dynamic reports | Not started | `/api/bootstrap` data |
@@ -116,15 +116,93 @@ Any change to who is authorized touches the login check and the RLS policies, so
 
 ## 6. Offline mode
 
-**Today (built):** the last-synced month is cached in IndexedDB and the app can open while offline. New expenses, income and transfers made offline are queued with a client-generated `operationId`, shown optimistically, and replayed when the connection returns. The cache is cleared on sign-out and is tied to a user id.
+**Priority use case:** adding expenses far outweighs every other action in the app. Anything that threatens "open the app and add an expense with no signal" outranks the rest of this section. Wishlist (item 1) and Tags (item 2) are committed to working fully offline, and Recurring transactions (item 3) will create transactions through the same path, so generalizing the offline engine once is cheaper than retrofitting each feature.
 
-**Not built:** edits and deletions require a connection. Only the data for months already synced is available offline. There is no conflict handling beyond idempotent creates.
+### How it works today
+
+- **Reads:** one snapshot per month is stored in IndexedDB (`budgify-offline`). On launch the app shows the cached snapshot immediately, then refreshes from `/api/bootstrap`. Refreshes also run every 5 minutes, when the app returns to the foreground, and when the network returns.
+- **Writes:** only new expenses, income and transfers can be queued. Each gets a client-generated `operationId`, an optimistic row, and an idempotent replay. `apiFetch` rejects every other write while offline.
+- **Replay:** the queue is sent oldest first, one entry at a time. A success removes the entry and swaps the temporary row for the server's row. A network failure stops replay and leaves the rest queued. A server rejection marks the entry failed with its error, visible with Retry and Discard. Replaying is safe to repeat because the server recognizes an `operationId` it has already saved.
+- **When replay runs:** only while the app is open in the foreground: on launch, on return to the foreground, when the browser reports it is online again, and on the 5-minute refresh. Nothing replays while the app is closed or the phone is asleep. There is no background-sync code and no custom service worker; the service worker only caches the app so it can start without a network.
+- **Login while offline (Phase 1 fix):** the app saves the signed-in user id on the device and uses it to open the app and to queue entries when the access token has expired and the server cannot be reached. A token refresh is attempted only when online, and a session check is capped at a few seconds.
+- **Background sync is discarded.** The owner uses an iPhone, and the browser Background Sync feature does not work on iOS Safari (it works in Chrome and Edge only). Sync happens when the app is opened.
+
+### Known issues (found by reading the code; issue 1 confirmed on the owner's phone; fixes for 1, 2, 3 and 6 are in Phase 1, awaiting a device test)
+
+1. **The app did not open offline once the login token expired.** Supabase access tokens last about an hour. When `getSession()` finds an expired token it tries a network refresh; offline, that fails and it returns "no session", so the app treated the user as signed out and showed the login page after a long wait. Confirmed 2026-11-21 on the owner's phone: airplane mode gives a long wait and then the login screen, and turning airplane mode off makes the app work again without signing in. **Fixed in Phase 1.**
+2. **Queueing an expense offline failed once the token had expired.** `createOrQueueOffline` re-read the session to get the user id and threw "Not authenticated" instead of queueing. **Fixed in Phase 1.**
+3. **A 401 during replay wiped the queue.** `syncOutbox` and `revalidate` cleared the whole offline cache, including the outbox. **Fixed in Phase 1.**
+4. **Sign-out clears the queue, by design.** `signOut()` clears the outbox, but the sign-out button already asks for confirmation when there are unsynced changes (`useSignOut`), so this is not a bug.
+5. **Only months already opened are available offline.** Any other month fails with "This month has not been saved for offline use yet."
+6. **`getSupabase()` created a new Supabase client on every call.** Several clients sharing one login could try to refresh the same token at once; because refresh tokens rotate, a race could sign the user out unexpectedly. **Fixed in Phase 1.**
+
+### Decisions
+
+**Agreed**
+- Target the use case, not a full local database: expenses, income and transfers (create, edit, delete), plus wishlist items and tags, work offline. Budgets and accounts stay online-only, because their writes run atomic database functions with uniqueness rules and month-owned periods that are conflict-prone to replay. A full local copy of the database with a sync engine would be a rewrite and is not justified by the use case.
+- Wishlist and tags work fully offline, including create, edit and delete (see items 1 and 2).
+- Background sync is discarded; sync happens when the app is opened.
+- Session expiry: unsynced changes are never discarded automatically. A rejected or missing login clears the in-memory data and the local login, keeps the offline cache and queue, and shows "Please sign in again"; the entries replay after the same user signs in. Signing out with unsynced changes warns first (already the case). Implemented in Phase 1.
+
+**Proposed defaults (not yet confirmed; confirm before building)**
+- **Editing or deleting something not yet synced:** change or remove the queued entry itself instead of queueing a separate update or delete.
+- **Conflicts:** last write wins. A delete beats an edit. An edit to something deleted elsewhere is dropped and shown in the failed list. Deleting something already deleted counts as success.
+- **Months available offline:** pre-cache the current month and the previous two while online, plus any month opened. Earlier months stay online-only.
+
+### Phase 1 fix for the launch and queueing bugs
+
+Separate "who is the user" (needed to open the app and queue entries) from "is there a valid token" (needed only to talk to the server):
+- One shared session helper (`resolveSession()`), used by the middleware, the login page, `useAppData`, the profile store and the offline queue. If a session exists, use it. If there is no session and no error, the user is signed out. If there is no session and the error is a network failure (or the check times out, or the browser is offline), treat the user as signed in but offline, using the saved user id. Any other error means the session is invalid.
+- Save the user id on the device whenever a valid session is seen, and clear it on sign-out. It is only used to find the cached data and to tag queued entries; it is not a credential, and the server still enforces access.
+- Queueing uses the saved user id, so it works with an expired token. Replay asks for a token when online, and the library refreshes it automatically.
+- Offline with a saved user, the login page redirects to the home page.
+- Do not wait on the network. When the browser reports it is offline, skip the refresh attempt. Otherwise cap session resolution at a few seconds and fall back to the saved user id.
+- The decision logic is a plain function (`utils/authSession.ts`) with unit tests (`tests/auth-session.test.mjs`).
+- One shared Supabase client instead of a new one per call.
+- On a 401 or missing login while syncing: stop polling, clear the in-memory data and the local login, keep the offline cache and queue, and open the login page with a "Please sign in again" message.
+- Rejected: lengthening the token lifetime in Supabase. It would only make the bug rarer and leaves a stolen token valid longer.
+
+### TODO
+
+**Phase 0: confirm the problem**
+- [x] Confirm what the user sees when the app will not load offline (done 2026-11-21, see known issue 1).
+- [x] Note which phone is used: an iPhone, so background sync is discarded.
+
+**Phase 1: fix launch and queueing**
+- [x] Pure session-decision function with unit tests.
+- [x] Shared session helper and saved user id; cleared on sign-out.
+- [x] Skip the token refresh when offline and cap session resolution with a short timeout.
+- [x] Replace direct `getSession()` calls in the auth middleware, the login page, `useAppData.load`, the profile store, `createOrQueueOffline` and `getApiToken`.
+- [x] One shared Supabase client.
+- [x] Redirect the login page to the home page when offline with a saved user.
+- [x] On a 401 during replay: keep the queue and prompt to sign in again. The outbox is no longer cleared.
+- [x] Warn before sign-out when there are unsynced entries (already in place).
+- [ ] Manual test on a real device (needs the owner's iPhone): open offline within the hour, open offline after more than an hour, add an expense offline, kill and reopen the app, go online and confirm the entry syncs. Also: let the login lapse, reconnect, and confirm queued entries survive the "Please sign in again" step and sync after signing in.
+- [x] Correct the docs that say the app opens offline (README, `AGENTS.md`, and the middleware comment).
+
+**Phase 2: generalize the queue (moderate)**
+- [ ] Change the outbox entry from "create" to an operation: entity, action (create, edit, delete), target id, payload.
+- [ ] Generate ids on the device for everything created offline, so a later queued entry can refer to it.
+- [ ] Merge edits and deletes of a not-yet-synced entry into the queued create instead of queueing separate entries.
+- [ ] Define replay ordering and dependencies (for example a tag must be created before an expense that uses it).
+- [ ] Make the server accept repeated edits and deletes safely (deleting a missing record succeeds; edits are idempotent).
+- [ ] Apply the agreed conflict rules; show dropped entries in the failed list.
+- [ ] Allow edit and delete of expenses, income and transfers while offline: lift the `apiFetch` offline block for these, update the stores optimistically, extend `WRITE_ACTIONS`.
+- [ ] Pre-cache the current month and previous two in the background when online.
+- [ ] Keep the "N changes waiting to sync" indicator prominent and make sync-on-open prompt.
+- [ ] Unit tests for the queue: merging, ordering, conflicts, retry and discard.
+
+**Phase 3: Wishlist and Tags offline (with items 1 and 2)**
+- [ ] Add wishlist items and tags to `/api/bootstrap` and the offline snapshot. Bump the snapshot version and decide how old caches are handled (the simple option discards them and refetches when online).
+- [ ] Queue wishlist and tag create, edit and delete through the generalized queue.
+
+**Later and optional**
+- [ ] Revisit budgets and accounts offline only if a real need appears.
 
 **Open questions**
-- Which of edit, delete, budget changes and account changes must work offline?
-- How should conflicts be resolved when the same record was changed on two devices?
-- Should more months be pre-cached, and how much storage is acceptable?
-- Test coverage today is unit-level only (queue and cache helpers); real-device testing of the PWA offline behavior is still needed.
+- Confirm the proposed defaults above, or change them.
+- Storage: how many months of data per device is acceptable once more months are pre-cached?
+- Test coverage today is unit-level only (queue and cache helpers, session decisions). Real-device testing of the PWA offline behavior is still needed after each phase.
 
 ## 7. Remove CSV file upload
 

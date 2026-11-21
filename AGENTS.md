@@ -45,7 +45,7 @@ The CSV statement upload feature (`/upload`, `/upload/transactions`) and everyth
   - `/savings` for trailing savings summaries
   - `/upload` (deprecated, see above)
 - `app/app.vue` is the shell. It switches between `SideNav` on desktop and `BottomNav` on mobile. `SideNav` links to the deprecated upload page; `BottomNav` does not.
-- `app/middleware/01.auth.global.ts` is the global auth gate. It only checks for a Supabase session: unauthenticated users stay on `/`, authenticated users are redirected from `/` to `/home`. It does not load data, so a previously loaded account can still open while offline.
+- `app/middleware/01.auth.global.ts` is the global auth gate. It resolves the session with `resolveSession()` (`app/composables/supabase/session.ts`): signed-out users stay on `/`, signed-in users are redirected from `/` to `/home`. A user who is signed in but cannot refresh an expired token because the device is offline still counts as signed in (see Offline support). It does not load data.
 - Authentication is invite-only email OTP. `POST /api/auth/send-code` checks the `is_authorized_email` RPC with the service-role key before sending a code (`shouldCreateUser: false`). The browser verifies the code with `supabase.auth.verifyOtp` (`app/composables/supabase/auth.ts`).
 
 ### State and data loading
@@ -61,8 +61,8 @@ The CSV statement upload feature (`/upload`, `/upload/transactions`) and everyth
 
 ### Data access layers
 
-- Browser: `app/composables/supabase/` is limited to the Supabase client (`client.ts`, used for session and auth only) and auth helpers (`auth.ts`). Do not query data tables from the browser.
-- Client API: `app/composables/api/use*Api.ts` call `apiFetch` (`app/composables/useApiToken.ts`), which attaches the user's access token as a Bearer header. `apiFetch` rejects non-GET requests while offline.
+- Browser: `app/composables/supabase/` is limited to the shared Supabase client (`client.ts`, a single instance, used for session and auth only), session helpers (`session.ts`) and auth helpers (`auth.ts`). Do not query data tables from the browser, and use `resolveSession()` instead of calling `getSession()` directly.
+- Client API: `app/composables/api/use*Api.ts` call `apiFetch` (`app/composables/useApiToken.ts`), which attaches the user's access token as a Bearer header. `apiFetch` rejects requests while offline. `getApiToken` waits at most 8 seconds for a token and throws `SessionUnavailableError` (a connection problem, so creates are queued) or `NotAuthenticatedError` (the user must sign in).
 - Server routes: `server/api/<domain>/...`. Each route calls `requireAuth(event)` (`server/utils/supabase/auth.ts`), which validates the token and returns a user-scoped Supabase client (anon key plus the caller's JWT, so RLS applies). Routes then call domain helpers in `server/utils/supabase/` (`budgets.ts`, `hits.ts`, `accounts.ts`, `profile.ts`, `transactions.ts`, plus `budget-errors.ts`). The service-role key is reserved for the login-code and keep-alive routes; don't use it elsewhere without a clear need.
 - `server/middleware/01.api-cache-control.ts` sets `Cache-Control: private, no-store` on all `/api/` responses.
 - Table names are capitalized (`Profile`, `Budgets`, `Budget_Period`, `Budget_Hit`, `Account`, `Account_Value`); preserve existing naming in queries and migrations unless intentionally changing the schema. Server helpers query the `finance-app` schema (for example `transactions.ts` uses `supabase.schema('finance-app')`).
@@ -71,10 +71,12 @@ The CSV statement upload feature (`/upload`, `/upload/transactions`) and everyth
 ### Offline support
 
 - `app/utils/offlineFinanceCache.client.ts` stores month snapshots, preferences and an outbox in IndexedDB (`budgify-offline`).
-- `app/utils/offlineCreateQueue.client.ts` (`createOrQueueOffline`) sends expense, income and transfer creates to `/api/hits`, `/api/income` and `/api/transfers` with a client-generated `operationId`. On a network failure it queues the operation and returns an optimistic row; queued items replay when the connection returns.
+- `app/utils/offlineCreateQueue.client.ts` (`createOrQueueOffline`) sends expense, income and transfer creates to `/api/hits`, `/api/income` and `/api/transfers` with a client-generated `operationId`. On a network failure it queues the operation and returns an optimistic row; queued items replay only while the app is open and online: on launch, on return to the foreground, when the browser reports it is online, and on the 5-minute refresh. Nothing replays while the app is closed, and background sync is not used.
 - Idempotency: server routes validate `operationId` (`server/utils/offline-operation.ts`) and the `idempotent_budget_hit_creates` migration makes replays safe. Keep creates idempotent when changing these paths.
+- Signed-in state while offline: `resolveSession()` (decision logic in `utils/authSession.ts`) saves the user id on the device (`localStorage`, key `budgify:user-id`) whenever a valid session is seen. If Supabase cannot refresh an expired token because the network is unavailable, the session check takes longer than 4 seconds, or the browser is offline, the user counts as signed in as the saved user. The app then opens from the cache and entries can be queued. The saved id is not a credential and the server still enforces access. It is cleared on sign-out.
 - Only creates are queued. Edits and deletes require a connection.
 - The offline cache is cleared on sign-out. Cached data is tied to a user id and is rejected if it belongs to a different user.
+- A rejected or missing login while syncing (a 401, or `NotAuthenticatedError`) clears only the in-memory data and the local login. The offline cache and outbox are kept, and queued entries replay after the same user signs in. Do not clear the outbox in this case.
 
 ### Persistence decision rule
 

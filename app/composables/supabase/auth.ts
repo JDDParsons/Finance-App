@@ -1,4 +1,5 @@
 import { getSupabase } from './client'
+import { clearSavedUserId, saveUserId } from './session'
 import { clearOfflineFinanceCache } from '~/utils/offlineFinanceCache.client'
 import { useProfileStore } from '~/stores/profile'
 import { useAccountsStore } from '~/stores/accounts'
@@ -13,6 +14,7 @@ export async function validateCode(email: string, code: string) {
       token: code,
       type: 'email',
     })
+    if (session?.user?.id) saveUserId(session.user.id)
     return { session, error }
   } catch (err: any) {
     console.error('Error validating code:', err)
@@ -23,6 +25,7 @@ export async function validateCode(email: string, code: string) {
 export async function signOut() {
   const supabase = getSupabase()
   await clearOfflineFinanceCache()
+  clearSavedUserId()
   useProfileStore().clear()
   useAccountsStore().clear()
   useFinanceStore().clear()
