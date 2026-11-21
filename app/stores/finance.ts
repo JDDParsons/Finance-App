@@ -100,6 +100,9 @@ export const useFinanceStore = defineStore('finance', () => {
 
   /** @param silent When true, skips setting loading/refreshing flags on this store and any dependent store fetches. */
   async function fetchAll(silent = false) {
+    // Offline there is nothing to fetch; keep the cached and queued rows on screen
+    // instead of replacing them with a "You are offline" error.
+    if (import.meta.client && initialized.value && !navigator.onLine) return
     try {
       if (!silent) {
         if (initialized.value) {
