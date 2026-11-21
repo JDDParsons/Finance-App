@@ -135,6 +135,7 @@ Any change to who is authorized touches the login check and the RLS policies, so
 4. **Sign-out clears the queue, by design.** `signOut()` clears the outbox, but the sign-out button already asks for confirmation when there are unsynced changes (`useSignOut`), so this is not a bug.
 5. **Only months already opened are available offline.** Any other month fails with "This month has not been saved for offline use yet."
 6. **`getSupabase()` created a new Supabase client on every call.** Several clients sharing one login could try to refresh the same token at once; because refresh tokens rotate, a race could sign the user out unexpectedly. **Fixed in Phase 1.**
+7. **Icons did not render offline.** The icon module used the `server` provider, which fetches each SVG from `/api/_nuxt_icon` at runtime; that fails offline and is never cached. **Fixed:** `icon.clientBundle` (with `scan: true` plus the two account icons from `utils/accountAppearance.ts`, which the scan does not reach) embeds the icons in the precached client bundle. A new icon name must be a literal string in `app/`, or be added to `icon.clientBundle.icons` in `nuxt.config.ts`.
 
 ### Decisions
 
