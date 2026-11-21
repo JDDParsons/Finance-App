@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { getSupabase } from '~/composables/supabase/client'
+import { resolveSession } from '~/composables/supabase/session'
 import { useProfileApi } from '~/composables/api/useProfileApi'
 
 export interface UserProfile {
@@ -19,9 +19,8 @@ export const useProfileStore = defineStore('profile', () => {
   const householdId = computed(() => profile.value?.household_id ?? null)
 
   async function init() {
-    const supabase = getSupabase()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) throw new Error('Not authenticated')
+    const auth = await resolveSession()
+    if (auth.state === 'signed-out') throw new Error('Not authenticated')
 
     const { getProfile } = useProfileApi()
     const data = await getProfile()

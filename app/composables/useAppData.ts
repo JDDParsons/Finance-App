@@ -5,6 +5,7 @@ import { useAccountsStore } from '~/stores/accounts'
 import { useFinanceStore } from '~/stores/finance'
 import { useSavingsStore } from '~/stores/savings'
 import { discardFailedOfflineCreates, replayOfflineCreates } from '~/utils/offlineCreateQueue.client'
+import { isSessionExpiredError, resolveSession } from '~/composables/supabase/session'
 import type { BootstrapResponse, OfflineFinanceSnapshot } from '~/types/bootstrap'
 import {
   clearOfflineFinanceCache,
@@ -99,6 +100,21 @@ export function useAppData() {
     if (restoreRows) operations.forEach(financeStore.restoreOfflineCreate)
   }
 
+  // The server rejected the login, or there is none. Unsynced changes are kept:
+  // the offline cache and outbox stay on the device and replay after the same
+  // user signs in again. Only the in-memory data and the local login are cleared.
+  async function handleSessionExpired() {
+    stopPolling()
+    clearStores()
+    activeUserId.value = null
+    try {
+      await getSupabase().auth.signOut({ scope: 'local' })
+    } catch {
+      // The local login is cleared best-effort; the login page still opens.
+    }
+    await navigateTo('/?expired=1')
+  }
+
   async function syncOutbox(retryFailed = false) {
     if (!activeUserId.value || !navigator.onLine || syncing.value) return
     syncing.value = true
@@ -116,12 +132,8 @@ export function useAppData() {
       await refreshOutboxState()
       await persist()
     } catch (error: any) {
-      const status = error?.statusCode ?? error?.status ?? error?.response?.status
-      if (status === 401) {
-        await clearOfflineFinanceCache()
-        clearStores()
-        activeUserId.value = null
-        await navigateTo('/')
+      if (isSessionExpiredError(error)) {
+        await handleSessionExpired()
         return
       }
       isOffline.value = !navigator.onLine
@@ -165,6 +177,7 @@ export function useAppData() {
   }
 
   async function revalidate() {
+    if (!activeUserId.value) return
     if (refreshPromise) return refreshPromise
     refreshPromise = (async () => {
       refreshing.value = isReady.value
@@ -176,12 +189,8 @@ export function useAppData() {
         isOffline.value = false
         await persist()
       } catch (error) {
-        const status = (error as any)?.statusCode ?? (error as any)?.status ?? (error as any)?.response?.status
-        if (status === 401) {
-          await clearOfflineFinanceCache()
-          clearStores()
-          activeUserId.value = null
-          await navigateTo('/')
+        if (isSessionExpiredError(error)) {
+          await handleSessionExpired()
           return
         }
         isOffline.value = import.meta.client ? !navigator.onLine || isReady.value : false
@@ -197,20 +206,23 @@ export function useAppData() {
   async function load() {
     isLoading.value = true
     try {
-      const supabase = getSupabase()
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user?.id) throw new Error('Not authenticated')
-      if (isReady.value && activeUserId.value === session.user.id) return
-      if (activeUserId.value && activeUserId.value !== session.user.id) {
+      // 'offline' means signed in but the server can't be reached to refresh an
+      // expired token; the cached data for the saved user is still shown.
+      const auth = await resolveSession()
+      if (auth.state === 'signed-out') throw new Error('Not authenticated')
+      if (auth.state === 'offline') isOffline.value = true
+      const userId = auth.userId
+      if (isReady.value && activeUserId.value === userId) return
+      if (activeUserId.value && activeUserId.value !== userId) {
         await clearOfflineFinanceCache()
         clearStores()
       }
-      activeUserId.value = session.user.id
+      activeUserId.value = userId
       registerSuccessfulActionPersistence()
       if ('caches' in globalThis) void caches.delete('nuxt-api')
 
       try {
-        const cached = await getOfflineFinanceSnapshot(session.user.id, financeStore.selectedMonth)
+        const cached = await getOfflineFinanceSnapshot(userId, financeStore.selectedMonth)
         if (cached) applyPayload(cached)
       } catch (error) {
         console.warn('Could not read the offline finance cache:', error)

@@ -1,10 +1,11 @@
 <script setup>
 import { validateCode } from '~/composables/supabase'
-import { getSupabase } from '~/composables/supabase/client'
+import { resolveSession } from '~/composables/supabase/session'
 
 useHead({ title: 'Budgify' })
 
 const toast = useToast();
+const route = useRoute();
 const email = ref('');
 const emailError = ref('');
 const loading = ref(false);
@@ -14,9 +15,15 @@ const codeRequested = ref(false);
 watch(email, () => { emailError.value = ''; });
 
 onMounted(async () => {
-    const supabase = getSupabase()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session) {
+    if (route.query.expired) {
+        toast.add({
+            title: 'Please sign in again',
+            description: 'Your session expired. Changes saved on this device will sync after you sign in.',
+            color: 'warning',
+        });
+    }
+    const auth = await resolveSession()
+    if (auth.state !== 'signed-out') {
         await navigateTo('/home');
     }
 });

@@ -1,4 +1,10 @@
-import { getSupabase } from '~/composables/supabase/client'
+import {
+  NotAuthenticatedError,
+  SessionUnavailableError,
+  getSavedUserId,
+  isSessionExpiredError,
+  resolveSession,
+} from '~/composables/supabase/session'
 import { apiFetch } from '~/composables/useApiToken'
 import type { OfflineCreateKind, OfflineCreateOperation, OfflineReplayResult } from '~/types/offline'
 import { deleteOfflineCreate, getOfflineCreates, putOfflineCreate } from './offlineFinanceCache.client'
@@ -19,6 +25,8 @@ function errorMessage(error: any) {
 }
 
 function isNetworkFailure(error: any) {
+  if (error instanceof NotAuthenticatedError) return false
+  if (error instanceof SessionUnavailableError) return true
   return !navigator.onLine || (!error?.response && !error?.status && !error?.statusCode)
 }
 
@@ -34,11 +42,16 @@ export async function createOrQueueOffline(
     })
   } catch (error: any) {
     if (!isNetworkFailure(error)) throw error
-    const { data: { session } } = await getSupabase().auth.getSession()
-    if (!session?.user.id) throw new Error('Not authenticated')
+    // Queueing must work without a valid token, so use the user id saved on this device.
+    let userId = getSavedUserId()
+    if (!userId) {
+      const auth = await resolveSession()
+      if (auth.state === 'signed-out') throw new NotAuthenticatedError()
+      userId = auth.userId
+    }
     const operation: OfflineCreateOperation = {
       id: operationId,
-      userId: session.user.id,
+      userId,
       kind,
       payload,
       createdAt: new Date().toISOString(),
@@ -48,7 +61,7 @@ export async function createOrQueueOffline(
     }
     await putOfflineCreate(operation)
     notifyOutboxChanged()
-    return buildOptimisticRow(kind, operationId, session.user.id, payload)
+    return buildOptimisticRow(kind, operationId, userId, payload)
   }
 }
 
@@ -64,8 +77,7 @@ export async function replayOfflineCreates(userId: string, retryFailed = false):
       await deleteOfflineCreate(operation.id)
       results.push({ operation, row })
     } catch (error: any) {
-      const status = error?.statusCode ?? error?.status ?? error?.response?.status
-      if (status === 401) throw error
+      if (isSessionExpiredError(error)) throw error
       if (isNetworkFailure(error)) break
       const message = errorMessage(error)
       await putOfflineCreate({
