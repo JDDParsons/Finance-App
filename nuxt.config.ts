@@ -15,6 +15,13 @@ export default defineNuxtConfig({
   icon: {
     provider: 'server',
     fallbackToApi: false,
+    // Embed icons in the client bundle so the service worker precaches them;
+    // the server provider would fetch them from /api/_nuxt_icon, which fails offline.
+    clientBundle: {
+      scan: true,
+      // Account icons live in utils/accountAppearance.ts, outside srcDir, so scan may miss them.
+      icons: ['heroicons-solid:building-library', 'heroicons-solid:credit-card'],
+    },
     serverBundle: {
       collections: [
         'heroicons',
