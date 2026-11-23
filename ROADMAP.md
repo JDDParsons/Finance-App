@@ -17,7 +17,7 @@ Planned features in priority order, highest first. Started 2026-11-18. This is a
 | 7 | Remove CSV file upload | Planned removal | See README footprint |
 | 8 | Linked bank accounts | Not started | Accounts |
 | 9 | Language model integration for dynamic reports | Not started | `/api/bootstrap` data |
-| 10 | Settings page (manage entities and tags) | Design agreed, not started | Entities on budget hits, tags (item 2) |
+| 10 | Settings page (manage entities and tags) | Settings, accounts move and entity rename and merge built, device check pending; tag management waits for item 2 | Entities on budget hits, tags (item 2) |
 | 11 | Custom reports | Design agreed (layout to plan), not started | Tags (item 2), settings (item 10) |
 
 Status values: Not started, In progress, Shipped, Dropped.
@@ -267,6 +267,7 @@ This work is independent of the other features and can be done at any time. It a
 **Today:** an entity is a free-text `entity` field on each budget hit (expense or income), typed per transaction. There is no entity table, so "Costco" and "costco " are different values, and nothing lets the user fix a misspelling in old records. The profile page appears to be a placeholder (see item 5), and there is no settings area.
 
 **Design decisions (confirmed 2026-11-23)**
+- Routes (decided 2026-11-23): `/settings` lists the categories, each with a line of subtext, and each category has its own route. The first two are Bank accounts (`/settings/accounts`, the former accounts page moved with its list unchanged) and Payment entities (`/settings/entities`). The profile page keeps the name, email and sync status. The old `/accounts` route is removed with no redirect.
 - Entity management: list the distinct entities in use with a count and total, rename one (which updates every record using it), and merge duplicates into one. A merge is a rename to a name that already exists. Rename and merge apply to both expenses and income. Both ask for confirmation first, showing how many records will change. There is no undo.
 - Navigation: Settings opens from a settings icon on the profile page, next to the sign-out icon. The dark/light mode switch that sits there today moves into Settings, and the settings icon takes its place on the profile page. The mobile bottom nav stays at four tabs.
 - Entities stay free text on the transaction. Settings only cleans up and standardizes existing values; it does not create a separate required entity list. The expense form can suggest existing entities as the user types.
@@ -276,6 +277,8 @@ This work is independent of the other features and can be done at any time. It a
 - Entity and tag management need a connection, like budgets and accounts, and are not queued offline.
 - Rename and merge sync the offline queue first. If any change on the device is still waiting or has failed, the user is asked to resolve it before renaming, so a retried entry cannot bring the old name back.
 - Known limitation: a rename only covers records already on the server. Changes queued on another household member's device may later bring back the old name, and the user can merge it again.
+
+**Built (entities page, 2026-11-23):** a list of entities with record count and total (sortable by name, record count or total) and a search box. One Edit action per row: a new name renames, a name that matches another entity merges (it uses that entity's spelling), and a change of case only is a normal rename. A confirmation shows how many records change (for example 43 records, 38 expenses and 5 income) and says it cannot be undone. The queue is synced first and the rename is refused while changes are waiting or failed. Offline, the list is read-only and built from the months saved on the device. After a rename the open month and the recent saved months are refreshed; older saved months keep the old name until they are opened online again. Database: migration `20261123120000_add_entity_management.sql`, run once against a throwaway Postgres 15 with stand-in tables (grouping, rename, merge, repeat, household isolation, transfers untouched, grants). It has not run against Supabase itself, and there is no database test in the repo.
 
 **Open questions**
 - Whether Settings later also holds profile and household settings is left to the item 5 discussion.

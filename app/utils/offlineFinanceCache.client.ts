@@ -65,6 +65,13 @@ export async function getOfflineFinanceSnapshotForMonth(
   return snapshot
 }
 
+/** Every cached month for this user (used to list entities offline). */
+export async function getOfflineSnapshotsForUser(userId: string) {
+  const database = await getDatabase()
+  const snapshots = await database.getAll('snapshots')
+  return snapshots.filter(snapshot => snapshot.userId === userId && snapshot.cacheVersion === 1)
+}
+
 export async function saveOfflineFinanceSnapshot(snapshot: OfflineFinanceSnapshot) {
   const database = await getDatabase()
   const { year, month } = snapshot.finance.selectedMonth
