@@ -20,10 +20,20 @@ export default defineNuxtConfig({
     clientBundle: {
       scan: true,
       // Account icons live in utils/accountAppearance.ts, outside srcDir, so scan may miss them.
-      icons: ['heroicons-solid:building-library', 'heroicons-solid:credit-card'],
+      // Sync status icons live in utils/syncStatus.ts, outside srcDir, so list them too.
+      icons: [
+        'heroicons-solid:building-library',
+        'heroicons-solid:credit-card',
+        'fa7-regular:cloud',
+        'fa7-regular:circle-check',
+        'fa7-solid:arrows-rotate',
+        'fa7-solid:triangle-exclamation',
+      ],
     },
     serverBundle: {
       collections: [
+        'fa7-regular',
+        'fa7-solid',
         'heroicons',
         'heroicons-solid',
         'ic',

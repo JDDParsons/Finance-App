@@ -13,12 +13,16 @@ Planned features in priority order, highest first. Started 2026-11-18. This is a
 | 3 | Recurring transactions | Not started | Idempotent creates, Vercel cron |
 | 4 | Activity history | Not started (needs definition) | `user_id` on budget hits |
 | 5 | User/household management | Not started | `Profile.household_id`, invite-only login |
-| 6 | Offline mode | Phases 1 and 2 shipped and tested on a device; Phase 3 not started (offline is a dependency of items 1 to 3) | Offline cache and outbox |
+| 6 | Offline mode | Phases 1 and 2 shipped and tested on a device; Phase 4 (sync status chip) built, device check pending; Phase 3 not started (offline is a dependency of items 1 to 3) | Offline cache and outbox |
 | 7 | Remove CSV file upload | Planned removal | See README footprint |
 | 8 | Linked bank accounts | Not started | Accounts |
 | 9 | Language model integration for dynamic reports | Not started | `/api/bootstrap` data |
+| 10 | Settings page (manage entities and tags) | Design agreed, not started | Entities on budget hits, tags (item 2) |
+| 11 | Custom reports | Design agreed (layout to plan), not started | Tags (item 2), settings (item 10) |
 
 Status values: Not started, In progress, Shipped, Dropped.
+
+**Agreed build order for items 10, 2 and 11 (decided 2026-11-23):** 1) the Settings page with entity management (item 10), 2) Tags, managed from Settings (item 2), 3) Custom reports (item 11). Each step ships on its own. The item numbers are not the build order here.
 
 ## 1. Wishlist (savings impact planner)
 
@@ -69,8 +73,7 @@ Status values: Not started, In progress, Shipped, Dropped.
 - Tags are created on the spot by typing a new name in the expense form, and can be added or removed later when editing any expense (one expense at a time; no bulk tagging).
 - Names are normalized: lowercase, prefixed with `#`, and with spaces removed, so "Dinner Party" becomes `#dinnerparty`. Typing the `#` yourself does not double it. Two names that normalize to the same value are the same tag. Special characters (punctuation, symbols, emoji) are allowed. The only things blocked are whitespace (removed), control and zero-width characters (invisible, so they would create look-alike duplicates), and names longer than 20 characters, not counting the `#`. Names are Unicode-normalized before comparing, so look-alike forms of the same text count as one tag. Because names can contain symbols, they must be URL-encoded wherever they appear in routes or queries.
 - A tag has a name and a color. No icon and no target amount. The color is assigned automatically from the existing budget color palette when the tag is created, so nothing extra is asked while typing a name in the expense form.
-- A tag's totals are all-time (a trip or a party does not reset monthly), with a way to view them by month. The tag view shows its total, a breakdown by budget, and a timeline of its expenses. It shows only the tag's own numbers, with no comparison to household spending.
-- Tags live in a "Tags" tab beside the budget list on the Budgets page. The mobile bottom nav stays at four tabs. There is no tag filter on the cashflow table for now.
+- There is no separate tag view or Tags tab on the Budgets page. Tag totals, breakdowns and timelines come from Custom reports (item 11), where a tag is one of the filters. Tags are created while entering an expense, and are renamed, recolored and deleted from the Settings page (item 10). The mobile bottom nav stays at four tabs. There is no tag filter on the cashflow table for now.
 - Tags are always shared with the household, and any member can edit or delete one.
 - Tags can be deleted, with a confirmation. Deleting a tag removes it from its expenses and never deletes the expenses. There is no archiving.
 - Tags work fully offline, in line with the Wishlist decision: a tag can be created offline, and an expense still waiting to sync can carry it.
@@ -82,6 +85,8 @@ Status values: Not started, In progress, Shipped, Dropped.
 
 **Open questions**
 - Renaming a tag to a name that already exists: reject with a message (the simple default), or merge the two tags?
+
+**Build order:** Tags come after the Settings page (item 10), which hosts tag management, and before Custom reports (item 11), which is where tags are used to answer questions.
 
 ## 3. Recurring transactions
 
@@ -200,6 +205,16 @@ Separate "who is the user" (needed to open the app and queue entries) from "is t
 - [ ] Add wishlist items and tags to `/api/bootstrap` and the offline snapshot. Bump the snapshot version and decide how old caches are handled (the simple option discards them and refetches when online).
 - [ ] Queue wishlist and tag create, edit and delete through the generalized queue.
 
+**Phase 4: visible sync status (small, independent of Phase 3)**
+Decided 2026-11-23. Make the offline, syncing and synced states visible without opening anything.
+- [x] Add a shared composable that turns the existing state in `useAppData` (`isOffline`, `syncing`, `pendingSyncCount`, `failedSyncCount`) into one status, so the chip, the profile page and the top banner cannot disagree. Offline: grey. Online with changes waiting or syncing: blue. Online and nothing waiting: green. Failed changes: amber, a fourth state so green never hides something that needs action.
+- [x] In the top right of the app, put a small colored chip (`UChip`, a plain dot with no icon) on the profile avatar in `AppHeader.vue`, with an accessible label and tooltip that state the status in words.
+- [x] On the profile page, show the status icon and text below the user's email. Icons: offline `fa7-regular:cloud`, syncing `fa7-solid:arrows-rotate` (spinning, and still when the user prefers reduced motion), synced `fa7-regular:circle-check`, needs attention `fa7-solid:triangle-exclamation`. The Retry and Discard actions for failed changes can sit next to the "needs attention" text.
+- [x] Keep the existing banner for details, and move it below the header. Today it is fixed at the top edge with the same stacking level (`z-50`) as the sticky header, which comes later in the page, so the header very likely covers it (found by reading the code on 2026-11-23, not yet confirmed on screen). Offset it by the header height (`--ui-header-height`, plus the safe-area inset) so it is always visible, including on a phone.
+- [x] Add `@iconify-json/fa7-regular` and `@iconify-json/fa7-solid`, list both in `icon.serverBundle.collections`, and list the four icon names in `icon.clientBundle.icons` (a computed name from a state map is not found by the scan), so they render offline.
+- [x] Unit test the status decision (`tests/sync-status.test.mjs`).
+- [ ] Check the colors, icons and banner position on a real device, including offline and with a failed change.
+
 **Later and optional**
 - [ ] Revisit budgets and accounts offline only if a real need appears.
 
@@ -243,6 +258,50 @@ This work is independent of the other features and can be done at any time. It a
 - Where the provider key is held (server only, never in the browser) and how requests are authorized and rate limited.
 - How are generated numbers checked against the real data so reports can't state wrong figures?
 - Cost per report and how often it is generated.
+- Overlap with Custom reports (item 11): a structured filter report could be the dependable base. A language model could turn a plain-language question into those same filters, so the figures come from the database and not from the model.
+
+## 10. Settings page (manage entities and tags)
+
+**Decided:** a Settings page is added, first for managing entities (the payer or payee on an expense or income record), then for managing tags once item 2 ships. It is the first step of the build order above.
+
+**Today:** an entity is a free-text `entity` field on each budget hit (expense or income), typed per transaction. There is no entity table, so "Costco" and "costco " are different values, and nothing lets the user fix a misspelling in old records. The profile page appears to be a placeholder (see item 5), and there is no settings area.
+
+**Design decisions (confirmed 2026-11-23)**
+- Entity management: list the distinct entities in use with a count and total, rename one (which updates every record using it), and merge duplicates into one. A merge is a rename to a name that already exists. Rename and merge apply to both expenses and income. Both ask for confirmation first, showing how many records will change. There is no undo.
+- Navigation: Settings opens from a settings icon on the profile page, next to the sign-out icon. The dark/light mode switch that sits there today moves into Settings, and the settings icon takes its place on the profile page. The mobile bottom nav stays at four tabs.
+- Entities stay free text on the transaction. Settings only cleans up and standardizes existing values; it does not create a separate required entity list. The expense form can suggest existing entities as the user types.
+- Matching for filters and merges uses a normalized form (trimmed, case-folded, Unicode-normalized), so look-alike spellings count as one entity.
+- A rename or merge touches many rows at once and must succeed or fail as a whole, so it should be a versioned database function called through `rpc()` (see the persistence rule in `AGENTS.md`), scoped to the caller's household.
+- Tag management is added here when item 2 ships: rename, recolor and delete (with confirmation), as decided in item 2.
+- Entity and tag management need a connection, like budgets and accounts, and are not queued offline.
+- Rename and merge sync the offline queue first. If any change on the device is still waiting or has failed, the user is asked to resolve it before renaming, so a retried entry cannot bring the old name back.
+- Known limitation: a rename only covers records already on the server. Changes queued on another household member's device may later bring back the old name, and the user can merge it again.
+
+**Open questions**
+- Whether Settings later also holds profile and household settings is left to the item 5 discussion.
+
+## 11. Custom reports
+
+**Decided:** this replaces the Tags tab on the Budgets page that item 2 used to describe. A button on the Home page opens a Custom reports page. The user picks a date range, then filters the matching expenses by budget, tag and entity (payer or payee), to answer precise questions about their spending. Example: how much was spent on gas and groceries (budgets) over the last two weeks, counting only expenses tagged with a recent road trip (tag).
+
+**Today:** nothing like this exists. Month views and tag totals are limited to loaded months, and the offline cache holds only three months.
+
+**Design decisions (confirmed 2026-11-23, except where noted in the open questions)**
+- Expenses only to start. Income and transfers could be added later behind a type toggle.
+- Filters: date range (required), budgets, tags and entities. Within one filter several values combine as OR (gas or groceries). Different filters combine as AND (those budgets, and that tag, and that date range). Tags need a choice: expenses with any of the chosen tags, or all of them. Default to any, with an all option.
+- Entity is the free-text field on the expense. The filter matches on the normalized form described in item 10 and suggests existing values as the user types.
+- The report is computed by a server route that filters in the database for the chosen range (for example `/api/reports`). It must not filter only the months already loaded in the store, because the range can cover months that are not loaded.
+- First output: the total, a breakdown by budget and by entity, and the matching line items. Layout needs planning before implementation. Saved reports, CSV export and charts are later ideas.
+- The page needs a connection at first and says so when offline, because the offline cache holds only three months and could give an incomplete answer without saying so.
+
+**Open questions**
+- Layout of the report page (summary first, or line items first) and of the filter controls on a phone.
+- Should tags use "any" or "all" by default, and should "all" be offered at launch?
+- Should the report allow "No budget" and "no tag" as filter values?
+- Should reports be saveable or shareable with the household, or are they one-off?
+- Include income and transfers later, and how do budget and tag filters apply to them?
+- Maximum date range, and how large a result is shown or paged.
+- Relationship to item 9: could a language model later produce the filters from a question?
 
 ## Cross-cutting notes
 

@@ -52,6 +52,11 @@ html:not(.app-loaded) body {
   top: calc(env(safe-area-inset-top, 0px) + 1rem);
 }
 
+/* Just below the sticky UHeader (safe area plus 4rem, see the header rule below). */
+@utility top-below-header {
+  top: calc(env(safe-area-inset-top, 0px) + 4rem);
+}
+
 @utility pt-safe {
   padding-top: env(safe-area-inset-top, 0px);
 }
