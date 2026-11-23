@@ -83,7 +83,7 @@ async function handleModalDelete() {
       <UCard>
         <template #header>
           <div class="flex items-center justify-between">
-            <h2 class="text-2xl font-bold">Edit Income</h2>
+            <h2 class="text-2xl font-bold">Income</h2>
             <UButton
               icon="heroicons-solid:trash"
               color="error"

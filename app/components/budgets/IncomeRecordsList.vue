@@ -48,7 +48,7 @@ function close() {
   <UModal v-if="selected" v-model:open="open" @update:open="value => { if (!value) close() }">
     <template #content>
       <UCard>
-        <template #header><h2 class="text-2xl font-bold">Edit Income</h2></template>
+        <template #header><h2 class="text-2xl font-bold">Income</h2></template>
         <IncomeEdit
           :income-id="selected.id"
           :income-amount="selected.amount"

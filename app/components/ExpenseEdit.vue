@@ -31,6 +31,9 @@ const noBudget = ref(!props.expenseBudgetId)
 const selectedBudgetId = ref(props.expenseBudgetId ?? '')
 const choosingBudget = ref(false)
 
+// The modal opens on a read-only summary; the pencil switches to the editable form.
+const editing = ref(false)
+
 const loading = ref(false)
 const deleting = ref(false)
 const error = ref<string | null>(null)
@@ -61,6 +64,54 @@ const accountOptions = computed(() => [
         value: a.id,
     }))
 ])
+
+// Existing payees for the chosen budget, the same suggestions the create flow shows.
+const entitySuggestions = computed((): string[] => {
+    if (noBudget.value || !selectedBudgetId.value) return []
+    return store.budgetAllEntities.get(selectedBudgetId.value) ?? []
+})
+
+watch(() => [editing.value, noBudget.value, selectedBudgetId.value] as const, ([isEditing, none, budgetId]) => {
+    if (!isEditing || none || !budgetId || store.budgetAllEntities.has(budgetId)) return
+    // Offline or failed: the picker still works with typed names.
+    store.fetchBudgetEntities(budgetId).catch(() => {})
+}, { immediate: true })
+
+const summaryAccountName = computed(() => {
+    const account = store.accounts.find((a: any) => a.id === immutableAccountId.value)
+    return account ? accountDisplayName(account) : 'No account'
+})
+
+const summaryAmount = computed(() =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(amount.value) || 0)
+)
+
+const summaryDate = computed(() => {
+    if (!date.value) return ''
+    const [year, month, day] = date.value.split('-').map(Number)
+    return new Date(year!, (month ?? 1) - 1, day ?? 1).toLocaleDateString('en-US', {
+        weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+    })
+})
+
+function startEditing() {
+    error.value = null
+    editing.value = true
+}
+
+// Cancel in edit mode discards the changes and goes back to the summary.
+function cancelEditing() {
+    amount.value = props.expenseAmount ?? 0
+    date.value = props.expenseDate ? props.expenseDate.slice(0, 10) : new Date().toLocaleDateString('en-CA')
+    entity.value = props.expenseEntity ?? ''
+    notes.value = props.expenseNotes ?? existingHit.value?.notes ?? ''
+    noBudget.value = !props.expenseBudgetId
+    selectedBudgetId.value = props.expenseBudgetId ?? ''
+    selectedAccountId.value = immutableAccountId.value ?? '__none__'
+    error.value = null
+    choosingBudget.value = false
+    editing.value = false
+}
 
 function validateForm() {
     if (!date.value) {
@@ -128,6 +179,61 @@ async function handleDelete() {
         </div>
     </template>
 
+    <!-- Read-only summary -->
+    <template v-else-if="!editing">
+        <div v-if="error" class="mb-4">
+            <UAlert title="Error" :description="error" color="error" variant="soft" />
+        </div>
+
+        <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <div
+                    v-if="chosenBudget"
+                    class="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+                    :style="chosenBudget.color ? { backgroundColor: chosenBudget.color + '33', borderColor: chosenBudget.color, border: '1.5px solid' } : {}"
+                    :class="!chosenBudget.color ? 'bg-gray-100 dark:bg-gray-800 border border-gray-300' : ''"
+                >
+                    <UIcon
+                        :name="budgetIcon(chosenBudget.name)"
+                        class="size-3.5"
+                        :style="chosenBudget.color ? { color: chosenBudget.color } : {}"
+                        :class="!chosenBudget.color ? 'text-gray-500' : ''"
+                    />
+                </div>
+                <div v-else class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 bg-gray-100 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-600">
+                    <UIcon name="heroicons:x-mark" class="size-3.5 text-gray-400" />
+                </div>
+                <span class="text-sm text-gray-600 dark:text-gray-300">{{ chosenBudget?.name ?? 'No budget' }}</span>
+            </div>
+            <UButton
+                icon="heroicons:pencil-square"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                aria-label="Edit expense"
+                @click="startEditing"
+            />
+        </div>
+
+        <p class="mt-4 text-3xl font-bold text-gray-900 dark:text-white">{{ summaryAmount }}</p>
+
+        <dl class="mt-5 space-y-4">
+            <SummaryField label="Date">{{ summaryDate }}</SummaryField>
+            <SummaryField label="Payee">
+                <span v-if="entity">{{ entity }}</span>
+                <span v-else class="text-gray-400">None</span>
+            </SummaryField>
+            <SummaryField label="Account">{{ summaryAccountName }}</SummaryField>
+            <SummaryField v-if="notes" label="Notes">
+                <span class="whitespace-pre-wrap">{{ notes }}</span>
+            </SummaryField>
+        </dl>
+
+        <div class="mt-6">
+            <UButton color="neutral" variant="ghost" class="w-full justify-center" @click="emit('cancel')">Close</UButton>
+        </div>
+    </template>
+
     <!-- Edit form page -->
     <template v-else>
         <div v-if="error" class="mb-4">
@@ -189,16 +295,7 @@ async function handleDelete() {
                 />
             </UFormField>
 
-            <UFormField label="Payee">
-                <UInput
-                    v-model="entity"
-                    highlight
-                    color="info"
-                    placeholder="Enter a payee..."
-                    type="text"
-                    size="xl"
-                />
-            </UFormField>
+            <EntityField v-model="entity" :is-income="false" :suggestions="entitySuggestions" />
 
             <UFormField label="Notes">
                 <UTextarea
@@ -235,7 +332,7 @@ async function handleDelete() {
                     color="neutral"
                     variant="ghost"
                     class="flex-1 justify-center"
-                    @click="emit('cancel')"
+                    @click="cancelEditing"
                     :disabled="loading || deleting"
                 >
                     Cancel

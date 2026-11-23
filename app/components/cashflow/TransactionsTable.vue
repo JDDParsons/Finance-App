@@ -356,7 +356,7 @@ async function handleModalDelete() {
           <template #header>
             <div class="flex items-center justify-between">
               <h2 class="text-2xl font-bold">
-                {{ selectedTransaction.type === 'income' ? 'Edit Income' : selectedTransaction.type === 'transfer' ? 'Edit Transfer' : 'Edit Expense' }}
+                {{ selectedTransaction.type === 'income' ? 'Income' : selectedTransaction.type === 'transfer' ? 'Edit Transfer' : 'Expense' }}
               </h2>
               <UButton
                 icon="heroicons-solid:trash"
