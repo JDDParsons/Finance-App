@@ -1,5 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import type { OfflineFinanceSnapshot } from '~/types/bootstrap'
+import type { OfflineOperation, OfflineQueueChange } from '~/types/offline'
+import { normalizeOperation, sortForReplay } from '../../utils/offlineQueue'
 
 const DATABASE_NAME = 'budgify-offline'
 const DATABASE_VERSION = 2
@@ -16,7 +18,7 @@ interface OfflineFinanceDatabase extends DBSchema {
   }
   outbox: {
     key: string
-    value: import('~/types/offline').OfflineCreateOperation
+    value: OfflineOperation
     indexes: { 'by-user': string }
   }
 }
@@ -88,23 +90,46 @@ export async function clearOfflineFinanceCache() {
   if ('caches' in globalThis) await caches.delete('nuxt-api')
 }
 
-export async function putOfflineCreate(operation: import('~/types/offline').OfflineCreateOperation) {
+export async function putOfflineOperation(operation: OfflineOperation) {
   const database = await getDatabase()
   await database.put('outbox', operation)
 }
 
-export async function getOfflineCreates(userId: string) {
+/** Entries saved before Phase 2 (creates with `kind`) are read as create operations. */
+export async function getOfflineOperations(userId: string) {
   const database = await getDatabase()
   const operations = await database.getAllFromIndex('outbox', 'by-user', userId)
-  return operations.sort((left, right) => left.createdAt.localeCompare(right.createdAt))
+  return sortForReplay(operations.map(normalizeOperation))
 }
 
-export async function deleteOfflineCreate(id: string) {
+export async function deleteOfflineOperation(id: string) {
   const database = await getDatabase()
   await database.delete('outbox', id)
 }
 
-export async function reconcileOfflineCreateSnapshots(userId: string, operationId: string, row?: any) {
+/** Apply a merge or queue change in one transaction so the outbox never holds half of it. */
+export async function applyOfflineQueueChange(change: OfflineQueueChange) {
+  const database = await getDatabase()
+  const transaction = database.transaction('outbox', 'readwrite')
+  await Promise.all([
+    ...change.remove.map(id => transaction.store.delete(id)),
+    ...change.put.map(operation => transaction.store.put(operation)),
+    transaction.done,
+  ])
+}
+
+/**
+ * Store a snapshot for a month without making it the one opened on launch.
+ * Used when pre-caching months in the background.
+ */
+export async function saveOfflineMonthSnapshot(snapshot: OfflineFinanceSnapshot) {
+  const database = await getDatabase()
+  const { year, month } = snapshot.finance.selectedMonth
+  await database.put('snapshots', snapshot, snapshotKey(snapshot.userId, year, month))
+}
+
+/** Replace (or, with no row, remove) the row with this id in every cached month. */
+export async function reconcileOfflineSnapshots(userId: string, rowId: string, row?: any) {
   const database = await getDatabase()
   const keys = (await database.getAllKeys('snapshots')).filter(key => key.startsWith(`${userId}:`))
   const transaction = database.transaction('snapshots', 'readwrite')
@@ -112,9 +137,9 @@ export async function reconcileOfflineCreateSnapshots(userId: string, operationI
   for (const key of keys) {
     const snapshot = await transaction.store.get(key)
     if (!snapshot) continue
-    snapshot.finance.budgetHits = snapshot.finance.budgetHits.filter(item => item.id !== operationId)
-    snapshot.finance.income = snapshot.finance.income.filter(item => item.id !== operationId)
-    snapshot.finance.transfers = snapshot.finance.transfers.filter(item => item.id !== operationId)
+    snapshot.finance.budgetHits = snapshot.finance.budgetHits.filter(item => item.id !== rowId)
+    snapshot.finance.income = snapshot.finance.income.filter(item => item.id !== rowId)
+    snapshot.finance.transfers = snapshot.finance.transfers.filter(item => item.id !== rowId)
 
     const monthKey = `${snapshot.finance.selectedMonth.year}-${String(snapshot.finance.selectedMonth.month).padStart(2, '0')}`
     if (row && String(row.date).slice(0, 7) === monthKey) {
@@ -127,9 +152,9 @@ export async function reconcileOfflineCreateSnapshots(userId: string, operationI
   await transaction.done
 }
 
-export async function markOfflineCreateFailedInSnapshots(
+export async function markOfflineFailedInSnapshots(
   userId: string,
-  operationId: string,
+  rowId: string,
   message: string
 ) {
   const database = await getDatabase()
@@ -138,7 +163,7 @@ export async function markOfflineCreateFailedInSnapshots(
   for (const key of keys) {
     const snapshot = await transaction.store.get(key)
     if (!snapshot) continue
-    const mark = (item: any) => item.id === operationId
+    const mark = (item: any) => item.id === rowId
       ? { ...item, pending_sync: false, sync_error: message }
       : item
     snapshot.finance.budgetHits = snapshot.finance.budgetHits.map(mark)

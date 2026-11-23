@@ -13,7 +13,7 @@ Planned features in priority order, highest first. Started 2026-11-18. This is a
 | 3 | Recurring transactions | Not started | Idempotent creates, Vercel cron |
 | 4 | Activity history | Not started (needs definition) | `user_id` on budget hits |
 | 5 | User/household management | Not started | `Profile.household_id`, invite-only login |
-| 6 | Offline mode | Phase 1 launch fix in review (offline is a dependency of items 1 to 3) | Offline cache and outbox |
+| 6 | Offline mode | Phases 1 and 2 built (Phase 2 awaiting a device test); Phase 3 not started (offline is a dependency of items 1 to 3) | Offline cache and outbox |
 | 7 | Remove CSV file upload | Planned removal | See README footprint |
 | 8 | Linked bank accounts | Not started | Accounts |
 | 9 | Language model integration for dynamic reports | Not started | `/api/bootstrap` data |
@@ -120,22 +120,24 @@ Any change to who is authorized touches the login check and the RLS policies, so
 
 ### How it works today
 
-- **Reads:** one snapshot per month is stored in IndexedDB (`budgify-offline`). On launch the app shows the cached snapshot immediately, then refreshes from `/api/bootstrap`. Refreshes also run every 5 minutes, when the app returns to the foreground, and when the network returns.
-- **Writes:** only new expenses, income and transfers can be queued. Each gets a client-generated `operationId`, an optimistic row, and an idempotent replay. `apiFetch` rejects every other write while offline.
-- **Replay:** the queue is sent oldest first, one entry at a time. A success removes the entry and swaps the temporary row for the server's row. A network failure stops replay and leaves the rest queued. A server rejection marks the entry failed with its error, visible with Retry and Discard. Replaying is safe to repeat because the server recognizes an `operationId` it has already saved.
+- **Reads:** one snapshot per month is stored in IndexedDB (`budgify-offline`). On launch the app shows the cached snapshot immediately, then refreshes from `/api/bootstrap`. Refreshes also run every 5 minutes, when the app returns to the foreground, and when the network returns. After a refresh, while online, the app also saves the current month and the two before it in the background (a month saved in the last 30 minutes is not fetched again). These extra months never change which month the app opens on.
+- **Writes:** expenses, income and transfers can be created, edited and deleted offline. Each queued entry is an operation: entity, action (create, edit, delete), target id and payload. A create gets a client-generated `operationId` that doubles as the id of its optimistic row. Edits and deletes carry the id of the existing row. `apiFetch` still rejects every other write while offline (budgets, accounts and so on).
+- **Merging:** a row that already has a queued entry is changed in the queue instead of being sent to the server. Editing something that has not synced yet changes the queued create; a second edit replaces the first; deleting something that has not synced removes the queued create and queues nothing; deleting a row with a queued edit drops the edit and queues one delete.
+- **Replay:** the queue is sent oldest first (at the same time, creates before edits before deletes), one entry at a time. A success removes the entry and swaps the temporary row for the server's row. A network failure stops replay and leaves the rest queued. A server rejection marks the entry failed with its error, visible with Retry and Discard; discarding a failed edit or delete reloads the data so the row shows what is saved. Replaying is safe to repeat: creates are recognized by their `operationId`, an edit just writes the same values again, and deleting a row that is already gone succeeds.
+- **Conflicts:** last write wins and a delete beats an edit. An edit of a row that was deleted elsewhere gets a 404 from the server, is dropped, and appears in the failed list with "This item was deleted elsewhere, so the change was dropped."
 - **When replay runs:** only while the app is open in the foreground: on launch, on return to the foreground, when the browser reports it is online again, and on the 5-minute refresh. Nothing replays while the app is closed or the phone is asleep. There is no background-sync code and no custom service worker; the service worker only caches the app so it can start without a network.
 - **Login while offline (Phase 1 fix):** the app saves the signed-in user id on the device and uses it to open the app and to queue entries when the access token has expired and the server cannot be reached. A token refresh is attempted only when online, and a session check is capped at a few seconds.
 - **Background sync is discarded.** The owner uses an iPhone, and the browser Background Sync feature does not work on iOS Safari (it works in Chrome and Edge only). Sync happens when the app is opened.
 
-### Known issues (found by reading the code; issue 1 confirmed on the owner's phone; fixes for 1, 2, 3 and 6 are in Phase 1, awaiting a device test)
+### Known issues (found by reading the code; issue 1 confirmed on the owner's phone)
 
 1. **The app did not open offline once the login token expired.** Supabase access tokens last about an hour. When `getSession()` finds an expired token it tries a network refresh; offline, that fails and it returns "no session", so the app treated the user as signed out and showed the login page after a long wait. Confirmed 2026-11-21 on the owner's phone: airplane mode gives a long wait and then the login screen, and turning airplane mode off makes the app work again without signing in. **Fixed in Phase 1.**
 2. **Queueing an expense offline failed once the token had expired.** `createOrQueueOffline` re-read the session to get the user id and threw "Not authenticated" instead of queueing. **Fixed in Phase 1.**
 3. **A 401 during replay wiped the queue.** `syncOutbox` and `revalidate` cleared the whole offline cache, including the outbox. **Fixed in Phase 1.**
-4. **Sign-out clears the queue, by design.** `signOut()` clears the outbox, but the sign-out button already asks for confirmation when there are unsynced changes (`useSignOut`), so this is not a bug.
-5. **Only months already opened are available offline.** Any other month fails with "This month has not been saved for offline use yet."
-6. **`getSupabase()` created a new Supabase client on every call.** Several clients sharing one login could try to refresh the same token at once; because refresh tokens rotate, a race could sign the user out unexpectedly. **Fixed in Phase 1.**
-7. **Icons did not render offline.** The icon module used the `server` provider, which fetches each SVG from `/api/_nuxt_icon` at runtime; that fails offline and is never cached. **Fixed:** `icon.clientBundle` (with `scan: true` plus the two account icons from `utils/accountAppearance.ts`, which the scan does not reach) embeds the icons in the precached client bundle. A new icon name must be a literal string in `app/`, or be added to `icon.clientBundle.icons` in `nuxt.config.ts`.
+4. **Only months already opened were available offline.** Any other month failed with "This month has not been saved for offline use yet." **Fixed in Phase 2:** the current month and the two before it are saved in the background while online. Earlier months you have not opened still fail with that message.
+5. **`getSupabase()` created a new Supabase client on every call.** Several clients sharing one login could try to refresh the same token at once; because refresh tokens rotate, a race could sign the user out unexpectedly. **Fixed in Phase 1.**
+6. **Icons did not render offline.** The icon module used the `server` provider, which fetches each SVG from `/api/_nuxt_icon` at runtime; that fails offline and is never cached. **Fixed:** `icon.clientBundle` (with `scan: true` plus the two account icons from `utils/accountAppearance.ts`, which the scan does not reach) embeds the icons in the precached client bundle. A new icon name must be a literal string in `app/`, or be added to `icon.clientBundle.icons` in `nuxt.config.ts`.
+7. **Cashflow showed an offline error after adding a transaction offline.** `CreateModal` refetches the month after saving; offline that request failed and set `store.error`, which the cashflow lists render instead of the transactions. **Fixed:** `fetchAll` in `app/stores/finance.ts` returns early when offline and the store is already loaded, so cached and queued rows stay on screen.
 
 ### Decisions
 
@@ -145,7 +147,7 @@ Any change to who is authorized touches the login check and the RLS policies, so
 - Background sync is discarded; sync happens when the app is opened.
 - Session expiry: unsynced changes are never discarded automatically. A rejected or missing login clears the in-memory data and the local login, keeps the offline cache and queue, and shows "Please sign in again"; the entries replay after the same user signs in. Signing out with unsynced changes warns first (already the case). Implemented in Phase 1.
 
-**Proposed defaults (not yet confirmed; confirm before building)**
+**Agreed for Phase 2 (confirmed 2026-11-22, implemented)**
 - **Editing or deleting something not yet synced:** change or remove the queued entry itself instead of queueing a separate update or delete.
 - **Conflicts:** last write wins. A delete beats an edit. An edit to something deleted elsewhere is dropped and shown in the failed list. Deleting something already deleted counts as success.
 - **Months available offline:** pre-cache the current month and the previous two while online, plus any month opened. Earlier months stay online-only.
@@ -178,21 +180,21 @@ Separate "who is the user" (needed to open the app and queue entries) from "is t
 - [x] Redirect the login page to the home page when offline with a saved user.
 - [x] On a 401 during replay: keep the queue and prompt to sign in again. The outbox is no longer cleared.
 - [x] Warn before sign-out when there are unsynced entries (already in place).
-- [ ] Manual test on a real device (needs the owner's iPhone): open offline within the hour, open offline after more than an hour, add an expense offline, kill and reopen the app, go online and confirm the entry syncs. Also: let the login lapse, reconnect, and confirm queued entries survive the "Please sign in again" step and sync after signing in.
+- [x] Manual test on a real device (the owner's iPhone): passed.
 - [x] Correct the docs that say the app opens offline (README, `AGENTS.md`, and the middleware comment).
 
 **Phase 2: generalize the queue (moderate)**
-- [ ] Change the outbox entry from "create" to an operation: entity, action (create, edit, delete), target id, payload.
-- [ ] Generate ids on the device for everything created offline, so a later queued entry can refer to it.
-- [ ] Merge edits and deletes of a not-yet-synced entry into the queued create instead of queueing separate entries.
-- [ ] Define replay ordering and dependencies (for example a tag must be created before an expense that uses it).
-- [ ] Make the server accept repeated edits and deletes safely (deleting a missing record succeeds; edits are idempotent).
-- [ ] Apply the agreed conflict rules; show dropped entries in the failed list.
-- [ ] Allow edit and delete of expenses, income and transfers while offline: lift the `apiFetch` offline block for these, update the stores optimistically, extend `WRITE_ACTIONS`.
-- [ ] Pre-cache the current month and previous two in the background when online.
-- [ ] Keep the "N changes waiting to sync" indicator prominent and make sync-on-open prompt.
-- [ ] Unit tests for the queue: merging, ordering, conflicts, retry and discard.
-
+- [x] Change the outbox entry from "create" to an operation: entity, action (create, edit, delete), target id, payload. Entries saved by the old version are read as creates (`normalizeOperation`), so nothing queued before the update is lost.
+- [x] Generate ids on the device for everything created offline, so a later queued entry can refer to it. Expenses, income and transfers already use a client-generated `operationId` as the id of the optimistic row. Wishlist items and tags will do the same in Phase 3.
+- [x] Merge edits and deletes of a not-yet-synced entry into the queued create instead of queueing separate entries (`planEdit` and `planDelete` in `utils/offlineQueue.ts`).
+- [x] Define replay ordering and dependencies: oldest first, then create, edit, delete. Expenses, income and transfers do not depend on each other (budgets and accounts are online-only), so no cross-entity dependency is needed yet. Phase 3 must queue a tag before the expense that uses it, which this order already gives.
+- [x] Make the server accept repeated edits and deletes safely: deleting a missing record already succeeds, edits are idempotent, and an edit of a missing record now answers 404 (`throwIfRowMissing`).
+- [x] Apply the agreed conflict rules; show dropped entries in the failed list (`classifyReplayError`).
+- [x] Allow edit and delete of expenses, income and transfers while offline: the API layer queues them (`editOrQueueOffline`, `deleteOrQueueOffline`), the stores update optimistically, and queued changes are re-applied after every refresh and when a cached month is opened.
+- [x] Pre-cache the current month and previous two in the background when online.
+- [x] Keep the "N changes waiting to sync" indicator prominent and make sync-on-open prompt. The existing banner counts every queued change, and replay still runs on launch, on return to the foreground and when the network returns.
+- [x] Unit tests for the queue: merging, ordering, conflicts, retry and discard (`tests/offline-queue.test.mjs`). The IndexedDB and replay code itself is covered only by source-level checks.
+- [ ] Manual test on a real device (the owner's iPhone): edit and delete expenses, income and transfers while offline, kill and reopen the app, go online and confirm they sync; edit and delete something that was only created offline; open the previous two months offline; delete something on another device, then edit it offline and confirm the edit shows up as dropped.
 **Phase 3: Wishlist and Tags offline (with items 1 and 2)**
 - [ ] Add wishlist items and tags to `/api/bootstrap` and the offline snapshot. Bump the snapshot version and decide how old caches are handled (the simple option discards them and refetches when online).
 - [ ] Queue wishlist and tag create, edit and delete through the generalized queue.
@@ -202,7 +204,7 @@ Separate "who is the user" (needed to open the app and queue entries) from "is t
 
 **Open questions**
 - Confirm the proposed defaults above, or change them.
-- Storage: how many months of data per device is acceptable once more months are pre-cached?
+- Storage: three months are pre-cached today. Is that enough, and how much data per device is acceptable if it grows?
 - Test coverage today is unit-level only (queue and cache helpers, session decisions). Real-device testing of the PWA offline behavior is still needed after each phase.
 
 ## 7. Remove CSV file upload

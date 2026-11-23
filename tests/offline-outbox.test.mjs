@@ -42,7 +42,7 @@ test('idempotent create migration scopes operations to the authenticated househo
   assert.match(sql, /REVOKE ALL[\s\S]*FROM PUBLIC, anon/)
 })
 
-test('create APIs use the outbox while updates and deletes remain online-only', async () => {
+test('create, edit and delete APIs for expenses, income and transfers use the outbox', async () => {
   const hitsApi = await readFile(new URL('../app/composables/api/useHitsApi.ts', import.meta.url), 'utf8')
   const cache = await readFile(new URL('../app/utils/offlineFinanceCache.client.ts', import.meta.url), 'utf8')
   const appData = await readFile(new URL('../app/composables/useAppData.ts', import.meta.url), 'utf8')
@@ -50,9 +50,13 @@ test('create APIs use the outbox while updates and deletes remain online-only', 
   assert.match(hitsApi, /createOrQueueOffline\('expense'/)
   assert.match(hitsApi, /createOrQueueOffline\('income'/)
   assert.match(hitsApi, /createOrQueueOffline\('transfer'/)
-  assert.match(hitsApi, /apiFetch<any>\(`\/api\/hits\/\$\{id\}`/)
+  for (const entity of ['expense', 'income', 'transfer']) {
+    assert.match(hitsApi, new RegExp(`editOrQueueOffline\\('${entity}'`))
+    assert.match(hitsApi, new RegExp(`deleteOrQueueOffline\\('${entity}'`))
+  }
+  assert.doesNotMatch(hitsApi, /method: 'PUT'|method: 'DELETE'/)
   assert.match(cache, /createObjectStore\('outbox'/)
   assert.match(cache, /createIndex\('by-user', 'userId'\)/)
-  assert.match(appData, /replayOfflineCreates/)
+  assert.match(appData, /replayOfflineOperations/)
   assert.match(appData, /window\.addEventListener\('online'/)
 })

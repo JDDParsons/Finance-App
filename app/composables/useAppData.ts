@@ -4,7 +4,7 @@ import { useProfileStore } from '~/stores/profile'
 import { useAccountsStore } from '~/stores/accounts'
 import { useFinanceStore } from '~/stores/finance'
 import { useSavingsStore } from '~/stores/savings'
-import { discardFailedOfflineCreates, replayOfflineCreates } from '~/utils/offlineCreateQueue.client'
+import { discardFailedOfflineOperations, replayOfflineOperations } from '~/utils/offlineQueue.client'
 import { isSessionExpiredError, resolveSession } from '~/composables/supabase/session'
 import type { BootstrapResponse, OfflineFinanceSnapshot } from '~/types/bootstrap'
 import {
@@ -12,10 +12,16 @@ import {
   getOfflineFinanceSnapshot,
   getOfflineFinanceSnapshotForMonth,
   saveOfflineFinanceSnapshot,
-  getOfflineCreates,
-  markOfflineCreateFailedInSnapshots,
-  reconcileOfflineCreateSnapshots,
+  getOfflineOperations,
+  markOfflineFailedInSnapshots,
+  reconcileOfflineSnapshots,
+  saveOfflineMonthSnapshot,
 } from '~/utils/offlineFinanceCache.client'
+
+// Months kept on the device for offline use: the current month and the two before it.
+const PRECACHE_MONTH_COUNT = 3
+// A pre-cached month newer than this is not fetched again.
+const PRECACHE_MAX_AGE_MS = 30 * 60 * 1000
 
 const WRITE_ACTIONS = new Set([
   'addAccount', 'editAccount', 'editAccountBaseline', 'removeAccount',
@@ -50,6 +56,7 @@ export function useAppData() {
   let offlineHandler: (() => void) | null = null
   let refreshPromise: Promise<void> | null = null
   let outboxHandler: (() => void) | null = null
+  let precaching = false
 
   function applyPayload(payload: BootstrapResponse) {
     if (payload.userId !== activeUserId.value) throw new Error('Cached data belongs to another user')
@@ -94,10 +101,10 @@ export function useAppData() {
 
   async function refreshOutboxState(restoreRows = false) {
     if (!activeUserId.value) return
-    const operations = await getOfflineCreates(activeUserId.value)
+    const operations = await getOfflineOperations(activeUserId.value)
     pendingSyncCount.value = operations.filter(operation => operation.status === 'pending').length
     failedSyncCount.value = operations.filter(operation => operation.status === 'failed').length
-    if (restoreRows) operations.forEach(financeStore.restoreOfflineCreate)
+    if (restoreRows) operations.forEach(financeStore.restoreOfflineOperation)
   }
 
   // The server rejected the login, or there is none. Unsynced changes are kept:
@@ -119,14 +126,17 @@ export function useAppData() {
     if (!activeUserId.value || !navigator.onLine || syncing.value) return
     syncing.value = true
     try {
-      const results = await replayOfflineCreates(activeUserId.value, retryFailed)
-      for (const result of results) {
-        if (result.row) {
-          financeStore.reconcileOfflineCreate(result.operation.kind, result.operation.id, result.row)
-          await reconcileOfflineCreateSnapshots(activeUserId.value, result.operation.id, result.row)
-        } else if (result.error) {
-          financeStore.markOfflineCreateFailed(result.operation.kind, result.operation.id, result.error)
-          await markOfflineCreateFailedInSnapshots(activeUserId.value, result.operation.id, result.error)
+      const results = await replayOfflineOperations(activeUserId.value, retryFailed)
+      for (const { operation, row, error } of results) {
+        if (error) {
+          financeStore.markOfflineOperationFailed(operation, error)
+          await markOfflineFailedInSnapshots(activeUserId.value, operation.targetId, error)
+        } else if (row) {
+          financeStore.reconcileOfflineOperation(operation, row)
+          await reconcileOfflineSnapshots(activeUserId.value, operation.targetId, row)
+        } else {
+          // A delete went through (or the row was already gone).
+          await reconcileOfflineSnapshots(activeUserId.value, operation.targetId)
         }
       }
       await refreshOutboxState()
@@ -145,13 +155,18 @@ export function useAppData() {
 
   async function discardFailed() {
     if (!activeUserId.value) return
-    const discarded = await discardFailedOfflineCreates(activeUserId.value)
-    financeStore.removeOfflineCreates(discarded.map(operation => operation.id))
-    for (const operation of discarded) {
-      await reconcileOfflineCreateSnapshots(activeUserId.value, operation.id)
+    const discarded = await discardFailedOfflineOperations(activeUserId.value)
+    // A discarded create never existed on the server, so its row just goes away.
+    const creates = discarded.filter(operation => operation.action === 'create')
+    financeStore.removeOfflineCreates(creates.map(operation => operation.id))
+    for (const operation of creates) {
+      await reconcileOfflineSnapshots(activeUserId.value, operation.id)
     }
     await refreshOutboxState()
     await persist()
+    // A discarded edit or delete leaves the screen showing a change the server never got;
+    // reload so the row shows what is actually saved.
+    if (discarded.length > creates.length && navigator.onLine) await revalidate()
   }
 
   async function retryFailed() {
@@ -188,6 +203,7 @@ export function useAppData() {
         await refreshOutboxState(true)
         isOffline.value = false
         await persist()
+        void precacheRecentMonths()
       } catch (error) {
         if (isSessionExpiredError(error)) {
           await handleSessionExpired()
@@ -201,6 +217,35 @@ export function useAppData() {
       }
     })()
     return refreshPromise
+  }
+
+  // Save the current and previous two months for offline use, in the background and
+  // without changing which month the app opens on. Failures are ignored: this is
+  // only a head start, and the months are fetched again on the next refresh.
+  async function precacheRecentMonths() {
+    if (precaching || !activeUserId.value || !navigator.onLine) return
+    precaching = true
+    const userId = activeUserId.value
+    try {
+      const today = new Date()
+      for (let offset = 0; offset < PRECACHE_MONTH_COUNT; offset++) {
+        const date = new Date(today.getFullYear(), today.getMonth() - offset, 1)
+        const year = date.getFullYear()
+        const month = date.getMonth() + 1
+        const selected = financeStore.selectedMonth
+        // The selected month was just saved by the refresh.
+        if (selected.year === year && selected.month === month) continue
+        const existing = await getOfflineFinanceSnapshotForMonth(userId, year, month)
+        if (existing && Date.now() - Date.parse(existing.syncedAt) < PRECACHE_MAX_AGE_MS) continue
+        const payload = await getBootstrap(year, month)
+        if (activeUserId.value !== userId || payload.userId !== userId) return
+        await saveOfflineMonthSnapshot({ ...payload, cacheVersion: 1 })
+      }
+    } catch {
+      // Ignored on purpose, see above.
+    } finally {
+      precaching = false
+    }
   }
 
   async function load() {
@@ -255,7 +300,11 @@ export function useAppData() {
     if (refreshPromise) await refreshPromise
 
     const cached = await getOfflineFinanceSnapshotForMonth(activeUserId.value, year, month)
-    if (cached) applyPayload(cached)
+    if (cached) {
+      applyPayload(cached)
+      // Cached months do not include changes still waiting to sync.
+      await refreshOutboxState(true)
+    }
 
     if (!navigator.onLine) {
       isOffline.value = true
