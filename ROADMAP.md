@@ -13,7 +13,7 @@ Planned features in priority order, highest first. Started 2026-11-18. This is a
 | 3 | Recurring transactions | Not started | Idempotent creates, Vercel cron |
 | 4 | Activity history | Not started (needs definition) | `user_id` on budget hits |
 | 5 | User/household management | Not started | `Profile.household_id`, invite-only login |
-| 6 | Offline mode | Phases 1 and 2 built (Phase 2 awaiting a device test); Phase 3 not started (offline is a dependency of items 1 to 3) | Offline cache and outbox |
+| 6 | Offline mode | Phases 1 and 2 shipped and tested on a device; Phase 3 not started (offline is a dependency of items 1 to 3) | Offline cache and outbox |
 | 7 | Remove CSV file upload | Planned removal | See README footprint |
 | 8 | Linked bank accounts | Not started | Accounts |
 | 9 | Language model integration for dynamic reports | Not started | `/api/bootstrap` data |
@@ -138,6 +138,7 @@ Any change to who is authorized touches the login check and the RLS policies, so
 5. **`getSupabase()` created a new Supabase client on every call.** Several clients sharing one login could try to refresh the same token at once; because refresh tokens rotate, a race could sign the user out unexpectedly. **Fixed in Phase 1.**
 6. **Icons did not render offline.** The icon module used the `server` provider, which fetches each SVG from `/api/_nuxt_icon` at runtime; that fails offline and is never cached. **Fixed:** `icon.clientBundle` (with `scan: true` plus the two account icons from `utils/accountAppearance.ts`, which the scan does not reach) embeds the icons in the precached client bundle. A new icon name must be a literal string in `app/`, or be added to `icon.clientBundle.icons` in `nuxt.config.ts`.
 7. **Cashflow showed an offline error after adding a transaction offline.** `CreateModal` refetches the month after saving; offline that request failed and set `store.error`, which the cashflow lists render instead of the transactions. **Fixed:** `fetchAll` in `app/stores/finance.ts` returns early when offline and the store is already loaded, so cached and queued rows stay on screen.
+8. **Rows waiting to sync could not be edited or deleted.** The lists refused with "This offline expense must sync before it can be edited" (and the same for income and transfers), a Phase 1 guard left over from when only creates could be queued. **Fixed:** the guards are gone, because the queue already merges an edit or delete into the queued entry for that row. Editing a failed entry puts it back in the queue to be retried.
 
 ### Decisions
 
@@ -194,7 +195,7 @@ Separate "who is the user" (needed to open the app and queue entries) from "is t
 - [x] Pre-cache the current month and previous two in the background when online.
 - [x] Keep the "N changes waiting to sync" indicator prominent and make sync-on-open prompt. The existing banner counts every queued change, and replay still runs on launch, on return to the foreground and when the network returns.
 - [x] Unit tests for the queue: merging, ordering, conflicts, retry and discard (`tests/offline-queue.test.mjs`). The IndexedDB and replay code itself is covered only by source-level checks.
-- [ ] Manual test on a real device (the owner's iPhone): edit and delete expenses, income and transfers while offline, kill and reopen the app, go online and confirm they sync; edit and delete something that was only created offline; open the previous two months offline; delete something on another device, then edit it offline and confirm the edit shows up as dropped.
+- [x] Manual test on a real device (the owner's iPhone): passed.
 **Phase 3: Wishlist and Tags offline (with items 1 and 2)**
 - [ ] Add wishlist items and tags to `/api/bootstrap` and the offline snapshot. Bump the snapshot version and decide how old caches are handled (the simple option discards them and refetches when online).
 - [ ] Queue wishlist and tag create, edit and delete through the generalized queue.
