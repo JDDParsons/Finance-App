@@ -36,10 +36,6 @@ const selectedTransfer = ref<any>(null)
 const isEditingTransfer = ref(false)
 
 function openTransfer(transfer: any) {
-  if (transfer.pending_sync || transfer.sync_error) {
-    alert('This offline transfer must sync before it can be edited.')
-    return
-  }
   selectedTransfer.value = transfer
   isEditingTransfer.value = true
 }

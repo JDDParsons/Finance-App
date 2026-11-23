@@ -100,11 +100,6 @@ const isEditingExpense = ref(false)
 
 function handleEdit(id: string) {
   selectedExpense.value = expenses.value.find((h: any) => h.id === id) ?? null
-  if (selectedExpense.value?.pending_sync || selectedExpense.value?.sync_error) {
-    alert('This offline expense must sync before it can be edited.')
-    selectedExpense.value = null
-    return
-  }
   if (selectedExpense.value) isEditingExpense.value = true
 }
 
@@ -114,11 +109,6 @@ function handleEditClose() {
 }
 
 async function handleDelete(id: string) {
-  const expense = expenses.value.find((hit: any) => hit.id === id)
-  if (expense?.pending_sync || expense?.sync_error) {
-    alert('Use the sync status controls to retry or discard this offline expense.')
-    return
-  }
   if (!confirm('Are you sure you want to delete this expense?')) return
   try {
     await store.removeExpense(id)
