@@ -11,7 +11,7 @@
             @touchend="isPressing = false"
             aria-label="Add"
         >
-            <UIcon name="fa-solid:plus" class="text-white size-5" />
+            <UIcon name="fa7-solid:plus" class="text-white size-5" />
         </button>
     </div>
 </template>

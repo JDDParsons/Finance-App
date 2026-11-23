@@ -11,6 +11,15 @@ useHead({ title: 'Accounts | Budgify' })
 const { handleSignOut } = useSignOut()
 const router = useRouter()
 
+// --- Sync status ---
+const appData = useAppData()
+const syncStatus = useSyncStatus()
+
+async function discardFailedChanges() {
+  if (!window.confirm('Discard all failed offline changes? This cannot be undone.')) return
+  await appData.discardFailed()
+}
+
 // --- Profile ---
 const profileStore = useProfileStore()
 const { profile } = storeToRefs(profileStore)
@@ -223,6 +232,25 @@ function goBack() {
       </p>
       <!-- Email -->
       <p v-if="profile?.email" class="text-sm text-gray-400 mt-0.5">{{ profile.email }}</p>
+      <!-- Sync status -->
+      <div class="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm" role="status">
+        <UIcon
+          :name="syncStatus.icon"
+          class="size-4"
+          :class="[
+            syncStatus.state === 'offline' ? 'text-gray-400' : '',
+            syncStatus.state === 'syncing' ? 'text-sky-500' : '',
+            syncStatus.state === 'synced' ? 'text-green-500' : '',
+            syncStatus.state === 'attention' ? 'text-amber-500' : '',
+            syncStatus.spin ? 'motion-safe:animate-spin' : '',
+          ]"
+        />
+        <span class="text-gray-500 dark:text-gray-400">{{ syncStatus.label }}</span>
+        <template v-if="syncStatus.state === 'attention'">
+          <button class="underline" :disabled="appData.syncing.value" @click="appData.retryFailed()">Retry</button>
+          <button class="underline" :disabled="appData.syncing.value" @click="discardFailedChanges">Discard</button>
+        </template>
+      </div>
     </div>
 
     <!-- Accounts subheading + action -->

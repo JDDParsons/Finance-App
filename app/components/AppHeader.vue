@@ -18,6 +18,8 @@ const { monthTitle } = useSelectedMonthTitle()
 const profileStore = useProfileStore()
 const { profile } = storeToRefs(profileStore)
 
+const syncStatus = useSyncStatus()
+
 const profileInitial = computed(() => {
   return profile.value?.first_name?.charAt(0)?.toUpperCase() || '?'
 })
@@ -46,25 +48,32 @@ const profileInitial = computed(() => {
       <div class="flex items-center gap-2">
         <slot name="actions" />
         <MonthSelector v-if="showMonth && showMonthSelector" plain />
-        <NuxtLink
+        <UChip
           v-if="showProfile"
-          to="/profile"
-          class="inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full ring-1 ring-gray-200 transition-opacity hover:opacity-90 dark:ring-gray-700"
-          aria-label="Open profile"
+          :color="syncStatus.color"
+          size="2xl"
+          :ui="{ base: syncStatus.state === 'syncing' ? 'motion-safe:animate-pulse' : '' }"
         >
-          <img
-            v-if="profile?.avatar_link"
-            :src="profile.avatar_link"
-            alt="Profile"
-            class="h-full w-full object-cover"
-          />
-          <span
-            v-else
-            class="inline-flex h-full w-full items-center justify-center bg-primary-100 text-sm font-bold text-primary-700 dark:bg-primary-900 dark:text-primary-300"
+          <NuxtLink
+            to="/profile"
+            class="inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full ring-1 ring-gray-200 transition-opacity hover:opacity-90 dark:ring-gray-700"
+            :aria-label="`Open profile. ${syncStatus.label}`"
+            :title="syncStatus.label"
           >
-            {{ profileInitial }}
-          </span>
-        </NuxtLink>
+            <img
+              v-if="profile?.avatar_link"
+              :src="profile.avatar_link"
+              alt="Profile"
+              class="h-full w-full object-cover"
+            />
+            <span
+              v-else
+              class="inline-flex h-full w-full items-center justify-center bg-primary-100 text-sm font-bold text-primary-700 dark:bg-primary-900 dark:text-primary-300"
+            >
+              {{ profileInitial }}
+            </span>
+          </NuxtLink>
+        </UChip>
       </div>
     </template>
   </UHeader>
