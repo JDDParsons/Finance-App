@@ -15,7 +15,7 @@ Planned work is tracked in [ROADMAP.md](ROADMAP.md).
 | Cashflow | `/cashflow` | Create and review expenses, income and transfers; daily/weekly grouped table |
 | Accounts | `/accounts` | Accounts with baseline values, appearance (color/icon), and transfers between accounts |
 | Savings | `/savings` | Trailing savings summary derived from budget data |
-| Offline | (all) | Last-synced data is cached on the device and the app opens without a connection; new expenses, income and transfers made offline are queued and synced the next time the app is open and online |
+| Offline | (all) | Last-synced data is cached on the device and the app opens without a connection; expenses, income and transfers can be added, edited and deleted offline; those changes are queued and synced the next time the app is open and online. The current month and the two before it are kept for offline use |
 
 ### Deprecated: statement upload (`/upload`)
 

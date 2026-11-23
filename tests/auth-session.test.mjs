@@ -50,7 +50,7 @@ test('withTimeout returns the value or reports a timeout, and swallows a late re
 test('session handling is shared and keeps unsynced changes', async () => {
   const session = await read('app/composables/supabase/session.ts')
   const client = await read('app/composables/supabase/client.ts')
-  const queue = await read('app/utils/offlineCreateQueue.client.ts')
+  const queue = await read('app/utils/offlineQueue.client.ts')
   const appData = await read('app/composables/useAppData.ts')
   const auth = await read('app/composables/supabase/auth.ts')
 

@@ -1,5 +1,29 @@
 export type OfflineRowKind = 'expense' | 'income' | 'transfer'
 
+/**
+ * The row shown for a queued edit: the existing row with the edited fields
+ * applied. It keeps the original id, creation time and author.
+ */
+export function buildOptimisticEdit(
+  kind: OfflineRowKind,
+  existing: Record<string, any> | undefined,
+  userId: string,
+  targetId: string,
+  payload: Record<string, any>
+) {
+  const edited = buildOptimisticRow(kind, targetId, userId, payload)
+  return {
+    ...edited,
+    client_operation_id: existing?.client_operation_id ?? edited.client_operation_id,
+    created_at: existing?.created_at ?? edited.created_at,
+    user_id: existing?.user_id ?? edited.user_id,
+    // An edit that leaves notes out keeps the notes the row already has.
+    notes: kind === 'transfer' ? null : (payload.notes === undefined ? (existing?.notes ?? null) : payload.notes),
+    pending_sync: true,
+    sync_error: null,
+  }
+}
+
 export function buildOptimisticRow(
   kind: OfflineRowKind,
   id: string,

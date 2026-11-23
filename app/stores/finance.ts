@@ -5,8 +5,8 @@ import { useAccountsStore } from './accounts'
 import { enrichBudgets } from '../../utils/budgetEnrichment'
 import { reconcileTransferUpdate, removeTransferRow, sortTransferRows } from '../../utils/transferRows'
 import type { FinanceBootstrapData } from '~/types/bootstrap'
-import type { OfflineCreateOperation, OfflineCreateKind } from '~/types/offline'
-import { buildOptimisticRow } from '../../utils/offlineRows'
+import type { OfflineEntity, OfflineOperation } from '~/types/offline'
+import { buildOptimisticEdit, buildOptimisticRow } from '../../utils/offlineRows'
 
 export const useFinanceStore = defineStore('finance', () => {
   const accountsStore = useAccountsStore()
@@ -206,49 +206,66 @@ export const useFinanceStore = defineStore('finance', () => {
     error.value = null
   }
 
-  function restoreOfflineCreate(operation: OfflineCreateOperation) {
-    const row = buildOptimisticRow(
-      operation.kind,
-      operation.id,
-      operation.userId,
-      operation.payload,
-      operation.status === 'failed' ? operation.error : null
-    )
-    if (!isInSelectedMonth(row)) return
-    if (operation.kind === 'expense' && !budgetHits.value.some(hit => hit.id === operation.id)) {
-      budgetHits.value = [row, ...budgetHits.value]
-      budgets.value = enrichSelectedMonthBudgets(budgets.value, budgetHits.value)
-    } else if (operation.kind === 'income' && !income.value.some(hit => hit.id === operation.id)) {
-      income.value = [row, ...income.value]
-      incomeBudgets.value = enrichSelectedMonthBudgets(incomeBudgets.value, income.value)
-    } else if (operation.kind === 'transfer' && !transfers.value.some(hit => hit.id === operation.id)) {
-      transfers.value = sortTransferRows([row, ...transfers.value])
-    }
+  // The rows array an operation touches, by entity.
+  function rowsFor(entity: OfflineEntity) {
+    return entity === 'expense' ? budgetHits : entity === 'income' ? income : transfers
   }
 
-  function reconcileOfflineCreate(kind: OfflineCreateKind, operationId: string, row: any) {
-    if (kind === 'expense') {
-      budgetHits.value = replaceOfflineRow(budgetHits.value, operationId, row)
-      budgets.value = enrichSelectedMonthBudgets(budgets.value, budgetHits.value)
-    } else if (kind === 'income') {
-      income.value = replaceOfflineRow(income.value, operationId, row).sort(
-        (a, b) => String(b.date).localeCompare(String(a.date))
-      )
-      incomeBudgets.value = enrichSelectedMonthBudgets(incomeBudgets.value, income.value)
-    } else {
-      transfers.value = sortTransferRows(replaceOfflineRow(transfers.value, operationId, row))
-    }
+  function refreshBudgetTotals(entity: OfflineEntity) {
+    if (entity === 'expense') budgets.value = enrichSelectedMonthBudgets(budgets.value, budgetHits.value)
+    if (entity === 'income') incomeBudgets.value = enrichSelectedMonthBudgets(incomeBudgets.value, income.value)
   }
 
-  function markOfflineCreateFailed(kind: OfflineCreateKind, operationId: string, message: string) {
-    const mark = (row: any) => row.id === operationId
+  function sortRows(entity: OfflineEntity, rows: any[]) {
+    if (entity === 'transfer') return sortTransferRows(rows)
+    if (entity === 'income') return rows.sort((a, b) => String(b.date).localeCompare(String(a.date)))
+    return rows
+  }
+
+  /** Show a queued change on screen again, for example after a refresh replaced the rows. */
+  function restoreOfflineOperation(operation: OfflineOperation) {
+    const rows = rowsFor(operation.entity)
+    if (operation.action === 'delete') {
+      rows.value = rows.value.filter(row => row.id !== operation.targetId)
+      refreshBudgetTotals(operation.entity)
+      return
+    }
+
+    const failed = operation.status === 'failed' ? operation.error : null
+    const existing = rows.value.find(row => row.id === operation.targetId)
+    if (operation.action === 'edit') {
+      if (!existing) return
+      const edited = {
+        ...buildOptimisticEdit(operation.entity, existing, operation.userId, operation.targetId, operation.payload),
+        pending_sync: !failed,
+        sync_error: failed,
+      }
+      rows.value = sortRows(operation.entity, rows.value.map(row => row.id === operation.targetId ? edited : row))
+      refreshBudgetTotals(operation.entity)
+      return
+    }
+
+    const row = buildOptimisticRow(operation.entity, operation.id, operation.userId, operation.payload, failed)
+    if (!isInSelectedMonth(row) || existing) return
+    rows.value = sortRows(operation.entity, [row, ...rows.value])
+    refreshBudgetTotals(operation.entity)
+  }
+
+  /** A queued create or edit was saved: swap the optimistic row for the server's row. */
+  function reconcileOfflineOperation(operation: OfflineOperation, row: any) {
+    const rows = rowsFor(operation.entity)
+    rows.value = sortRows(operation.entity, replaceOfflineRow(rows.value, operation.targetId, row))
+    refreshBudgetTotals(operation.entity)
+  }
+
+  function markOfflineOperationFailed(operation: OfflineOperation, message: string) {
+    const rows = rowsFor(operation.entity)
+    rows.value = rows.value.map(row => row.id === operation.targetId
       ? { ...row, pending_sync: false, sync_error: message }
-      : row
-    if (kind === 'expense') budgetHits.value = budgetHits.value.map(mark)
-    if (kind === 'income') income.value = income.value.map(mark)
-    if (kind === 'transfer') transfers.value = transfers.value.map(mark)
+      : row)
   }
 
+  /** Remove rows that only exist as unsynced creates (their operation ids). */
   function removeOfflineCreates(operationIds: string[]) {
     const ids = new Set(operationIds)
     budgetHits.value = budgetHits.value.filter(row => !ids.has(row.id))
@@ -358,7 +375,7 @@ export const useFinanceStore = defineStore('finance', () => {
     const resolvedAccountId = accountId === undefined ? (existing?.account_id ?? null) : accountId
     const resolvedBudgetId = budgetId === undefined ? (existing?.budget_id ?? null) : budgetId
     const resolvedNotes = notes === undefined ? (existing?.notes ?? null) : notes
-    const row = await apiUpdateIncome(id, amount, date, entity, resolvedBudgetId, resolvedAccountId, resolvedNotes)
+    const row = await apiUpdateIncome(id, amount, date, entity, resolvedBudgetId, resolvedAccountId, resolvedNotes, existing)
     income.value = income.value.map(r => r.id === id ? row : r).sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     )
@@ -383,7 +400,7 @@ export const useFinanceStore = defineStore('finance', () => {
     const existing = budgetHits.value.find((h: any) => h.id === id)
     const resolvedAccountId = accountId === undefined ? (existing?.account_id ?? null) : accountId
     const resolvedNotes = notes === undefined ? (existing?.notes ?? null) : notes
-    const hit = await updateBudgetHit(id, budgetId, date, amount, entity, resolvedAccountId, resolvedNotes)
+    const hit = await updateBudgetHit(id, budgetId, date, amount, entity, resolvedAccountId, resolvedNotes, existing)
     budgetHits.value = budgetHits.value.map(h => h.id === id ? hit : h)
     budgets.value = enrichSelectedMonthBudgets(budgets.value, budgetHits.value)
   }
@@ -397,7 +414,8 @@ export const useFinanceStore = defineStore('finance', () => {
   }
 
   async function updateTransfer(id: string, fromAccountId: string, toAccountId: string, amount: number, date: string) {
-    const row = await apiUpdateTransfer(id, fromAccountId, toAccountId, amount, date)
+    const existing = transfers.value.find((r: any) => r.id === id)
+    const row = await apiUpdateTransfer(id, fromAccountId, toAccountId, amount, date, existing)
     transfers.value = reconcileTransferUpdate(transfers.value, row, selectedMonth.value)
     return row
   }
@@ -490,9 +508,9 @@ export const useFinanceStore = defineStore('finance', () => {
     hydrate,
     snapshot,
     clear,
-    restoreOfflineCreate,
-    reconcileOfflineCreate,
-    markOfflineCreateFailed,
+    restoreOfflineOperation,
+    reconcileOfflineOperation,
+    markOfflineOperationFailed,
     removeOfflineCreates,
     refreshBudgets,
     fetchAvailableBudgets,

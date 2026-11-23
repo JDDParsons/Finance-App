@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { throwBudgetSupabaseError } from './budget-errors'
+import { throwIfRowMissing } from './missing-row'
 import type { ValidTransferInput } from '../transfer'
 import { buildTrailingSavingsTotals } from '../../../utils/savingsTotals'
 
@@ -142,6 +143,7 @@ export async function updateBudgetHit(
     .single()
 
   if (error) {
+    throwIfRowMissing(error)
     if (error.code === 'P0003' || error.code === 'P0004') throwBudgetSupabaseError(error, 'update an expense')
     throw error
   }
@@ -225,6 +227,7 @@ export async function updateIncome(
     .single()
 
   if (error) {
+    throwIfRowMissing(error)
     if (error.code === 'P0003' || error.code === 'P0004') throwBudgetSupabaseError(error, 'update income')
     throw error
   }
@@ -388,7 +391,10 @@ export async function updateTransfer(
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    throwIfRowMissing(error)
+    throw error
+  }
   return data
 }
 
