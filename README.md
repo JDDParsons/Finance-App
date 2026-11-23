@@ -13,7 +13,8 @@ Planned work is tracked in [ROADMAP.md](ROADMAP.md).
 | Home | `/home` | Monthly dashboard: spending charts, daily spending calendar/figure, budget usage radar, cumulative spending |
 | Budgets | `/budgets`, `/budgets/[id]` | Month-based budgets (expense and income), copy previous month, budget history, allocation charts |
 | Cashflow | `/cashflow` | Create and review expenses, income and transfers; daily/weekly grouped table |
-| Accounts | `/accounts` | Accounts with baseline values, appearance (color/icon), and transfers between accounts |
+| Profile | `/profile` | Name, email and sync status, with links to Settings and sign-out |
+| Settings | `/settings`, `/settings/accounts`, `/settings/entities` | A list of setting categories. Bank accounts (baseline values, appearance, transfers) live at `/settings/accounts`; payment entities at `/settings/entities` (list with record counts and totals, search, rename and merge; needs a connection to change anything). Holds the light/dark switch |
 | Savings | `/savings` | Trailing savings summary derived from budget data |
 | Offline | (all) | Last-synced data is cached on the device and the app opens without a connection; expenses, income and transfers can be added, edited and deleted offline; those changes are queued and synced the next time the app is open and online. The current month and the two before it are kept for offline use |
 

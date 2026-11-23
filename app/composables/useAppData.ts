@@ -222,7 +222,8 @@ export function useAppData() {
   // Save the current and previous two months for offline use, in the background and
   // without changing which month the app opens on. Failures are ignored: this is
   // only a head start, and the months are fetched again on the next refresh.
-  async function precacheRecentMonths() {
+  /** `force` re-saves months even when the cached copy is recent, for after a bulk rename. */
+  async function precacheRecentMonths(force = false) {
     if (precaching || !activeUserId.value || !navigator.onLine) return
     precaching = true
     const userId = activeUserId.value
@@ -236,7 +237,7 @@ export function useAppData() {
         // The selected month was just saved by the refresh.
         if (selected.year === year && selected.month === month) continue
         const existing = await getOfflineFinanceSnapshotForMonth(userId, year, month)
-        if (existing && Date.now() - Date.parse(existing.syncedAt) < PRECACHE_MAX_AGE_MS) continue
+        if (!force && existing && Date.now() - Date.parse(existing.syncedAt) < PRECACHE_MAX_AGE_MS) continue
         const payload = await getBootstrap(year, month)
         if (activeUserId.value !== userId || payload.userId !== userId) return
         await saveOfflineMonthSnapshot({ ...payload, cacheVersion: 1 })
@@ -370,6 +371,7 @@ export function useAppData() {
     refresh,
     selectMonth,
     syncOutbox,
+    precacheRecentMonths,
     retryFailed,
     discardFailed,
     startPolling,
