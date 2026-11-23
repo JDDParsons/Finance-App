@@ -75,6 +75,8 @@ The CSV statement upload feature (`/upload`, `/upload/transactions`) and everyth
 - Idempotency: server routes validate `operationId` (`server/utils/offline-operation.ts`) and the `idempotent_budget_hit_creates` migration makes replays safe. Keep creates idempotent when changing these paths.
 - Signed-in state while offline: `resolveSession()` (decision logic in `utils/authSession.ts`) saves the user id on the device (`localStorage`, key `budgify:user-id`) whenever a valid session is seen. If Supabase cannot refresh an expired token because the network is unavailable, the session check takes longer than 4 seconds, or the browser is offline, the user counts as signed in as the saved user. The app then opens from the cache and entries can be queued. The saved id is not a credential and the server still enforces access. It is cleared on sign-out.
 - Only creates are queued. Edits and deletes require a connection.
+- Offline, `fetchAll` in the finance store returns early once loaded, so cached and queued rows stay on screen instead of being replaced by an offline error.
+- Icons must work offline: `icon.clientBundle` in `nuxt.config.ts` embeds them in the precached client bundle (`scan: true` plus an explicit list). A new icon name must be a literal string in `app/`, or be added to `icon.clientBundle.icons`; otherwise it will not render offline.
 - The offline cache is cleared on sign-out. Cached data is tied to a user id and is rejected if it belongs to a different user.
 - A rejected or missing login while syncing (a 401, or `NotAuthenticatedError`) clears only the in-memory data and the local login. The offline cache and outbox are kept, and queued entries replay after the same user signs in. Do not clear the outbox in this case.
 

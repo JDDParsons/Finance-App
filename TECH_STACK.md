@@ -7,7 +7,7 @@ Verified against `package.json`, `nuxt.config.ts` and the source tree.
 | Layer | Technology |
 | --- | --- |
 | Framework | Nuxt 4 (`ssr: false`, client-rendered SPA, `srcDir: 'app'`), Vue 3, TypeScript |
-| UI | `@nuxt/ui` v4 with Iconify icon collections (heroicons, lucide, streamline, etc.), bundled locally via `icon.serverBundle` |
+| UI | `@nuxt/ui` v4 with Iconify icon collections (heroicons, lucide, streamline, etc.), bundled locally via `icon.serverBundle` (server) and `icon.clientBundle` (embedded in the precached client bundle so icons render offline) |
 | State | Pinia (`profile`, `accounts`, `finance`, `savings` stores) |
 | Charts | Chart.js with vue-chartjs |
 | PWA | `@vite-pwa/nuxt` (autoUpdate service worker, standalone manifest) |

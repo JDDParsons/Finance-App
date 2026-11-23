@@ -13,7 +13,7 @@ Planned features in priority order, highest first. Started 2026-11-18. This is a
 | 3 | Recurring transactions | Not started | Idempotent creates, Vercel cron |
 | 4 | Activity history | Not started (needs definition) | `user_id` on budget hits |
 | 5 | User/household management | Not started | `Profile.household_id`, invite-only login |
-| 6 | Offline mode | Phase 1 launch fix in review (offline is a dependency of items 1 to 3) | Offline cache and outbox |
+| 6 | Offline mode | Phase 1 shipped and tested on a device (offline is a dependency of items 1 to 3) | Offline cache and outbox |
 | 7 | Remove CSV file upload | Planned removal | See README footprint |
 | 8 | Linked bank accounts | Not started | Accounts |
 | 9 | Language model integration for dynamic reports | Not started | `/api/bootstrap` data |
@@ -127,15 +127,15 @@ Any change to who is authorized touches the login check and the RLS policies, so
 - **Login while offline (Phase 1 fix):** the app saves the signed-in user id on the device and uses it to open the app and to queue entries when the access token has expired and the server cannot be reached. A token refresh is attempted only when online, and a session check is capped at a few seconds.
 - **Background sync is discarded.** The owner uses an iPhone, and the browser Background Sync feature does not work on iOS Safari (it works in Chrome and Edge only). Sync happens when the app is opened.
 
-### Known issues (found by reading the code; issue 1 confirmed on the owner's phone; fixes for 1, 2, 3 and 6 are in Phase 1, awaiting a device test)
+### Known issues (found by reading the code; issue 1 confirmed on the owner's phone)
 
 1. **The app did not open offline once the login token expired.** Supabase access tokens last about an hour. When `getSession()` finds an expired token it tries a network refresh; offline, that fails and it returns "no session", so the app treated the user as signed out and showed the login page after a long wait. Confirmed 2026-11-21 on the owner's phone: airplane mode gives a long wait and then the login screen, and turning airplane mode off makes the app work again without signing in. **Fixed in Phase 1.**
 2. **Queueing an expense offline failed once the token had expired.** `createOrQueueOffline` re-read the session to get the user id and threw "Not authenticated" instead of queueing. **Fixed in Phase 1.**
 3. **A 401 during replay wiped the queue.** `syncOutbox` and `revalidate` cleared the whole offline cache, including the outbox. **Fixed in Phase 1.**
-4. **Sign-out clears the queue, by design.** `signOut()` clears the outbox, but the sign-out button already asks for confirmation when there are unsynced changes (`useSignOut`), so this is not a bug.
-5. **Only months already opened are available offline.** Any other month fails with "This month has not been saved for offline use yet."
-6. **`getSupabase()` created a new Supabase client on every call.** Several clients sharing one login could try to refresh the same token at once; because refresh tokens rotate, a race could sign the user out unexpectedly. **Fixed in Phase 1.**
-7. **Icons did not render offline.** The icon module used the `server` provider, which fetches each SVG from `/api/_nuxt_icon` at runtime; that fails offline and is never cached. **Fixed:** `icon.clientBundle` (with `scan: true` plus the two account icons from `utils/accountAppearance.ts`, which the scan does not reach) embeds the icons in the precached client bundle. A new icon name must be a literal string in `app/`, or be added to `icon.clientBundle.icons` in `nuxt.config.ts`.
+4. **Only months already opened are available offline.** Any other month fails with "This month has not been saved for offline use yet."
+5. **`getSupabase()` created a new Supabase client on every call.** Several clients sharing one login could try to refresh the same token at once; because refresh tokens rotate, a race could sign the user out unexpectedly. **Fixed in Phase 1.**
+6. **Icons did not render offline.** The icon module used the `server` provider, which fetches each SVG from `/api/_nuxt_icon` at runtime; that fails offline and is never cached. **Fixed:** `icon.clientBundle` (with `scan: true` plus the two account icons from `utils/accountAppearance.ts`, which the scan does not reach) embeds the icons in the precached client bundle. A new icon name must be a literal string in `app/`, or be added to `icon.clientBundle.icons` in `nuxt.config.ts`.
+7. **Cashflow showed an offline error after adding a transaction offline.** `CreateModal` refetches the month after saving; offline that request failed and set `store.error`, which the cashflow lists render instead of the transactions. **Fixed:** `fetchAll` in `app/stores/finance.ts` returns early when offline and the store is already loaded, so cached and queued rows stay on screen.
 
 ### Decisions
 
@@ -178,7 +178,7 @@ Separate "who is the user" (needed to open the app and queue entries) from "is t
 - [x] Redirect the login page to the home page when offline with a saved user.
 - [x] On a 401 during replay: keep the queue and prompt to sign in again. The outbox is no longer cleared.
 - [x] Warn before sign-out when there are unsynced entries (already in place).
-- [ ] Manual test on a real device (needs the owner's iPhone): open offline within the hour, open offline after more than an hour, add an expense offline, kill and reopen the app, go online and confirm the entry syncs. Also: let the login lapse, reconnect, and confirm queued entries survive the "Please sign in again" step and sync after signing in.
+- [x] Manual test on a real device (the owner's iPhone): passed.
 - [x] Correct the docs that say the app opens offline (README, `AGENTS.md`, and the middleware comment).
 
 **Phase 2: generalize the queue (moderate)**
