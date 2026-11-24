@@ -294,20 +294,25 @@ function onClickCapture(event: MouseEvent) {
 </script>
 
 <template>
-    <!-- Choose budget page -->
-    <UCard v-if="choosingBudget">
-        <BudgetsChooseBudget
-            :budgets="store.budgets"
-            :expenses-only="true"
-            @select="handleBudgetSelect"
-        />
-        <div class="mt-4">
-            <UButton color="neutral" variant="ghost" @click="cancelBudgetChange">Cancel</UButton>
-        </div>
-    </UCard>
-
     <!-- The expense, laid out exactly like its card. Tap a field to edit it. -->
-    <div v-else class="relative overflow-hidden rounded-lg">
+    <!-- Clipping is only needed while the card is slid over the Delete action. -->
+    <div class="relative rounded-lg" :class="{ 'overflow-hidden': swipeOffset < 0 || swiping }">
+        <!-- Choose budget -->
+        <UModal v-model:open="choosingBudget">
+            <template #content>
+                <UCard>
+                    <BudgetsChooseBudget
+                        :budgets="store.budgets"
+                        :expenses-only="true"
+                        @select="handleBudgetSelect"
+                    />
+                    <div class="mt-4">
+                        <UButton color="neutral" variant="ghost" @click="cancelBudgetChange">Cancel</UButton>
+                    </div>
+                </UCard>
+            </template>
+        </UModal>
+
         <!-- Revealed by swiping the card left -->
         <div v-show="swipeOffset < 0" class="absolute inset-y-0 right-0 flex bg-red-600" :style="{ width: `${SWIPE_OPEN}px` }">
             <button

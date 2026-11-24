@@ -86,10 +86,14 @@ test('the expense modal closes with a Close button and deletes by swiping left',
   assert.match(modal, /confirm\('Are you sure you want to delete this expense/)
 })
 
-test('hosts show the expense modal without a wrapping card and header', async () => {
+test('tapping an expense card expands it in place instead of opening a modal', async () => {
   for (const file of ['app/components/budgets/ExpensesList.vue', 'app/components/cashflow/AllExpenses.vue']) {
     const source = await read(file)
+    assert.match(source, /v-if="expandedId === hit\.id"/, file)
     assert.doesNotMatch(source, /<h2 class="text-2xl font-bold">Expense<\/h2>/, file)
-    assert.doesNotMatch(source, /:expense-id=[\s\S]*@update=/, file)
   }
+  // The cashflow list has no modal left; the budget page keeps one for its desktop table.
+  assert.doesNotMatch(await read('app/components/cashflow/AllExpenses.vue'), /<UModal/)
+  // Choosing a budget opens over the card instead of replacing it.
+  assert.match(await read('app/components/ExpenseEdit.vue'), /<UModal v-model:open="choosingBudget">/)
 })
