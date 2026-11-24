@@ -50,3 +50,10 @@ test('expense and income modals are titled without "Edit" because they open read
   const table = await read('app/components/cashflow/TransactionsTable.vue')
   assert.doesNotMatch(table, /'Edit Income'|'Edit Expense'/)
 })
+
+test('tapping an existing entity saves it right away and reopening shows the list', async () => {
+  const source = await readFile(new URL('../app/components/cashflow/create/StepEntity.vue', import.meta.url), 'utf8')
+  assert.match(source, /function applySuggestion[\s\S]*?emit\('save', \{ entity: suggestion, selectedEntity: suggestion \}\)/)
+  assert.match(source, /draftEntity\.value = props\.selectedEntity \? '' : props\.entity/)
+  assert.doesNotMatch(source, /v-if="draftSelectedEntity"/)
+})
