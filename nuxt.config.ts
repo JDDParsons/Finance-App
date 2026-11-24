@@ -28,6 +28,9 @@ export default defineNuxtConfig({
         'fa7-regular:circle-check',
         'fa7-solid:arrows-rotate',
         'fa7-solid:triangle-exclamation',
+        'fa7-solid:user',
+        'fa7-solid:comment-dots',
+        'fa7-solid:calendar',
       ],
     },
     serverBundle: {

@@ -387,7 +387,7 @@ function onClickCapture(event: MouseEvent) {
                         inputmode="decimal"
                         placeholder="0.00"
                         aria-label="Amount"
-                        class="min-w-0 flex-1 border-b border-info/50 bg-transparent text-xl font-semibold text-info outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        class="w-2/5 min-w-0 flex-none border-b border-info/50 bg-transparent text-xl font-semibold text-info outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         @keydown.enter.prevent="confirmField"
                     />
                     <button
@@ -404,7 +404,7 @@ function onClickCapture(event: MouseEvent) {
                     <!-- Budget icon: colored circle or grey X pattern for uncategorized -->
                     <button
                         type="button"
-                        class="shrink-0 rounded-full disabled:cursor-default"
+                        class="ml-auto shrink-0 rounded-full disabled:cursor-default"
                         :class="isOpen ? 'cursor-pointer' : 'pointer-events-none'"
                         :aria-label="`Change budget, currently ${chosenBudget?.name ?? 'No budget'}`"
                         :title="chosenBudget?.name ?? 'No budget'"
@@ -427,33 +427,19 @@ function onClickCapture(event: MouseEvent) {
                 </div>
             </ExpandRow>
 
-            <!-- Date, under the amount. A native date input sits over the text. -->
-            <ExpandRow :expanded="isOpen" collapsed-pad="pt-0" expanded-pad="pt-1">
-                <div class="relative inline-block text-xs text-gray-400">
-                    <span>{{ formatDate(date) }}</span>
-                    <input
-                        type="date"
-                        :value="date"
-                        aria-label="Edit date"
-                        class="absolute inset-0 h-full w-full opacity-0"
-                        :class="isOpen && !activeField ? 'cursor-pointer' : 'pointer-events-none'"
-                        tabindex="-1"
-                        @click="onDateClick"
-                        @change="onDateChange"
-                    />
-                </div>
-            </ExpandRow>
-
             <!-- Payee -->
             <ExpandRow :open="isOpen || !!entity" :expanded="isOpen">
                 <button
                     type="button"
-                    class="text-left text-sm disabled:cursor-default"
+                    class="flex items-center gap-1.5 pl-2 text-left text-sm disabled:cursor-default"
                     :class="[entity ? 'text-gray-600 dark:text-gray-300' : 'text-gray-300 dark:text-gray-600', isOpen ? 'cursor-pointer' : 'pointer-events-none']"
                     aria-label="Edit payee"
                     :disabled="!!activeField"
                     @click="openEntityPicker"
-                >{{ entity || 'Add a payee' }}</button>
+                >
+                    <UIcon name="fa7-solid:user" class="size-3 shrink-0 text-gray-400" aria-hidden="true" />
+                    <span>{{ entity || 'Add a payee' }}</span>
+                </button>
             </ExpandRow>
             <EntityField
                 ref="entityPicker"
@@ -466,10 +452,13 @@ function onClickCapture(event: MouseEvent) {
 
             <!-- Notes -->
             <ExpandRow :open="isOpen || !!notes" :expanded="isOpen">
-                <div v-if="activeField === 'notes'" class="flex items-start gap-2">
+                <div v-if="activeField === 'notes'" class="flex items-start gap-1.5 pl-2">
+                    <UIcon name="fa7-solid:comment-dots" class="mt-2.5 size-3 shrink-0 text-gray-400" aria-hidden="true" />
+                    <!-- 16px text: iOS zooms the page when a smaller field is focused. -->
                     <UTextarea
                         v-model="draft"
                         class="flex-1"
+                        :ui="{ base: 'text-base' }"
                         highlight
                         color="info"
                         placeholder="Add notes..."
@@ -482,17 +471,38 @@ function onClickCapture(event: MouseEvent) {
                 <button
                     v-else
                     type="button"
-                    class="whitespace-pre-wrap text-left text-xs disabled:cursor-default"
+                    class="flex items-start gap-1.5 pl-2 text-left text-xs disabled:cursor-default"
                     :class="[notes ? 'text-gray-400 dark:text-gray-500' : 'text-gray-300 dark:text-gray-600', isOpen ? 'cursor-pointer' : 'pointer-events-none']"
                     aria-label="Edit notes"
                     :disabled="!!activeField"
                     @click="startField('notes')"
-                >{{ notes || 'Add notes' }}</button>
+                >
+                    <UIcon name="fa7-solid:comment-dots" class="mt-0.5 size-3 shrink-0 text-gray-400" aria-hidden="true" />
+                    <span class="whitespace-pre-wrap">{{ notes || 'Add notes' }}</span>
+                </button>
+            </ExpandRow>
+
+            <!-- Date. A native date input sits over the text, so one tap opens the picker. -->
+            <ExpandRow :expanded="isOpen">
+                <div class="relative ml-2 inline-flex items-center gap-1.5 text-xs text-gray-400">
+                    <UIcon name="fa7-solid:calendar" class="size-3 shrink-0" aria-hidden="true" />
+                    <span>{{ formatDate(date) }}</span>
+                    <input
+                        type="date"
+                        :value="date"
+                        aria-label="Edit date"
+                        class="absolute inset-0 h-full w-full text-base opacity-0"
+                        :class="isOpen && !activeField ? 'cursor-pointer' : 'pointer-events-none'"
+                        tabindex="-1"
+                        @click="onDateClick"
+                        @change="onDateChange"
+                    />
+                </div>
             </ExpandRow>
 
             <!-- Account, and who created the expense (not editable) -->
             <ExpandRow :open="isOpen || !!accountName || !!creator?.firstName" :expanded="isOpen">
-                <div v-if="activeField === 'account'" class="flex items-center gap-2">
+                <div v-if="activeField === 'account'" class="flex items-center gap-2 pl-2">
                     <USelect
                         v-model="draft"
                         class="flex-1"
@@ -502,7 +512,7 @@ function onClickCapture(event: MouseEvent) {
                     />
                     <FieldConfirmButton label="account" :saving="saving" @confirm="confirmField" />
                 </div>
-                <div v-else class="flex items-center gap-2 flex-wrap">
+                <div v-else class="flex items-center gap-2 flex-wrap pl-2">
                     <button
                         v-if="accountName || isOpen"
                         type="button"
