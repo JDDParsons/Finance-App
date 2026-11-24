@@ -117,16 +117,6 @@ async function handleDelete(id: string) {
   }
 }
 
-async function handleModalDelete() {
-  if (!selectedExpense.value) return
-  if (!confirm('Are you sure you want to delete this expense? This action cannot be undone.')) return
-  try {
-    await store.removeExpense(selectedExpense.value.id)
-    handleEditClose()
-  } catch (err: any) {
-    alert(err?.message || 'Failed to delete expense')
-  }
-}
 </script>
 
 <template>
@@ -177,19 +167,6 @@ async function handleModalDelete() {
 
   <UModal v-if="selectedExpense" v-model:open="isEditingExpense" @update:open="(val) => { if (!val) handleEditClose() }">
     <template #content>
-      <UCard>
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h2 class="text-2xl font-bold">Expense</h2>
-            <UButton
-              icon="heroicons-solid:trash"
-              color="error"
-              variant="ghost"
-              size="sm"
-              @click="handleModalDelete"
-            />
-          </div>
-        </template>
         <ExpenseEdit
           :expense-id="selectedExpense.id"
           :expense-amount="selectedExpense.amount"
@@ -198,11 +175,9 @@ async function handleModalDelete() {
           :expense-notes="selectedExpense.notes"
           :expense-budget-id="selectedExpense.budget_id"
           :expense-account-id="selectedExpense.account_id ?? null"
-          @update="handleEditClose"
           @cancel="handleEditClose"
           @delete="handleEditClose"
         />
-      </UCard>
     </template>
   </UModal>
 </template>

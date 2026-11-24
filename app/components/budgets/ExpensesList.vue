@@ -60,18 +60,6 @@ async function handleDeleteHit(id: string) {
     }
 }
 
-async function handleModalDeleteHit() {
-    if (!selectedHit.value) return
-    if (!confirm('Are you sure you want to delete this expense? This action cannot be undone.')) return
-    try {
-        await store.removeExpense(selectedHit.value.id)
-        handleEditHitClose()
-    } catch (err: any) {
-        alert(err?.message || 'Failed to delete expense')
-        console.error('Error deleting expense:', err)
-    }
-}
-
 function formatDate(dateString: string | null) {
     if (!dateString) return '-'
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -170,19 +158,6 @@ const tableColumns = [
 
     <UModal v-if="selectedHit" v-model:open="isEditingHit" @update:open="(val) => { if (!val) handleEditHitClose() }">
         <template #content>
-            <UCard>
-                <template #header>
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-2xl font-bold">Expense</h2>
-                        <UButton
-                            icon="heroicons-solid:trash"
-                            color="error"
-                            variant="ghost"
-                            size="sm"
-                            @click="handleModalDeleteHit"
-                        />
-                    </div>
-                </template>
                 <ExpenseEdit
                     :expense-id="selectedHit.id"
                     :expense-amount="selectedHit.amount"
@@ -190,11 +165,9 @@ const tableColumns = [
                     :expense-entity="selectedHit.entity"
                     :expense-notes="selectedHit.notes"
                     :expense-budget-id="selectedHit.budget_id"
-                    @update="handleEditHitClose"
                     @cancel="handleEditHitClose"
                     @delete="handleEditHitClose"
                 />
-            </UCard>
         </template>
     </UModal>
 </template>
