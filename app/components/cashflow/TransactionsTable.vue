@@ -352,11 +352,23 @@ async function handleModalDelete() {
 
     <UModal v-if="selectedTransaction" v-model:open="isEditingTransaction" @update:open="(val) => { if (!val) handleEditClose() }">
       <template #content>
-        <UCard>
+        <ExpenseEdit
+          v-if="selectedTransaction.type === 'expense'"
+          :expense-id="selectedTransaction.id"
+          :expense-amount="selectedTransaction.amount"
+          :expense-date="selectedTransaction.date"
+          :expense-entity="selectedTransaction.entity"
+          :expense-notes="selectedTransaction.notes"
+          :expense-budget-id="selectedTransaction.budget_id"
+          :expense-account-id="selectedTransaction.account_id ?? null"
+          @cancel="handleEditClose"
+          @delete="handleEditClose"
+        />
+        <UCard v-else>
           <template #header>
             <div class="flex items-center justify-between">
               <h2 class="text-2xl font-bold">
-                {{ selectedTransaction.type === 'income' ? 'Income' : selectedTransaction.type === 'transfer' ? 'Edit Transfer' : 'Expense' }}
+                {{ selectedTransaction.type === 'income' ? 'Income' : 'Edit Transfer' }}
               </h2>
               <UButton
                 icon="heroicons-solid:trash"
@@ -368,21 +380,8 @@ async function handleModalDelete() {
             </div>
           </template>
 
-          <ExpenseEdit
-            v-if="selectedTransaction.type === 'expense'"
-            :expense-id="selectedTransaction.id"
-            :expense-amount="selectedTransaction.amount"
-            :expense-date="selectedTransaction.date"
-            :expense-entity="selectedTransaction.entity"
-            :expense-notes="selectedTransaction.notes"
-            :expense-budget-id="selectedTransaction.budget_id"
-            :expense-account-id="selectedTransaction.account_id ?? null"
-            @update="handleEditClose"
-            @cancel="handleEditClose"
-            @delete="handleEditClose"
-          />
           <IncomeEdit
-            v-else-if="selectedTransaction.type === 'income'"
+            v-if="selectedTransaction.type === 'income'"
             :income-id="selectedTransaction.id"
             :income-amount="selectedTransaction.amount"
             :income-date="selectedTransaction.date"

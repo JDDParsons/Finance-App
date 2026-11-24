@@ -5,6 +5,8 @@ const props = defineProps<{
   isIncome: boolean
   /** Existing entities to suggest, as in the create flow. */
   suggestions: string[]
+  /** Hide the field itself and open the picker from outside through `open()`. */
+  hideTrigger?: boolean
 }>()
 
 const entity = defineModel<string>({ default: '' })
@@ -21,6 +23,12 @@ const selectedEntity = computed(() => {
   return props.suggestions.find(suggestion => suggestion.toLowerCase() === current) ?? null
 })
 
+function open() {
+  isOpen.value = true
+}
+
+defineExpose({ open })
+
 function close() {
   isOpen.value = false
 }
@@ -32,7 +40,7 @@ function handleSave(payload: { entity: string; selectedEntity: string | null }) 
 </script>
 
 <template>
-  <UFormField :label="label">
+  <UFormField v-if="!hideTrigger" :label="label">
     <button
       type="button"
       class="flex h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-gray-300 px-3 text-left transition-colors hover:border-gray-400 dark:border-gray-700 dark:hover:border-gray-600"

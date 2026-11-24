@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
+import { useInstitutionBranding } from '~/composables/useInstitutionBranding'
 import { getMissingBudgetPeriodMessage } from '~/utils/budgetErrors'
 import { accountDisplayName } from '../../utils/accountAppearance'
 
@@ -21,8 +22,10 @@ const emit = defineEmits<{
 
 const store = useFinanceStore()
 const { budgetIcon } = useBudgetIcon()
+const { institutionLogo, institutionIcon, institutionBgClass } = useInstitutionBranding()
 const existingHit = computed(() => store.budgetHits.find((h: any) => h.id === props.expenseId) ?? null)
 
+// The values shown. Each one changes only after its own save succeeds.
 const amount = ref(props.expenseAmount ?? 0)
 const date = ref(props.expenseDate ? props.expenseDate.slice(0, 10) : new Date().toLocaleDateString('en-CA'))
 const entity = ref(props.expenseEntity ?? '')
@@ -31,31 +34,33 @@ const noBudget = ref(!props.expenseBudgetId)
 const selectedBudgetId = ref(props.expenseBudgetId ?? '')
 const choosingBudget = ref(false)
 
-// The modal opens on a read-only summary; the pencil switches to the editable form.
-const editing = ref(false)
+const immutableAccountId = computed<string | null>(() => {
+    if (props.expenseAccountId !== undefined) return props.expenseAccountId
+    return existingHit.value?.account_id ?? null
+})
+const selectedAccountId = ref<string>(immutableAccountId.value ?? '__none__')
 
-const loading = ref(false)
 const deleting = ref(false)
 const error = ref<string | null>(null)
+
+// Only one field is edited at a time. While it is, the other pencils are hidden.
+type EditableField = 'amount' | 'date' | 'notes' | 'account'
+const activeField = ref<EditableField | null>(null)
+const draft = ref('')
+const saving = ref(false)
+const entityPicker = ref<{ open: () => void } | null>(null)
 
 const chosenBudget = computed(() => {
     if (noBudget.value) return null
     return store.budgets.find((b: any) => b.id === selectedBudgetId.value) ?? null
 })
 
-function handleBudgetSelect(selection: { budgetId: string | null; budgetName: string | null; noBudget: boolean; type: 'expense' | 'income' }) {
-    selectedBudgetId.value = selection.budgetId ?? ''
-    noBudget.value = selection.noBudget
-    choosingBudget.value = false
-}
+const budgetColor = computed<string | null>(() => chosenBudget.value?.color ?? null)
+const borderColor = computed(() => budgetColor.value || '#E5E7EB')
 
-const immutableAccountId = computed<string | null>(() => {
-    if (props.expenseAccountId !== undefined) return props.expenseAccountId
-    const hit = store.budgetHits.find((h: any) => h.id === props.expenseId)
-    return hit?.account_id ?? null
-})
-
-const selectedAccountId = ref<string>(immutableAccountId.value ?? '__none__')
+const chosenAccount = computed(() => store.accounts.find((a: any) => a.id === selectedAccountId.value) ?? null)
+const accountName = computed(() => chosenAccount.value ? accountDisplayName(chosenAccount.value) : null)
+const accountInstitution = computed<string | null>(() => chosenAccount.value?.institution ?? null)
 
 const accountOptions = computed(() => [
     { label: 'No account', value: '__none__' },
@@ -65,90 +70,156 @@ const accountOptions = computed(() => [
     }))
 ])
 
+const creator = computed(() => {
+    const userId = existingHit.value?.user_id
+    return userId ? store.userProfiles.get(userId) ?? null : null
+})
+
 // Existing payees for the chosen budget, the same suggestions the create flow shows.
 const entitySuggestions = computed((): string[] => {
     if (noBudget.value || !selectedBudgetId.value) return []
     return store.budgetAllEntities.get(selectedBudgetId.value) ?? []
 })
 
-watch(() => [editing.value, noBudget.value, selectedBudgetId.value] as const, ([isEditing, none, budgetId]) => {
-    if (!isEditing || none || !budgetId || store.budgetAllEntities.has(budgetId)) return
-    // Offline or failed: the picker still works with typed names.
-    store.fetchBudgetEntities(budgetId).catch(() => {})
-}, { immediate: true })
+function formatCurrency(value: number | string | null) {
+    if (value == null || value === '') return '-'
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value))
+}
 
-const summaryAccountName = computed(() => {
-    const account = store.accounts.find((a: any) => a.id === immutableAccountId.value)
-    return account ? accountDisplayName(account) : 'No account'
-})
-
-const summaryAmount = computed(() =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(amount.value) || 0)
-)
-
-const summaryDate = computed(() => {
-    if (!date.value) return ''
-    const [year, month, day] = date.value.split('-').map(Number)
-    return new Date(year!, (month ?? 1) - 1, day ?? 1).toLocaleDateString('en-US', {
-        weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+function formatDate(value: string) {
+    if (!value) return '-'
+    return new Date(value).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        timeZone: 'UTC',
     })
-})
-
-function startEditing() {
-    error.value = null
-    editing.value = true
 }
 
-// Cancel in edit mode discards the changes and goes back to the summary.
-function cancelEditing() {
-    amount.value = props.expenseAmount ?? 0
-    date.value = props.expenseDate ? props.expenseDate.slice(0, 10) : new Date().toLocaleDateString('en-CA')
-    entity.value = props.expenseEntity ?? ''
-    notes.value = props.expenseNotes ?? existingHit.value?.notes ?? ''
-    noBudget.value = !props.expenseBudgetId
-    selectedBudgetId.value = props.expenseBudgetId ?? ''
-    selectedAccountId.value = immutableAccountId.value ?? '__none__'
-    error.value = null
-    choosingBudget.value = false
-    editing.value = false
+interface ExpenseValues {
+    amount: number | string
+    date: string
+    entity: string
+    notes: string
+    budgetId: string | null
+    accountId: string | null
 }
 
-function validateForm() {
-    if (!date.value) {
-        alert('Please select a date')
-        return false
+// Saves the whole record with one field changed. The shown values change only on success.
+async function commit(patch: Partial<ExpenseValues>): Promise<boolean> {
+    const next: ExpenseValues = {
+        amount: amount.value,
+        date: date.value,
+        entity: entity.value,
+        notes: notes.value,
+        budgetId: noBudget.value ? null : (selectedBudgetId.value || null),
+        accountId: selectedAccountId.value === '__none__' ? null : selectedAccountId.value,
+        ...patch,
     }
-    if (!amount.value) {
-        alert('Please enter an amount')
-        return false
-    }
-    return true
-}
-
-async function handleUpdate() {
-    if (!validateForm()) return
+    saving.value = true
+    error.value = null
     try {
-        loading.value = true
-        error.value = null
-        const budgetIdToSubmit = noBudget.value ? null : (selectedBudgetId.value || null)
         await store.updateExpense(
             props.expenseId,
-            budgetIdToSubmit,
-            date.value,
-            amount.value.toString(),
-            entity.value,
-            selectedAccountId.value === '__none__' ? null : selectedAccountId.value,
-            notes.value
+            next.budgetId,
+            next.date,
+            String(next.amount),
+            next.entity,
+            next.accountId,
+            next.notes
         )
-        emit('update')
+        amount.value = Number(next.amount)
+        date.value = next.date
+        entity.value = next.entity
+        notes.value = next.notes
+        selectedBudgetId.value = next.budgetId ?? ''
+        noBudget.value = !next.budgetId
+        selectedAccountId.value = next.accountId ?? '__none__'
+        return true
     } catch (err: any) {
-        error.value = getMissingBudgetPeriodMessage(err, chosenBudget.value?.name ?? 'This budget', date.value)
+        const budgetName = store.budgets.find((b: any) => b.id === next.budgetId)?.name ?? chosenBudget.value?.name ?? 'This budget'
+        error.value = getMissingBudgetPeriodMessage(err, budgetName, next.date)
             || err?.message
             || 'Error updating expense'
         console.error('Error updating expense:', err)
+        return false
     } finally {
-        loading.value = false
+        saving.value = false
     }
+}
+
+function startField(field: EditableField) {
+    if (activeField.value || saving.value) return
+    error.value = null
+    draft.value = field === 'amount' ? String(amount.value)
+        : field === 'date' ? date.value
+        : field === 'notes' ? notes.value
+        : selectedAccountId.value
+    activeField.value = field
+}
+
+// The check icon: saves the field being edited, or just closes it when nothing changed.
+async function confirmField() {
+    const field = activeField.value
+    if (!field || saving.value) return
+
+    let patch: Partial<ExpenseValues>
+    if (field === 'amount') {
+        const value = Number(draft.value)
+        if (!String(draft.value).trim() || !Number.isFinite(value) || value === 0) {
+            error.value = 'Please enter an amount'
+            return
+        }
+        if (value === Number(amount.value)) { activeField.value = null; return }
+        patch = { amount: value }
+    } else if (field === 'date') {
+        if (!draft.value) {
+            error.value = 'Please select a date'
+            return
+        }
+        if (draft.value === date.value) { activeField.value = null; return }
+        patch = { date: draft.value }
+    } else if (field === 'notes') {
+        if (draft.value === notes.value) { activeField.value = null; return }
+        patch = { notes: draft.value }
+    } else {
+        if (draft.value === selectedAccountId.value) { activeField.value = null; return }
+        patch = { accountId: draft.value === '__none__' ? null : draft.value }
+    }
+
+    if (await commit(patch)) activeField.value = null
+}
+
+function handleBudgetSelect(selection: { budgetId: string | null; budgetName: string | null; noBudget: boolean; type: 'expense' | 'income' }) {
+    choosingBudget.value = false
+    const budgetId = selection.noBudget ? null : selection.budgetId
+    if (budgetId === (noBudget.value ? null : (selectedBudgetId.value || null))) return
+    void commit({ budgetId })
+}
+
+function openEntityPicker() {
+    if (activeField.value || saving.value) return
+    const budgetId = selectedBudgetId.value
+    if (!noBudget.value && budgetId && !store.budgetAllEntities.has(budgetId)) {
+        // Offline or failed: the picker still works with typed names.
+        store.fetchBudgetEntities(budgetId).catch(() => {})
+    }
+    entityPicker.value?.open()
+}
+
+function handleEntitySelect(value: string) {
+    if (value === entity.value) return
+    void commit({ entity: value })
+}
+
+function startBudgetChange() {
+    if (activeField.value || saving.value) return
+    error.value = null
+    choosingBudget.value = true
+}
+
+function cancelBudgetChange() {
+    choosingBudget.value = false
 }
 
 async function handleDelete() {
@@ -168,176 +239,180 @@ async function handleDelete() {
 
 <template>
     <!-- Choose budget page -->
-    <template v-if="choosingBudget">
+    <UCard v-if="choosingBudget">
         <BudgetsChooseBudget
             :budgets="store.budgets"
             :expenses-only="true"
             @select="handleBudgetSelect"
         />
         <div class="mt-4">
-            <UButton color="neutral" variant="ghost" @click="choosingBudget = false">Cancel</UButton>
+            <UButton color="neutral" variant="ghost" @click="cancelBudgetChange">Cancel</UButton>
         </div>
-    </template>
+    </UCard>
 
-    <!-- Read-only summary -->
-    <template v-else-if="!editing">
-        <div v-if="error" class="mb-4">
-            <UAlert title="Error" :description="error" color="error" variant="soft" />
-        </div>
-
-        <div class="flex items-start justify-between gap-3">
-            <div class="flex items-center gap-2">
-                <div
-                    v-if="chosenBudget"
-                    class="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-                    :style="chosenBudget.color ? { backgroundColor: chosenBudget.color + '33', borderColor: chosenBudget.color, border: '1.5px solid' } : {}"
-                    :class="!chosenBudget.color ? 'bg-gray-100 dark:bg-gray-800 border border-gray-300' : ''"
-                >
-                    <UIcon
-                        :name="budgetIcon(chosenBudget.name)"
-                        class="size-3.5"
-                        :style="chosenBudget.color ? { color: chosenBudget.color } : {}"
-                        :class="!chosenBudget.color ? 'text-gray-500' : ''"
-                    />
-                </div>
-                <div v-else class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 bg-gray-100 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-600">
-                    <UIcon name="heroicons:x-mark" class="size-3.5 text-gray-400" />
-                </div>
-                <span class="text-sm text-gray-600 dark:text-gray-300">{{ chosenBudget?.name ?? 'No budget' }}</span>
+    <!-- The expense, laid out like its card; each field has its own edit icon -->
+    <UCard
+        v-else
+        class="shadow"
+        :style="{ borderLeft: `4px solid ${borderColor}` }"
+    >
+        <div class="flex flex-col gap-1.5">
+            <div class="-mt-1 flex items-center justify-end gap-1">
+                <UButton
+                    icon="heroicons-solid:trash"
+                    color="error"
+                    variant="ghost"
+                    size="xs"
+                    aria-label="Delete expense"
+                    :disabled="saving || deleting"
+                    @click="handleDelete"
+                />
+                <UButton
+                    icon="heroicons:x-mark"
+                    color="neutral"
+                    variant="ghost"
+                    size="xs"
+                    aria-label="Close"
+                    @click="emit('cancel')"
+                />
             </div>
-            <UButton
-                icon="heroicons:pencil-square"
-                color="neutral"
-                variant="ghost"
-                size="sm"
-                aria-label="Edit expense"
-                @click="startEditing"
-            />
-        </div>
 
-        <p class="mt-4 text-3xl font-bold text-gray-900 dark:text-white">{{ summaryAmount }}</p>
+            <div v-if="error" role="alert">
+                <UAlert title="Error" :description="error" color="error" variant="soft" />
+            </div>
 
-        <dl class="mt-5 space-y-4">
-            <SummaryField label="Date">{{ summaryDate }}</SummaryField>
-            <SummaryField label="Payee">
-                <span v-if="entity">{{ entity }}</span>
-                <span v-else class="text-gray-400">None</span>
-            </SummaryField>
-            <SummaryField label="Account">{{ summaryAccountName }}</SummaryField>
-            <SummaryField v-if="notes" label="Notes">
-                <span class="whitespace-pre-wrap">{{ notes }}</span>
-            </SummaryField>
-        </dl>
-
-        <div class="mt-6">
-            <UButton color="neutral" variant="ghost" class="w-full justify-center" @click="emit('cancel')">Close</UButton>
-        </div>
-    </template>
-
-    <!-- Edit form page -->
-    <template v-else>
-        <div v-if="error" class="mb-4">
-            <UAlert
-                title="Error"
-                :description="error"
-                color="error"
-                variant="soft"
-            />
-        </div>
-
-        <div class="space-y-6">
-            <!-- Budget pill -->
-            <button
-                type="button"
-                class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
-                @click="choosingBudget = true"
-                aria-label="Change budget"
-            >
-                <div
-                    v-if="chosenBudget"
-                    class="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                    :style="chosenBudget.color ? { backgroundColor: chosenBudget.color + '33', borderColor: chosenBudget.color, border: '1.5px solid' } : {}"
-                    :class="!chosenBudget.color ? 'bg-gray-100 dark:bg-gray-800 border border-gray-300' : ''"
-                >
-                    <UIcon
-                        :name="budgetIcon(chosenBudget.name)"
-                        class="size-3"
-                        :style="chosenBudget.color ? { color: chosenBudget.color } : {}"
-                        :class="!chosenBudget.color ? 'text-gray-500' : ''"
-                    />
-                </div>
-                <div v-else class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 bg-gray-100 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-600">
-                    <UIcon name="heroicons:x-mark" class="size-3 text-gray-400" />
-                </div>
-                <span class="text-sm text-gray-600 dark:text-gray-300">{{ chosenBudget?.name ?? 'No budget' }}</span>
-                <UIcon name="heroicons:pencil-square" class="size-3.5 text-gray-400 ml-0.5" />
-            </button>
-
-            <UFormField label="Amount" required>
+            <!-- Amount -->
+            <div class="flex items-center gap-2">
                 <UInput
-                    v-model="amount"
+                    v-if="activeField === 'amount'"
+                    v-model="draft"
+                    class="flex-1"
                     highlight
                     color="info"
                     placeholder="0.00"
                     type="number"
                     step="0.01"
-                    size="xl"
+                    size="lg"
+                    aria-label="Amount"
+                    @keydown.enter.prevent="confirmField"
                 />
-            </UFormField>
+                <span v-else class="flex-1 text-xl font-semibold text-info">{{ formatCurrency(amount) }}</span>
+                <FieldEditButton label="amount" :editing="activeField === 'amount'" :locked="!!activeField" :saving="saving" @edit="startField('amount')" @confirm="confirmField" />
+            </div>
 
-            <UFormField label="Date" required>
+            <!-- Date -->
+            <div class="flex items-center gap-2">
                 <UInput
-                    v-model="date"
+                    v-if="activeField === 'date'"
+                    v-model="draft"
+                    class="flex-1"
                     highlight
                     color="info"
                     type="date"
-                    size="xl"
+                    aria-label="Date"
                 />
-            </UFormField>
+                <span v-else class="flex-1 text-sm text-gray-400">{{ formatDate(date) }}</span>
+                <FieldEditButton label="date" :editing="activeField === 'date'" :locked="!!activeField" :saving="saving" @edit="startField('date')" @confirm="confirmField" />
+            </div>
 
-            <EntityField v-model="entity" :is-income="false" :suggestions="entitySuggestions" />
+            <!-- Budget -->
+            <div class="flex items-center gap-2">
+                <div class="flex flex-1 items-center gap-2">
+                    <div
+                        v-if="chosenBudget && budgetColor"
+                        class="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                        :style="{ backgroundColor: budgetColor + '33' }"
+                    >
+                        <UIcon :name="chosenBudget.icon ?? budgetIcon(chosenBudget.name)" class="w-4 h-4" :style="{ color: budgetColor }" />
+                    </div>
+                    <div
+                        v-else
+                        class="w-7 h-7 rounded-full shrink-0"
+                        style="background-color: #F3F4F6; background-image: repeating-linear-gradient(45deg, #D1D5DB 0, #D1D5DB 0.6px, transparent 0, transparent 50%), repeating-linear-gradient(-45deg, #D1D5DB 0, #D1D5DB 0.6px, transparent 0, transparent 50%); background-size: 8px 8px;"
+                    />
+                    <span class="text-sm text-gray-600 dark:text-gray-300">{{ chosenBudget?.name ?? 'No budget' }}</span>
+                </div>
+                <FieldEditButton label="budget" :editing="false" :locked="!!activeField" @edit="startBudgetChange" />
+            </div>
 
-            <UFormField label="Notes">
+            <!-- Payee -->
+            <div class="flex items-center gap-2">
+                <span v-if="entity" class="flex-1 text-sm text-gray-600 dark:text-gray-300">{{ entity }}</span>
+                <span v-else class="flex-1 text-sm text-gray-400 dark:text-gray-500">No payee</span>
+                <FieldEditButton label="payee" :editing="false" :locked="!!activeField" @edit="openEntityPicker" />
+            </div>
+            <EntityField
+                ref="entityPicker"
+                hide-trigger
+                :model-value="entity"
+                :is-income="false"
+                :suggestions="entitySuggestions"
+                @update:model-value="handleEntitySelect"
+            />
+
+            <!-- Notes -->
+            <div class="flex items-center gap-2" :class="activeField === 'notes' ? 'items-start' : ''">
                 <UTextarea
-                    v-model="notes"
+                    v-if="activeField === 'notes'"
+                    v-model="draft"
+                    class="flex-1"
                     highlight
                     color="info"
                     placeholder="Add notes..."
-                    :rows="4"
-                    class="w-full"
+                    :rows="3"
+                    aria-label="Notes"
                 />
-            </UFormField>
+                <span v-else-if="notes" class="flex-1 whitespace-pre-wrap text-xs text-gray-400 dark:text-gray-500">{{ notes }}</span>
+                <span v-else class="flex-1 text-xs text-gray-300 dark:text-gray-600">No notes</span>
+                <FieldEditButton label="notes" :editing="activeField === 'notes'" :locked="!!activeField" :saving="saving" @edit="startField('notes')" @confirm="confirmField" />
+            </div>
 
-            <UFormField label="Account">
+            <!-- Account -->
+            <div class="flex items-center gap-2">
                 <USelect
-                    v-model="selectedAccountId"
+                    v-if="activeField === 'account'"
+                    v-model="draft"
+                    class="flex-1"
                     :items="accountOptions"
-                    size="xl"
                     color="info"
-                    style="min-width: 200px;"
+                    aria-label="Account"
                 />
-            </UFormField>
+                <div v-else class="flex flex-1 items-center gap-1.5">
+                    <template v-if="accountName">
+                        <div :class="['shrink-0 w-5 h-5 rounded-full flex items-center justify-center overflow-hidden', institutionBgClass(accountInstitution, accountName)]">
+                            <img
+                                v-if="institutionLogo(accountInstitution, accountName)"
+                                :src="institutionLogo(accountInstitution, accountName)!.src"
+                                :alt="institutionLogo(accountInstitution, accountName)!.alt"
+                                class="w-3 h-3 object-contain"
+                            />
+                            <UIcon v-else :name="institutionIcon(accountInstitution, accountName)" class="w-3 h-3 text-primary-500" />
+                        </div>
+                        <span class="text-xs text-gray-400">{{ accountName }}</span>
+                    </template>
+                    <span v-else class="text-xs text-gray-400">No account</span>
+                </div>
+                <FieldEditButton label="account" :editing="activeField === 'account'" :locked="!!activeField" :saving="saving" @edit="startField('account')" @confirm="confirmField" />
+            </div>
 
-            <div class="flex gap-3">
-                <UButton
-                    color="secondary"
-                    class="flex-1 justify-center"
-                    @click="handleUpdate"
-                    :loading="loading"
-                    :disabled="loading || deleting"
+            <!-- Created by (not editable) -->
+            <div v-if="creator?.firstName" class="flex items-center gap-1.5">
+                <img
+                    v-if="creator.avatarLink"
+                    :src="creator.avatarLink"
+                    :alt="creator.firstName"
+                    class="w-4 h-4 rounded-full object-cover shrink-0"
+                />
+                <div
+                    v-else
+                    class="w-4 h-4 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center shrink-0"
                 >
-                    Update Expense
-                </UButton>
-                <UButton
-                    color="neutral"
-                    variant="ghost"
-                    class="flex-1 justify-center"
-                    @click="cancelEditing"
-                    :disabled="loading || deleting"
-                >
-                    Cancel
-                </UButton>
+                    <span class="text-[8px] font-bold text-primary-600 dark:text-primary-300 leading-none select-none">
+                        {{ creator.firstName.charAt(0).toUpperCase() }}
+                    </span>
+                </div>
+                <span class="text-xs text-gray-400">{{ creator.firstName }}</span>
             </div>
         </div>
-    </template>
+    </UCard>
 </template>
