@@ -43,7 +43,7 @@ const selectedAccountId = ref<string>(immutableAccountId.value ?? '__none__')
 const deleting = ref(false)
 const error = ref<string | null>(null)
 
-// Only one field is edited at a time. While it is, the other pencils are hidden.
+// Only one field is edited at a time. While it is, the other fields cannot be tapped.
 type EditableField = 'amount' | 'date' | 'notes' | 'account'
 const activeField = ref<EditableField | null>(null)
 const draft = ref('')
@@ -223,7 +223,10 @@ function cancelBudgetChange() {
 }
 
 async function handleDelete() {
-    if (!confirm('Are you sure you want to delete this expense? This action cannot be undone.')) return
+    if (!confirm('Are you sure you want to delete this expense? This action cannot be undone.')) {
+        swipeOffset.value = 0
+        return
+    }
     try {
         deleting.value = true
         error.value = null
@@ -233,6 +236,59 @@ async function handleDelete() {
         error.value = err?.message || 'Error deleting expense'
         console.error('Error deleting expense:', err)
         deleting.value = false
+        swipeOffset.value = 0
+    }
+}
+
+// --- Swipe left to delete ---
+// Dragging the card left (finger or mouse) slides it over a red Delete action. A
+// drag that is mostly vertical is left alone so the page can still scroll.
+const SWIPE_OPEN = 96
+const swipeOffset = ref(0)
+const swiping = ref(false)
+let swipeStart: { x: number; y: number; base: number; id: number } | null = null
+let swipeMoved = false
+
+function onPointerDown(event: PointerEvent) {
+    if (event.pointerType === 'mouse' && event.button !== 0) return
+    if (activeField.value || saving.value) return
+    if ((event.target as HTMLElement).closest('input, textarea, select')) return
+    swipeStart = { x: event.clientX, y: event.clientY, base: swipeOffset.value, id: event.pointerId }
+    swipeMoved = false
+}
+
+function onPointerMove(event: PointerEvent) {
+    if (!swipeStart || event.pointerId !== swipeStart.id) return
+    const dx = event.clientX - swipeStart.x
+    const dy = event.clientY - swipeStart.y
+    if (!swiping.value) {
+        if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy) * 1.5) return
+        swiping.value = true
+        swipeMoved = true
+        ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
+    }
+    swipeOffset.value = Math.min(0, Math.max(-SWIPE_OPEN, swipeStart.base + dx))
+}
+
+function onPointerEnd(event: PointerEvent) {
+    if (!swipeStart || event.pointerId !== swipeStart.id) return
+    swipeStart = null
+    if (!swiping.value) return
+    swiping.value = false
+    swipeOffset.value = swipeOffset.value < -SWIPE_OPEN / 2 ? -SWIPE_OPEN : 0
+}
+
+// A drag ends in a click on whatever is under the finger, and a tap on an opened card
+// should only close it. Neither should reach the fields.
+function onClickCapture(event: MouseEvent) {
+    if (swipeMoved) {
+        swipeMoved = false
+        event.stopPropagation()
+        event.preventDefault()
+    } else if (swipeOffset.value !== 0) {
+        swipeOffset.value = 0
+        event.stopPropagation()
+        event.preventDefault()
     }
 }
 </script>
@@ -250,169 +306,206 @@ async function handleDelete() {
         </div>
     </UCard>
 
-    <!-- The expense, laid out like its card; each field has its own edit icon -->
-    <UCard
-        v-else
-        class="shadow"
-        :style="{ borderLeft: `4px solid ${borderColor}` }"
-    >
-        <div class="flex flex-col gap-1.5">
-            <div class="-mt-1 flex items-center justify-end gap-1">
-                <UButton
-                    icon="heroicons-solid:trash"
-                    color="error"
-                    variant="ghost"
-                    size="xs"
-                    aria-label="Delete expense"
-                    :disabled="saving || deleting"
-                    @click="handleDelete"
-                />
-                <UButton
-                    icon="heroicons:x-mark"
-                    color="neutral"
-                    variant="ghost"
-                    size="xs"
-                    aria-label="Close"
-                    @click="emit('cancel')"
-                />
-            </div>
-
-            <div v-if="error" role="alert">
-                <UAlert title="Error" :description="error" color="error" variant="soft" />
-            </div>
-
-            <!-- Amount -->
-            <div class="flex items-center gap-2">
-                <UInput
-                    v-if="activeField === 'amount'"
-                    v-model="draft"
-                    class="flex-1"
-                    highlight
-                    color="info"
-                    placeholder="0.00"
-                    type="number"
-                    step="0.01"
-                    size="lg"
-                    aria-label="Amount"
-                    @keydown.enter.prevent="confirmField"
-                />
-                <span v-else class="flex-1 text-xl font-semibold text-info">{{ formatCurrency(amount) }}</span>
-                <FieldEditButton label="amount" :editing="activeField === 'amount'" :locked="!!activeField" :saving="saving" @edit="startField('amount')" @confirm="confirmField" />
-            </div>
-
-            <!-- Date -->
-            <div class="flex items-center gap-2">
-                <UInput
-                    v-if="activeField === 'date'"
-                    v-model="draft"
-                    class="flex-1"
-                    highlight
-                    color="info"
-                    type="date"
-                    aria-label="Date"
-                />
-                <span v-else class="flex-1 text-sm text-gray-400">{{ formatDate(date) }}</span>
-                <FieldEditButton label="date" :editing="activeField === 'date'" :locked="!!activeField" :saving="saving" @edit="startField('date')" @confirm="confirmField" />
-            </div>
-
-            <!-- Budget -->
-            <div class="flex items-center gap-2">
-                <div class="flex flex-1 items-center gap-2">
-                    <div
-                        v-if="chosenBudget && budgetColor"
-                        class="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
-                        :style="{ backgroundColor: budgetColor + '33' }"
-                    >
-                        <UIcon :name="chosenBudget.icon ?? budgetIcon(chosenBudget.name)" class="w-4 h-4" :style="{ color: budgetColor }" />
-                    </div>
-                    <div
-                        v-else
-                        class="w-7 h-7 rounded-full shrink-0"
-                        style="background-color: #F3F4F6; background-image: repeating-linear-gradient(45deg, #D1D5DB 0, #D1D5DB 0.6px, transparent 0, transparent 50%), repeating-linear-gradient(-45deg, #D1D5DB 0, #D1D5DB 0.6px, transparent 0, transparent 50%); background-size: 8px 8px;"
-                    />
-                    <span class="text-sm text-gray-600 dark:text-gray-300">{{ chosenBudget?.name ?? 'No budget' }}</span>
-                </div>
-                <FieldEditButton label="budget" :editing="false" :locked="!!activeField" @edit="startBudgetChange" />
-            </div>
-
-            <!-- Payee -->
-            <div class="flex items-center gap-2">
-                <span v-if="entity" class="flex-1 text-sm text-gray-600 dark:text-gray-300">{{ entity }}</span>
-                <span v-else class="flex-1 text-sm text-gray-400 dark:text-gray-500">No payee</span>
-                <FieldEditButton label="payee" :editing="false" :locked="!!activeField" @edit="openEntityPicker" />
-            </div>
-            <EntityField
-                ref="entityPicker"
-                hide-trigger
-                :model-value="entity"
-                :is-income="false"
-                :suggestions="entitySuggestions"
-                @update:model-value="handleEntitySelect"
-            />
-
-            <!-- Notes -->
-            <div class="flex items-center gap-2" :class="activeField === 'notes' ? 'items-start' : ''">
-                <UTextarea
-                    v-if="activeField === 'notes'"
-                    v-model="draft"
-                    class="flex-1"
-                    highlight
-                    color="info"
-                    placeholder="Add notes..."
-                    :rows="3"
-                    aria-label="Notes"
-                />
-                <span v-else-if="notes" class="flex-1 whitespace-pre-wrap text-xs text-gray-400 dark:text-gray-500">{{ notes }}</span>
-                <span v-else class="flex-1 text-xs text-gray-300 dark:text-gray-600">No notes</span>
-                <FieldEditButton label="notes" :editing="activeField === 'notes'" :locked="!!activeField" :saving="saving" @edit="startField('notes')" @confirm="confirmField" />
-            </div>
-
-            <!-- Account -->
-            <div class="flex items-center gap-2">
-                <USelect
-                    v-if="activeField === 'account'"
-                    v-model="draft"
-                    class="flex-1"
-                    :items="accountOptions"
-                    color="info"
-                    aria-label="Account"
-                />
-                <div v-else class="flex flex-1 items-center gap-1.5">
-                    <template v-if="accountName">
-                        <div :class="['shrink-0 w-5 h-5 rounded-full flex items-center justify-center overflow-hidden', institutionBgClass(accountInstitution, accountName)]">
-                            <img
-                                v-if="institutionLogo(accountInstitution, accountName)"
-                                :src="institutionLogo(accountInstitution, accountName)!.src"
-                                :alt="institutionLogo(accountInstitution, accountName)!.alt"
-                                class="w-3 h-3 object-contain"
-                            />
-                            <UIcon v-else :name="institutionIcon(accountInstitution, accountName)" class="w-3 h-3 text-primary-500" />
-                        </div>
-                        <span class="text-xs text-gray-400">{{ accountName }}</span>
-                    </template>
-                    <span v-else class="text-xs text-gray-400">No account</span>
-                </div>
-                <FieldEditButton label="account" :editing="activeField === 'account'" :locked="!!activeField" :saving="saving" @edit="startField('account')" @confirm="confirmField" />
-            </div>
-
-            <!-- Created by (not editable) -->
-            <div v-if="creator?.firstName" class="flex items-center gap-1.5">
-                <img
-                    v-if="creator.avatarLink"
-                    :src="creator.avatarLink"
-                    :alt="creator.firstName"
-                    class="w-4 h-4 rounded-full object-cover shrink-0"
-                />
-                <div
-                    v-else
-                    class="w-4 h-4 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center shrink-0"
-                >
-                    <span class="text-[8px] font-bold text-primary-600 dark:text-primary-300 leading-none select-none">
-                        {{ creator.firstName.charAt(0).toUpperCase() }}
-                    </span>
-                </div>
-                <span class="text-xs text-gray-400">{{ creator.firstName }}</span>
-            </div>
+    <!-- The expense, laid out exactly like its card. Tap a field to edit it. -->
+    <div v-else class="relative overflow-hidden rounded-lg">
+        <!-- Revealed by swiping the card left -->
+        <div v-show="swipeOffset < 0" class="absolute inset-y-0 right-0 flex bg-red-600" :style="{ width: `${SWIPE_OPEN}px` }">
+            <button
+                type="button"
+                class="flex h-full w-full cursor-pointer flex-col items-center justify-center gap-1 text-white"
+                aria-label="Delete expense"
+                :disabled="saving || deleting"
+                @click="handleDelete"
+            >
+                <UIcon name="heroicons-solid:trash" class="size-5" />
+                <span class="text-xs font-medium">Delete</span>
+            </button>
         </div>
-    </UCard>
+
+        <UCard
+            class="shadow"
+            :style="{
+                borderLeft: `4px solid ${borderColor}`,
+                transform: `translateX(${swipeOffset}px)`,
+                transition: swiping ? 'none' : 'transform 150ms ease',
+                touchAction: 'pan-y',
+            }"
+            @pointerdown="onPointerDown"
+            @pointermove="onPointerMove"
+            @pointerup="onPointerEnd"
+            @pointercancel="onPointerEnd"
+            @click.capture="onClickCapture"
+        >
+            <div class="flex flex-col gap-1.5">
+                <div v-if="error" role="alert">
+                    <UAlert title="Error" :description="error" color="error" variant="soft" />
+                </div>
+
+                <!-- Top row: amount | date | budget icon -->
+                <div v-if="activeField === 'amount'" class="flex items-center gap-2">
+                    <UInput
+                        v-model="draft"
+                        class="flex-1"
+                        highlight
+                        color="info"
+                        placeholder="0.00"
+                        type="number"
+                        step="0.01"
+                        size="lg"
+                        aria-label="Amount"
+                        @keydown.enter.prevent="confirmField"
+                    />
+                    <FieldConfirmButton label="amount" :saving="saving" @confirm="confirmField" />
+                </div>
+                <div v-else-if="activeField === 'date'" class="flex items-center gap-2">
+                    <UInput
+                        v-model="draft"
+                        class="flex-1"
+                        highlight
+                        color="info"
+                        type="date"
+                        aria-label="Date"
+                    />
+                    <FieldConfirmButton label="date" :saving="saving" @confirm="confirmField" />
+                </div>
+                <div v-else class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        class="cursor-pointer text-left text-xl font-semibold text-info disabled:cursor-default"
+                        aria-label="Edit amount"
+                        :disabled="!!activeField"
+                        @click="startField('amount')"
+                    >{{ formatCurrency(amount) }}</button>
+                    <button
+                        type="button"
+                        class="flex-1 cursor-pointer text-left text-sm text-gray-400 disabled:cursor-default"
+                        aria-label="Edit date"
+                        :disabled="!!activeField"
+                        @click="startField('date')"
+                    >{{ formatDate(date) }}</button>
+                    <!-- Budget icon: colored circle or grey X pattern for uncategorized -->
+                    <button
+                        type="button"
+                        class="shrink-0 cursor-pointer rounded-full disabled:cursor-default"
+                        :aria-label="`Change budget, currently ${chosenBudget?.name ?? 'No budget'}`"
+                        :title="chosenBudget?.name ?? 'No budget'"
+                        :disabled="!!activeField"
+                        @click="startBudgetChange"
+                    >
+                        <div
+                            v-if="chosenBudget && budgetColor"
+                            class="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                            :style="{ backgroundColor: budgetColor + '33' }"
+                        >
+                            <UIcon :name="chosenBudget.icon ?? budgetIcon(chosenBudget.name)" class="w-4 h-4" :style="{ color: budgetColor }" />
+                        </div>
+                        <div
+                            v-else
+                            class="w-7 h-7 rounded-full shrink-0"
+                            style="background-color: #F3F4F6; background-image: repeating-linear-gradient(45deg, #D1D5DB 0, #D1D5DB 0.6px, transparent 0, transparent 50%), repeating-linear-gradient(-45deg, #D1D5DB 0, #D1D5DB 0.6px, transparent 0, transparent 50%); background-size: 8px 8px;"
+                        />
+                    </button>
+                </div>
+
+                <!-- Payee -->
+                <button
+                    type="button"
+                    class="cursor-pointer text-left text-sm disabled:cursor-default"
+                    :class="entity ? 'text-gray-600 dark:text-gray-300' : 'text-gray-300 dark:text-gray-600'"
+                    aria-label="Edit payee"
+                    :disabled="!!activeField"
+                    @click="openEntityPicker"
+                >{{ entity || 'Add a payee' }}</button>
+                <EntityField
+                    ref="entityPicker"
+                    hide-trigger
+                    :model-value="entity"
+                    :is-income="false"
+                    :suggestions="entitySuggestions"
+                    @update:model-value="handleEntitySelect"
+                />
+
+                <!-- Notes -->
+                <div v-if="activeField === 'notes'" class="flex items-start gap-2">
+                    <UTextarea
+                        v-model="draft"
+                        class="flex-1"
+                        highlight
+                        color="info"
+                        placeholder="Add notes..."
+                        :rows="3"
+                        aria-label="Notes"
+                    />
+                    <FieldConfirmButton label="notes" :saving="saving" @confirm="confirmField" />
+                </div>
+                <button
+                    v-else
+                    type="button"
+                    class="cursor-pointer whitespace-pre-wrap text-left text-xs disabled:cursor-default"
+                    :class="notes ? 'text-gray-400 dark:text-gray-500' : 'text-gray-300 dark:text-gray-600'"
+                    aria-label="Edit notes"
+                    :disabled="!!activeField"
+                    @click="startField('notes')"
+                >{{ notes || 'Add notes' }}</button>
+
+                <!-- Bottom row: account + user info -->
+                <div v-if="activeField === 'account'" class="flex items-center gap-2">
+                    <USelect
+                        v-model="draft"
+                        class="flex-1"
+                        :items="accountOptions"
+                        color="info"
+                        aria-label="Account"
+                    />
+                    <FieldConfirmButton label="account" :saving="saving" @confirm="confirmField" />
+                </div>
+                <div v-else class="flex items-center gap-2 flex-wrap">
+                    <button
+                        type="button"
+                        class="flex cursor-pointer items-center gap-1.5 disabled:cursor-default"
+                        aria-label="Edit account"
+                        :disabled="!!activeField"
+                        @click="startField('account')"
+                    >
+                        <template v-if="accountName">
+                            <div :class="['shrink-0 w-5 h-5 rounded-full flex items-center justify-center overflow-hidden', institutionBgClass(accountInstitution, accountName)]">
+                                <img
+                                    v-if="institutionLogo(accountInstitution, accountName)"
+                                    :src="institutionLogo(accountInstitution, accountName)!.src"
+                                    :alt="institutionLogo(accountInstitution, accountName)!.alt"
+                                    class="w-3 h-3 object-contain"
+                                />
+                                <UIcon v-else :name="institutionIcon(accountInstitution, accountName)" class="w-3 h-3 text-primary-500" />
+                            </div>
+                            <span class="text-xs text-gray-400">{{ accountName }}</span>
+                        </template>
+                        <span v-else class="text-xs text-gray-300 dark:text-gray-600">Add an account</span>
+                    </button>
+
+                    <!-- User info (not editable) -->
+                    <div v-if="creator?.firstName" class="flex items-center gap-1.5 ml-auto">
+                        <img
+                            v-if="creator.avatarLink"
+                            :src="creator.avatarLink"
+                            :alt="creator.firstName"
+                            class="w-4 h-4 rounded-full object-cover shrink-0"
+                        />
+                        <div
+                            v-else
+                            class="w-4 h-4 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center shrink-0"
+                        >
+                            <span class="text-[8px] font-bold text-primary-600 dark:text-primary-300 leading-none select-none">
+                                {{ creator.firstName.charAt(0).toUpperCase() }}
+                            </span>
+                        </div>
+                        <span class="text-xs text-gray-400">{{ creator.firstName }}</span>
+                    </div>
+                </div>
+
+                <div class="mt-2 flex justify-end">
+                    <UButton color="neutral" variant="ghost" label="Close" @click="emit('cancel')" />
+                </div>
+            </div>
+        </UCard>
+    </div>
 </template>
