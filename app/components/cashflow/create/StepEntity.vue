@@ -16,15 +16,16 @@ const draftEntity = ref('')
 const draftSelectedEntity = ref<string | null>(null)
 
 const filteredSuggestions = computed((): string[] => {
-  if (draftSelectedEntity.value) return []
   const query = draftEntity.value.trim().toLowerCase()
   if (!query) return props.suggestions
   return props.suggestions.filter(s => s.toLowerCase().includes(query))
 })
 
+// Tapping an existing entity is the choice: it is saved and the picker closes.
 function applySuggestion(suggestion: string) {
   draftEntity.value = suggestion
   draftSelectedEntity.value = suggestion
+  emit('save', { entity: suggestion, selectedEntity: suggestion })
 }
 
 function clearEntity() {
@@ -33,13 +34,20 @@ function clearEntity() {
   focusField()
 }
 
+// Opening again to change a chosen entity starts with an empty search and the full
+// list, so no chip has to be cleared first. A typed name is still shown for editing.
 function syncDrafts() {
-  draftEntity.value = props.entity
-  draftSelectedEntity.value = props.selectedEntity
+  draftEntity.value = props.selectedEntity ? '' : props.entity
+  draftSelectedEntity.value = null
 }
 
 function handleSave() {
   const normalizedEntity = draftEntity.value.trim()
+  // Saving an empty search keeps a chosen entity instead of clearing it.
+  if (!normalizedEntity && props.selectedEntity) {
+    emit('cancel')
+    return
+  }
   emit('save', {
     entity: normalizedEntity,
     selectedEntity: draftSelectedEntity.value ? normalizedEntity : null,
@@ -61,28 +69,14 @@ function focusField() {
 watch(() => props.open, (open) => {
   if (!open) return
   syncDrafts()
-  if (!draftSelectedEntity.value) {
-    focusField()
-  }
+  focusField()
 }, { immediate: true })
 </script>
 
 <template>
   <div class="p-4 pt-0">
     <div class="min-h-0">
-      <div
-        v-if="draftSelectedEntity"
-        class="flex h-11 items-center gap-2 rounded-md border border-gray-300 px-3 dark:border-gray-700"
-      >
-        <span class="rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-sm text-green-700 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-300">
-          {{ draftSelectedEntity }}
-        </span>
-        <button type="button" class="ml-auto cursor-pointer" @click="clearEntity">
-          <UIcon name="heroicons:x-circle" class="size-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" />
-        </button>
-      </div>
-
-      <div v-else ref="fieldRef">
+      <div ref="fieldRef">
         <UInput
           v-model="draftEntity"
           variant="soft"
