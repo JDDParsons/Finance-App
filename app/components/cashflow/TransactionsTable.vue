@@ -352,16 +352,10 @@ async function handleModalDelete() {
 
     <UModal v-if="selectedTransaction" v-model:open="isEditingTransaction" @update:open="(val) => { if (!val) handleEditClose() }">
       <template #content>
-        <ExpenseEdit
+        <ExpenseCard
           v-if="selectedTransaction.type === 'expense'"
           :expense-id="selectedTransaction.id"
-          :expense-amount="selectedTransaction.amount"
-          :expense-date="selectedTransaction.date"
-          :expense-entity="selectedTransaction.entity"
-          :expense-notes="selectedTransaction.notes"
-          :expense-budget-id="selectedTransaction.budget_id"
-          :expense-account-id="selectedTransaction.account_id ?? null"
-          @cancel="handleEditClose"
+          modal
           @delete="handleEditClose"
         />
         <UCard v-else>

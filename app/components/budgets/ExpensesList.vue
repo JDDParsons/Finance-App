@@ -36,13 +36,9 @@ function handleEditHit(id: string) {
 // On a phone, tapping a card expands it in place; the desktop table still uses the modal.
 const expandedId = ref<string | null>(null)
 
-function expandCard(id: string) {
-    expandedId.value = id
-}
-
-function collapseCard() {
-    expandedId.value = null
-    emit('update')
+function setExpanded(id: string, open: boolean) {
+    if (open) expandedId.value = id
+    else if (expandedId.value === id) expandedId.value = null
 }
 
 function handleEditHitClose() {
@@ -114,36 +110,15 @@ const tableColumns = [
         <!-- Mobile: cards -->
         <div class="lg:hidden">
             <div class="space-y-4 p-1 pb-2">
-                <template v-for="hit in props.budgetHits" :key="hit.id">
-                <ExpenseEdit
-                    v-if="expandedId === hit.id"
-                    :expense-id="hit.id"
-                    :expense-amount="hit.amount"
-                    :expense-date="hit.date"
-                    :expense-entity="hit.entity"
-                    :expense-notes="hit.notes"
-                    :expense-budget-id="hit.budget_id"
-                    :expense-account-id="hit.account_id ?? null"
-                    class="ml-2 mr-2"
-                    @cancel="collapseCard"
-                    @delete="collapseCard"
-                />
                 <ExpenseCard
-                    v-else
-                    :id="hit.id"
-                    :amount="hit.amount"
-                    :date="hit.date"
-                    :entity="hit.entity"
-                    :budget-color="props.budgetColor"
-                    :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
-                    :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
-                    :user-first-name="hit.user_id ? store.userProfiles.get(hit.user_id)?.firstName ?? null : null"
-                    :user-avatar-link="hit.user_id ? store.userProfiles.get(hit.user_id)?.avatarLink ?? null : null"
+                    v-for="hit in props.budgetHits"
+                    :key="hit.id"
+                    :expense-id="hit.id"
+                    :expanded="expandedId === hit.id"
                     class="ml-2 mr-2"
-                    @delete="handleDeleteHit"
-                    @edit="expandCard"
+                    @update:expanded="setExpanded(hit.id, $event)"
+                    @delete="emit('update')"
                 />
-                </template>
             </div>
         </div>
 
@@ -184,14 +159,9 @@ const tableColumns = [
 
     <UModal v-if="selectedHit" v-model:open="isEditingHit" @update:open="(val) => { if (!val) handleEditHitClose() }">
         <template #content>
-                <ExpenseEdit
+                <ExpenseCard
                     :expense-id="selectedHit.id"
-                    :expense-amount="selectedHit.amount"
-                    :expense-date="selectedHit.date"
-                    :expense-entity="selectedHit.entity"
-                    :expense-notes="selectedHit.notes"
-                    :expense-budget-id="selectedHit.budget_id"
-                    @cancel="handleEditHitClose"
+                    modal
                     @delete="handleEditHitClose"
                 />
         </template>

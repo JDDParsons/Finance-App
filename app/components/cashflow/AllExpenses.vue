@@ -98,21 +98,9 @@ const isCurrentMonth = computed(() =>
 // Tapping a card expands it in place so its fields can be edited. One card at a time.
 const expandedId = ref<string | null>(null)
 
-function handleEdit(id: string) {
-  expandedId.value = id
-}
-
-function collapse() {
-  expandedId.value = null
-}
-
-async function handleDelete(id: string) {
-  if (!confirm('Are you sure you want to delete this expense?')) return
-  try {
-    await store.removeExpense(id)
-  } catch (err: any) {
-    alert(err?.message || 'Failed to delete expense')
-  }
+function setExpanded(id: string, open: boolean) {
+  if (open) expandedId.value = id
+  else if (expandedId.value === id) expandedId.value = null
 }
 
 </script>
@@ -138,34 +126,10 @@ async function handleDelete(id: string) {
             <p class="text-xs text-gray-500">{{ section.dateLabel }}</p>
           </div>
           <div v-for="hit in section.items" :key="hit.id">
-            <ExpenseEdit
-              v-if="expandedId === hit.id"
-              :expense-id="hit.id"
-              :expense-amount="hit.amount"
-              :expense-date="hit.date"
-              :expense-entity="hit.entity"
-              :expense-notes="hit.notes"
-              :expense-budget-id="hit.budget_id"
-              :expense-account-id="hit.account_id ?? null"
-              @cancel="collapse"
-              @delete="collapse"
-            />
             <ExpenseCard
-            v-else
-            :id="hit.id"
-            :amount="hit.amount"
-            :date="hit.date"
-            :entity="hit.entity"
-            :notes="hit.notes"
-            :budget-name="budgetMap.get(hit.budget_id)"
-            :budget-color="hit.budget_id ? budgetColorMap.get(hit.budget_id) ?? null : null"
-            :budget-icon="hit.budget_id ? budgetIconMap.get(hit.budget_id) ?? null : null"
-            :account-name="hit.account_id ? accountMap.get(hit.account_id) ?? null : null"
-            :account-institution="hit.account_id ? accountInstitutionMap.get(hit.account_id) ?? null : null"
-            :user-first-name="hit.user_id ? store.userProfiles.get(hit.user_id)?.firstName ?? null : null"
-            :user-avatar-link="hit.user_id ? store.userProfiles.get(hit.user_id)?.avatarLink ?? null : null"
-            @delete="handleDelete"
-            @edit="handleEdit"
+              :expense-id="hit.id"
+              :expanded="expandedId === hit.id"
+              @update:expanded="setExpanded(hit.id, $event)"
             />
             <p v-if="hit.pending_sync || hit.sync_error" class="mt-1 text-right text-xs" :class="hit.sync_error ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'">
               {{ hit.sync_error || 'Waiting to sync' }}
