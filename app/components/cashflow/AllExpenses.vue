@@ -95,17 +95,15 @@ const isCurrentMonth = computed(() =>
   store.selectedMonth.month === now.getMonth() + 1
 )
 
-const selectedExpense = ref<any>(null)
-const isEditingExpense = ref(false)
+// Tapping a card expands it in place so its fields can be edited. One card at a time.
+const expandedId = ref<string | null>(null)
 
 function handleEdit(id: string) {
-  selectedExpense.value = expenses.value.find((h: any) => h.id === id) ?? null
-  if (selectedExpense.value) isEditingExpense.value = true
+  expandedId.value = id
 }
 
-function handleEditClose() {
-  isEditingExpense.value = false
-  selectedExpense.value = null
+function collapse() {
+  expandedId.value = null
 }
 
 async function handleDelete(id: string) {
@@ -140,7 +138,20 @@ async function handleDelete(id: string) {
             <p class="text-xs text-gray-500">{{ section.dateLabel }}</p>
           </div>
           <div v-for="hit in section.items" :key="hit.id">
+            <ExpenseEdit
+              v-if="expandedId === hit.id"
+              :expense-id="hit.id"
+              :expense-amount="hit.amount"
+              :expense-date="hit.date"
+              :expense-entity="hit.entity"
+              :expense-notes="hit.notes"
+              :expense-budget-id="hit.budget_id"
+              :expense-account-id="hit.account_id ?? null"
+              @cancel="collapse"
+              @delete="collapse"
+            />
             <ExpenseCard
+            v-else
             :id="hit.id"
             :amount="hit.amount"
             :date="hit.date"
@@ -165,19 +176,4 @@ async function handleDelete(id: string) {
     </div>
   </div>
 
-  <UModal v-if="selectedExpense" v-model:open="isEditingExpense" @update:open="(val) => { if (!val) handleEditClose() }">
-    <template #content>
-        <ExpenseEdit
-          :expense-id="selectedExpense.id"
-          :expense-amount="selectedExpense.amount"
-          :expense-date="selectedExpense.date"
-          :expense-entity="selectedExpense.entity"
-          :expense-notes="selectedExpense.notes"
-          :expense-budget-id="selectedExpense.budget_id"
-          :expense-account-id="selectedExpense.account_id ?? null"
-          @cancel="handleEditClose"
-          @delete="handleEditClose"
-        />
-    </template>
-  </UModal>
 </template>

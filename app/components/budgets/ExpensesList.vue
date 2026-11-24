@@ -33,6 +33,18 @@ function handleEditHit(id: string) {
     if (selectedHit.value) isEditingHit.value = true
 }
 
+// On a phone, tapping a card expands it in place; the desktop table still uses the modal.
+const expandedId = ref<string | null>(null)
+
+function expandCard(id: string) {
+    expandedId.value = id
+}
+
+function collapseCard() {
+    expandedId.value = null
+    emit('update')
+}
+
 function handleEditHitClose() {
     isEditingHit.value = false
     selectedHit.value = null
@@ -102,9 +114,22 @@ const tableColumns = [
         <!-- Mobile: cards -->
         <div class="lg:hidden">
             <div class="space-y-4 p-1 pb-2">
+                <template v-for="hit in props.budgetHits" :key="hit.id">
+                <ExpenseEdit
+                    v-if="expandedId === hit.id"
+                    :expense-id="hit.id"
+                    :expense-amount="hit.amount"
+                    :expense-date="hit.date"
+                    :expense-entity="hit.entity"
+                    :expense-notes="hit.notes"
+                    :expense-budget-id="hit.budget_id"
+                    :expense-account-id="hit.account_id ?? null"
+                    class="ml-2 mr-2"
+                    @cancel="collapseCard"
+                    @delete="collapseCard"
+                />
                 <ExpenseCard
-                    v-for="hit in props.budgetHits"
-                    :key="hit.id"
+                    v-else
                     :id="hit.id"
                     :amount="hit.amount"
                     :date="hit.date"
@@ -116,8 +141,9 @@ const tableColumns = [
                     :user-avatar-link="hit.user_id ? store.userProfiles.get(hit.user_id)?.avatarLink ?? null : null"
                     class="ml-2 mr-2"
                     @delete="handleDeleteHit"
-                    @edit="handleEditHit"
+                    @edit="expandCard"
                 />
+                </template>
             </div>
         </div>
 
