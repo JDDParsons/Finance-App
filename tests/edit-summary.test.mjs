@@ -57,23 +57,33 @@ test('tapping an existing entity saves it right away and reopening shows the lis
   assert.doesNotMatch(source, /v-if="draftSelectedEntity"/)
 })
 
-test('the expense modal is laid out like its card with one edit icon per field', async () => {
+test('the expense modal is laid out like its card, with tap-to-edit fields', async () => {
   const modal = await read('app/components/ExpenseEdit.vue')
-  const button = await read('app/components/FieldEditButton.vue')
+  const check = await read('app/components/FieldConfirmButton.vue')
   assert.match(modal, /borderLeft: .4px solid \$\{borderColor\}./)
   assert.match(modal, /text-xl font-semibold text-info/)
-  for (const field of ['amount', 'date', 'budget', 'payee', 'notes', 'account']) {
-    assert.match(modal, new RegExp(`<FieldEditButton label="${field}"`))
+  // Fields are tapped directly: no pencil icons, and no budget name beside the budget icon.
+  for (const label of ['amount', 'date', 'payee', 'notes', 'account']) {
+    assert.match(modal, new RegExp(`aria-label="Edit ${label}"`))
   }
-  // Only one field is edited at a time: the other pencils are locked away.
-  assert.match(modal, /:locked="!!activeField"/)
-  assert.match(button, /v-else-if="!locked"/)
-  assert.match(button, /heroicons-solid:check-circle/)
-  assert.match(button, /heroicons:pencil-square/)
+  assert.doesNotMatch(modal, /heroicons:pencil-square/)
+  assert.doesNotMatch(modal, />\s*\{\{ chosenBudget/)
+  // Only one field is edited at a time: the others cannot be tapped.
+  assert.match(modal, /:disabled="!!activeField"/)
+  assert.match(check, /heroicons-solid:check-circle/)
   // Each confirmed field is saved on its own through the normal update.
   assert.match(modal, /async function commit\(patch/)
   assert.match(modal, /store\.updateExpense\(/)
   assert.doesNotMatch(modal, /Update Expense/)
+})
+
+test('the expense modal closes with a Close button and deletes by swiping left', async () => {
+  const modal = await read('app/components/ExpenseEdit.vue')
+  assert.match(modal, /label="Close"/)
+  assert.doesNotMatch(modal, /heroicons:x-mark/)
+  assert.match(modal, /@pointerdown="onPointerDown"/)
+  assert.match(modal, /aria-label="Delete expense"/)
+  assert.match(modal, /confirm\('Are you sure you want to delete this expense/)
 })
 
 test('hosts show the expense modal without a wrapping card and header', async () => {
