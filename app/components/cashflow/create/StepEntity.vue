@@ -28,11 +28,6 @@ function applySuggestion(suggestion: string) {
   emit('save', { entity: suggestion, selectedEntity: suggestion })
 }
 
-// Removes the entity from the record and closes the picker.
-function handleClear() {
-  emit('save', { entity: '', selectedEntity: null })
-}
-
 function clearEntity() {
   draftEntity.value = ''
   draftSelectedEntity.value = null
@@ -46,10 +41,13 @@ function syncDrafts() {
   draftSelectedEntity.value = null
 }
 
-// Enter saves a typed name; an empty search changes nothing.
 function handleSave() {
   const normalizedEntity = draftEntity.value.trim()
-  if (!normalizedEntity) return
+  // Saving an empty search keeps a chosen entity instead of clearing it.
+  if (!normalizedEntity && props.selectedEntity) {
+    emit('cancel')
+    return
+  }
   emit('save', {
     entity: normalizedEntity,
     selectedEntity: draftSelectedEntity.value ? normalizedEntity : null,
@@ -87,7 +85,6 @@ watch(() => props.open, (open) => {
           type="text"
           size="xl"
           class="w-full"
-          @keydown.enter.prevent="handleSave"
         >
           <template v-if="draftEntity" #trailing>
             <button type="button" class="cursor-pointer" @click="clearEntity">
@@ -114,8 +111,8 @@ watch(() => props.open, (open) => {
       <UButton color="neutral" variant="ghost" @click="emit('cancel')">
         Cancel
       </UButton>
-      <UButton color="neutral" variant="soft" @click="handleClear">
-        Clear
+      <UButton color="primary" @click="handleSave">
+        Save
       </UButton>
     </div>
   </div>
