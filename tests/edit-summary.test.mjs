@@ -57,43 +57,64 @@ test('tapping an existing entity saves it right away and reopening shows the lis
   assert.doesNotMatch(source, /v-if="draftSelectedEntity"/)
 })
 
-test('the expense modal is laid out like its card, with tap-to-edit fields', async () => {
-  const modal = await read('app/components/ExpenseEdit.vue')
+
+test('the expense card has tap-to-edit fields laid out like the card, with the date under the amount', async () => {
+  const card = await read('app/components/ExpenseCard.vue')
   const check = await read('app/components/FieldConfirmButton.vue')
-  assert.match(modal, /borderLeft: .4px solid \$\{borderColor\}./)
-  assert.match(modal, /text-xl font-semibold text-info/)
-  // Fields are tapped directly: no pencil icons, and no budget name beside the budget icon.
-  for (const label of ['amount', 'date', 'payee', 'notes', 'account']) {
-    assert.match(modal, new RegExp(`aria-label="Edit ${label}"`))
+  assert.match(card, /borderLeft: .4px solid \$\{borderColor\}./)
+  for (const label of ['amount', 'payee', 'notes', 'account']) {
+    assert.match(card, new RegExp(`aria-label="Edit ${label}"`))
   }
-  assert.doesNotMatch(modal, /heroicons:pencil-square/)
-  assert.doesNotMatch(modal, />\s*\{\{ chosenBudget/)
-  // Only one field is edited at a time: the others cannot be tapped.
-  assert.match(modal, /:disabled="!!activeField"/)
+  assert.match(card, /aria-label="Edit date"/)
+  assert.doesNotMatch(card, /heroicons:pencil-square/)
+  assert.doesNotMatch(card, />\s*\{\{ chosenBudget/)
+  // The date row comes after the amount row and uses the small text size.
+  assert.ok(card.indexOf('Edit amount') < card.indexOf('Edit date'))
+  assert.match(card, /<div class="relative inline-block text-xs text-gray-400">/)
+  // The amount keeps its size and color while it is edited.
+  assert.match(card, /<input[^>]*text-xl font-semibold text-info/)
+  // Only one field is edited at a time, and each is saved on its own.
+  assert.match(card, /:disabled="!!activeField"/)
   assert.match(check, /heroicons-solid:check-circle/)
-  // Each confirmed field is saved on its own through the normal update.
-  assert.match(modal, /async function commit\(patch/)
-  assert.match(modal, /store\.updateExpense\(/)
-  assert.doesNotMatch(modal, /Update Expense/)
+  assert.match(card, /async function commit\(patch/)
+  assert.match(card, /store\.updateExpense\(/)
 })
 
-test('the expense modal closes with a Close button and deletes by swiping left', async () => {
-  const modal = await read('app/components/ExpenseEdit.vue')
-  assert.match(modal, /label="Close"/)
-  assert.doesNotMatch(modal, /heroicons:x-mark/)
-  assert.match(modal, /@pointerdown="onPointerDown"/)
-  assert.match(modal, /aria-label="Delete expense"/)
-  assert.match(modal, /confirm\('Are you sure you want to delete this expense/)
+test('the date opens the picker on one tap and saves as soon as a date is chosen', async () => {
+  const card = await read('app/components/ExpenseCard.vue')
+  assert.match(card, /type="date"/)
+  assert.match(card, /showPicker/)
+  assert.match(card, /@change="onDateChange"/)
+  assert.match(card, /function onDateChange[\s\S]*?void commit\(\{ date: value \}\)/)
+  assert.doesNotMatch(card, /'date'/)
 })
 
-test('tapping an expense card expands it in place instead of opening a modal', async () => {
+test('the card expands with animated spacing and collapses when tapped away from a field', async () => {
+  const card = await read('app/components/ExpenseCard.vue')
+  const row = await read('app/components/ExpandRow.vue')
+  assert.match(row, /transition-\[padding\]/)
+  assert.match(row, /grid-rows-\[0fr\]/)
+  assert.match(card, /\.animate\(/)
+  assert.match(card, /prefers-reduced-motion/)
+  assert.match(card, /closest\('button, input, textarea, select, a'\)[\s\S]*?expanded\.value = false/)
+  assert.doesNotMatch(card, /label="Close"/)
+})
+
+test('the card deletes by swiping left, with the usual confirmation', async () => {
+  const card = await read('app/components/ExpenseCard.vue')
+  assert.match(card, /@pointerdown="onPointerDown"/)
+  assert.match(card, /aria-label="Delete expense"/)
+  assert.match(card, /confirm\('Are you sure you want to delete this expense/)
+})
+
+test('lists show one expandable card per expense and tables keep the modal', async () => {
   for (const file of ['app/components/budgets/ExpensesList.vue', 'app/components/cashflow/AllExpenses.vue']) {
     const source = await read(file)
-    assert.match(source, /v-if="expandedId === hit\.id"/, file)
-    assert.doesNotMatch(source, /<h2 class="text-2xl font-bold">Expense<\/h2>/, file)
+    assert.match(source, /<ExpenseCard[\s\S]*?:expanded="expandedId === hit\.id"/, file)
+    assert.doesNotMatch(source, /ExpenseEdit/, file)
   }
-  // The cashflow list has no modal left; the budget page keeps one for its desktop table.
   assert.doesNotMatch(await read('app/components/cashflow/AllExpenses.vue'), /<UModal/)
+  assert.match(await read('app/components/cashflow/TransactionsTable.vue'), /<ExpenseCard[\s\S]*?modal/)
   // Choosing a budget opens over the card instead of replacing it.
-  assert.match(await read('app/components/ExpenseEdit.vue'), /<UModal v-model:open="choosingBudget">/)
+  assert.match(await read('app/components/ExpenseCard.vue'), /<UModal v-model:open="choosingBudget">/)
 })
