@@ -57,3 +57,10 @@ test('tapping an existing entity saves it right away and reopening shows the lis
   assert.match(source, /draftEntity\.value = props\.selectedEntity \? '' : props\.entity/)
   assert.doesNotMatch(source, /v-if="draftSelectedEntity"/)
 })
+
+test('the picker has a Clear button instead of Save, and Enter saves a typed name', async () => {
+  const source = await readFile(new URL('../app/components/cashflow/create/StepEntity.vue', import.meta.url), 'utf8')
+  assert.match(source, /function handleClear[\s\S]*?emit\('save', \{ entity: '', selectedEntity: null \}\)/)
+  assert.match(source, /@keydown\.enter\.prevent="handleSave"/)
+  assert.doesNotMatch(source, /^\s*Save\s*$/m)
+})
