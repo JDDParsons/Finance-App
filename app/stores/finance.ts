@@ -1,12 +1,15 @@
 import { defineStore } from 'pinia'
 import { useBudgetsApi } from '~/composables/api/useBudgetsApi'
 import { useHitsApi } from '~/composables/api/useHitsApi'
+import { useTagsApi } from '~/composables/api/useTagsApi'
 import { useAccountsStore } from './accounts'
 import { enrichBudgets } from '../../utils/budgetEnrichment'
 import { reconcileTransferUpdate, removeTransferRow, sortTransferRows } from '../../utils/transferRows'
 import type { FinanceBootstrapData } from '~/types/bootstrap'
 import type { OfflineEntity, OfflineOperation } from '~/types/offline'
 import { buildOptimisticEdit, buildOptimisticRow } from '../../utils/offlineRows'
+import { addPendingTags, mergeTags, normalizeTagList } from '../../utils/tags'
+import type { Tag } from '../../utils/tags'
 
 export const useFinanceStore = defineStore('finance', () => {
   const accountsStore = useAccountsStore()
@@ -23,6 +26,7 @@ export const useFinanceStore = defineStore('finance', () => {
     createBudgetHit, deleteBudgetHit, updateBudgetHit,
     getUserProfiles,
   } = useHitsApi()
+  const { getTags } = useTagsApi()
 
   const _now = new Date()
   const selectedMonth = ref({ year: _now.getFullYear(), month: _now.getMonth() + 1 })
@@ -42,6 +46,9 @@ export const useFinanceStore = defineStore('finance', () => {
   const initialized = ref(false)
   const userProfiles = ref<Map<string, { firstName: string | null; avatarLink: string | null }>>(new Map())
   const budgetAllEntities = ref<Map<string, string[]>>(new Map())
+  // The household's tags. A tag made offline is listed as pending until it is saved.
+  const tags = ref<Tag[]>([])
+  const tagsByName = computed(() => new Map(tags.value.map(tag => [tag.name, tag])))
 
   const defaultExpenseAccount = computed(() =>
     accounts.value.find((a: any) => a.is_default_for_expenses) ?? null
@@ -55,6 +62,25 @@ export const useFinanceStore = defineStore('finance', () => {
   function enrichSelectedMonthBudgets(rawBudgets: any[], hits: any[]) {
     const { year, month } = selectedMonth.value
     return enrichBudgets(rawBudgets, hits, year, month)
+  }
+
+  /** Lists tags the app has not seen yet (made offline) so rows can show them. */
+  function rememberTags(names: string[] | undefined) {
+    if (names?.length) tags.value = addPendingTags(tags.value, names)
+  }
+
+  /** Takes the tag details the server sends with a saved expense, and leaves the plain row. */
+  function absorbTagDetails<T extends Record<string, any>>(row: T): T {
+    const { tag_details: details, ...plain } = row as Record<string, any>
+    if (Array.isArray(details)) tags.value = mergeTags(tags.value, details)
+    return plain as T
+  }
+
+  /** Cleans typed names the way the server does. Throws the message when a name is not allowed. */
+  function cleanTagNames(names: string[]) {
+    const result = normalizeTagList(names)
+    if (!result.ok) throw new Error(result.message)
+    return result.names
   }
 
   function normalizeEntities(entities: string[]) {
@@ -115,7 +141,7 @@ export const useFinanceStore = defineStore('finance', () => {
       const { year, month } = selectedMonth.value
       const prevYear = month === 1 ? year - 1 : year
       const prevMonth = month === 1 ? 12 : month - 1
-      const [rawBudgets, rawIncomeBudgets, hits, prevHits, inc, transferRows, avail] = await Promise.all([
+      const [rawBudgets, rawIncomeBudgets, hits, prevHits, inc, transferRows, avail, , tagRows] = await Promise.all([
         getBudgetsByMonth(year, month, 'Expense'),
         getBudgetsByMonth(year, month, 'Income'),
         getBudgetHitsByMonth(year, month),
@@ -124,7 +150,9 @@ export const useFinanceStore = defineStore('finance', () => {
         getTransfersByMonth(year, month),
         getAvailableBudgetMonths(),
         accountsStore.fetchAccounts(false, silent),
+        getTags(),
       ])
+      tags.value = tagRows
       availableMonths.value = avail
       budgetHits.value = hits
       prevMonthBudgetHits.value = prevHits
@@ -172,6 +200,7 @@ export const useFinanceStore = defineStore('finance', () => {
     incomeBudgets.value = enrichSelectedMonthBudgets(data.incomeBudgets, data.income)
     userProfiles.value = new Map(Object.entries(data.userProfiles))
     budgetAllEntities.value = new Map(Object.entries(data.budgetEntities))
+    tags.value = data.tags ?? []
     initialized.value = true
     error.value = null
   }
@@ -188,6 +217,7 @@ export const useFinanceStore = defineStore('finance', () => {
       transfers: transfers.value,
       userProfiles: Object.fromEntries(userProfiles.value),
       budgetEntities: Object.fromEntries(budgetAllEntities.value),
+      tags: tags.value.filter(tag => !tag.pending),
     }
   }
 
@@ -202,6 +232,7 @@ export const useFinanceStore = defineStore('finance', () => {
     transfers.value = []
     userProfiles.value = new Map()
     budgetAllEntities.value = new Map()
+    tags.value = []
     initialized.value = false
     error.value = null
   }
@@ -224,6 +255,7 @@ export const useFinanceStore = defineStore('finance', () => {
 
   /** Show a queued change on screen again, for example after a refresh replaced the rows. */
   function restoreOfflineOperation(operation: OfflineOperation) {
+    if (operation.entity === 'expense') rememberTags(operation.payload.tags as string[] | undefined)
     const rows = rowsFor(operation.entity)
     if (operation.action === 'delete') {
       rows.value = rows.value.filter(row => row.id !== operation.targetId)
@@ -254,7 +286,7 @@ export const useFinanceStore = defineStore('finance', () => {
   /** A queued create or edit was saved: swap the optimistic row for the server's row. */
   function reconcileOfflineOperation(operation: OfflineOperation, row: any) {
     const rows = rowsFor(operation.entity)
-    rows.value = sortRows(operation.entity, replaceOfflineRow(rows.value, operation.targetId, row))
+    rows.value = sortRows(operation.entity, replaceOfflineRow(rows.value, operation.targetId, absorbTagDetails(row)))
     refreshBudgetTotals(operation.entity)
   }
 
@@ -384,8 +416,10 @@ export const useFinanceStore = defineStore('finance', () => {
 
   // ── expenses ──────────────────────────────────────────────────────────────
 
-  async function addExpense(budgetId: string | null, date: string, amount: string, entity: string, accountId: string | null = null, notes: string | null = null) {
-    const hit = await createBudgetHit(budgetId, date, amount, entity, accountId, notes)
+  async function addExpense(budgetId: string | null, date: string, amount: string, entity: string, accountId: string | null = null, notes: string | null = null, tagNames?: string[]) {
+    const names = tagNames ? cleanTagNames(tagNames) : undefined
+    rememberTags(names)
+    const hit = absorbTagDetails(await createBudgetHit(budgetId, date, amount, entity, accountId, notes, names))
     budgetHits.value = [hit, ...budgetHits.value]
     budgets.value = enrichSelectedMonthBudgets(budgets.value, budgetHits.value)
   }
@@ -396,11 +430,13 @@ export const useFinanceStore = defineStore('finance', () => {
     budgets.value = enrichSelectedMonthBudgets(budgets.value, budgetHits.value)
   }
 
-  async function updateExpense(id: string, budgetId: string | null, date: string, amount: string, entity: string, accountId?: string | null, notes?: string | null) {
+  async function updateExpense(id: string, budgetId: string | null, date: string, amount: string, entity: string, accountId?: string | null, notes?: string | null, tagNames?: string[]) {
     const existing = budgetHits.value.find((h: any) => h.id === id)
     const resolvedAccountId = accountId === undefined ? (existing?.account_id ?? null) : accountId
     const resolvedNotes = notes === undefined ? (existing?.notes ?? null) : notes
-    const hit = await updateBudgetHit(id, budgetId, date, amount, entity, resolvedAccountId, resolvedNotes, existing)
+    const names = tagNames ? cleanTagNames(tagNames) : undefined
+    rememberTags(names)
+    const hit = absorbTagDetails(await updateBudgetHit(id, budgetId, date, amount, entity, resolvedAccountId, resolvedNotes, names, existing))
     budgetHits.value = budgetHits.value.map(h => h.id === id ? hit : h)
     budgets.value = enrichSelectedMonthBudgets(budgets.value, budgetHits.value)
   }
@@ -491,6 +527,8 @@ export const useFinanceStore = defineStore('finance', () => {
     incomeBudgets,
     availableBudgets,
     budgetHits,
+    tags,
+    tagsByName,
     prevMonthBudgetHits,
     budgetAllEntities,
     income,
