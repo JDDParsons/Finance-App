@@ -1,46 +1,15 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
-import { accountDisplayName } from '../../../utils/accountAppearance'
 
 const store = useFinanceStore()
 const incomeRows = computed(() => store.income)
 
-const accountMap = computed(() =>
-  new Map<string, string>(store.accounts.map((a: any) => [a.id, accountDisplayName(a)]))
-)
-const budgetMap = computed(() => new Map(store.incomeBudgets.map((budget: any) => [budget.id, budget.name])))
+// Tapping a card expands it in place so its fields can be edited. One card at a time.
+const expandedId = ref<string | null>(null)
 
-async function handleDelete(id: string) {
-  if (!confirm('Delete this income record?')) return
-  try {
-    await store.removeIncome(id)
-  } catch (err: any) {
-    alert('Error deleting income: ' + (err?.message || 'Unknown error'))
-  }
-}
-
-const selectedIncome = ref<any>(null)
-const isEditingIncome = ref(false)
-
-function handleEdit(id: string) {
-  selectedIncome.value = incomeRows.value.find((r: any) => r.id === id) ?? null
-  if (selectedIncome.value) isEditingIncome.value = true
-}
-
-function handleEditClose() {
-  isEditingIncome.value = false
-  selectedIncome.value = null
-}
-
-async function handleModalDelete() {
-  if (!selectedIncome.value) return
-  if (!confirm('Are you sure you want to delete this income record? This action cannot be undone.')) return
-  try {
-    await store.removeIncome(selectedIncome.value.id)
-    handleEditClose()
-  } catch (err: any) {
-    alert(err?.message || 'Failed to delete income')
-  }
+function setExpanded(id: string, open: boolean) {
+  if (open) expandedId.value = id
+  else if (expandedId.value === id) expandedId.value = null
 }
 </script>
 
@@ -61,15 +30,10 @@ async function handleModalDelete() {
 
     <div v-else class="flex flex-col gap-3">
       <div v-for="row in incomeRows" :key="row.id">
-        <CashflowIncomeCard
-        :id="row.id"
-        :amount="row.amount"
-        :date="row.date"
-        :entity="row.entity"
-        :account-name="row.account_id ? accountMap.get(row.account_id) ?? null : null"
-        :budget-name="row.budget_id ? budgetMap.get(row.budget_id) ?? null : null"
-        @delete="handleDelete"
-        @edit="handleEdit"
+        <IncomeCard
+          :income-id="row.id"
+          :expanded="expandedId === row.id"
+          @update:expanded="setExpanded(row.id, $event)"
         />
         <p v-if="row.pending_sync || row.sync_error" class="mt-1 text-right text-xs" :class="row.sync_error ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'">
           {{ row.sync_error || 'Waiting to sync' }}
@@ -78,33 +42,4 @@ async function handleModalDelete() {
     </div>
   </div>
 
-  <UModal v-if="selectedIncome" v-model:open="isEditingIncome" @update:open="(val) => { if (!val) handleEditClose() }">
-    <template #content>
-      <UCard>
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h2 class="text-2xl font-bold">Income</h2>
-            <UButton
-              icon="heroicons-solid:trash"
-              color="error"
-              variant="ghost"
-              size="sm"
-              @click="handleModalDelete"
-            />
-          </div>
-        </template>
-        <IncomeEdit
-          :income-id="selectedIncome.id"
-          :income-amount="selectedIncome.amount"
-          :income-date="selectedIncome.date"
-          :income-entity="selectedIncome.entity"
-          :income-budget-id="selectedIncome.budget_id ?? null"
-          :income-account-id="selectedIncome.account_id ?? null"
-          @update="handleEditClose"
-          @cancel="handleEditClose"
-          @delete="handleEditClose"
-        />
-      </UCard>
-    </template>
-  </UModal>
 </template>

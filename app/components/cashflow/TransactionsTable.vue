@@ -358,11 +358,17 @@ async function handleModalDelete() {
           modal
           @delete="handleEditClose"
         />
+        <IncomeCard
+          v-else-if="selectedTransaction.type === 'income'"
+          :income-id="selectedTransaction.id"
+          modal
+          @delete="handleEditClose"
+        />
         <UCard v-else>
           <template #header>
             <div class="flex items-center justify-between">
               <h2 class="text-2xl font-bold">
-                {{ selectedTransaction.type === 'income' ? 'Income' : 'Edit Transfer' }}
+                Edit Transfer
               </h2>
               <UButton
                 icon="heroicons-solid:trash"
@@ -374,20 +380,7 @@ async function handleModalDelete() {
             </div>
           </template>
 
-          <IncomeEdit
-            v-if="selectedTransaction.type === 'income'"
-            :income-id="selectedTransaction.id"
-            :income-amount="selectedTransaction.amount"
-            :income-date="selectedTransaction.date"
-            :income-entity="selectedTransaction.entity"
-            :income-budget-id="selectedTransaction.budget_id ?? null"
-            :income-account-id="selectedTransaction.account_id ?? null"
-            @update="handleEditClose"
-            @cancel="handleEditClose"
-            @delete="handleEditClose"
-          />
           <TransferEdit
-            v-else
             :transfer-id="selectedTransaction.id"
             :transfer-amount="selectedTransaction.amount"
             :transfer-date="selectedTransaction.date"
