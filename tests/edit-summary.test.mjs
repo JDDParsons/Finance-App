@@ -129,3 +129,20 @@ test('income lists show one expandable card per record and the table keeps the m
   }
   assert.match(await read('app/components/cashflow/TransactionsTable.vue'), /<IncomeCard[\s\S]*?modal/)
 })
+
+test('the create flow pills share one style: same size and text, green when filled, budget keeps its colour', async () => {
+  const pill = await read('app/components/TagPill.vue')
+  assert.match(pill, /w-\[6\.5rem\]/)
+  assert.match(pill, /text-xs/)
+  assert.match(pill, /truncate/)
+  assert.match(pill, /bg-green-50/)
+  assert.match(pill, /\$\{tint\}33/)
+  const step = await read('app/components/cashflow/create/StepAmount.vue')
+  assert.equal((step.match(/<TagPill/g) ?? []).length, 3)
+  for (const file of ['DateTagPicker', 'AccountTagPicker', 'BudgetTagPicker']) {
+    assert.match(await read(`app/components/${file}.vue`), /<TagPill/, file)
+  }
+  // The payee pill keeps its icon and gets its text from the chosen value.
+  assert.match(step, /:label="entityLabel \|\| entityButtonLabel"/)
+  assert.match(await read('app/components/AccountTagPicker.vue'), /accountDisplayName\(selectedAccount\)/)
+})

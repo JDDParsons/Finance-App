@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useInstitutionBranding } from '~/composables/useInstitutionBranding'
-import { accountDisplayName } from '../../utils/accountAppearance'
+import { accountDisplayName, resolveAccountIcon } from '../../utils/accountAppearance'
 
 interface AccountLike {
   id: string
@@ -42,13 +42,12 @@ function selectAccount(accountId: string) {
 
 <template>
   <UPopover v-model:open="open">
-    <button
-      type="button"
-      class="inline-flex cursor-pointer items-center justify-center rounded-full border border-gray-200 px-2 py-1 text-sm text-gray-600 transition-colors hover:border-gray-300 dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-600"
+    <TagPill
+      :icon="resolveAccountIcon(selectedAccount?.icon)"
+      :label="selectedAccount ? accountDisplayName(selectedAccount) : 'No account'"
+      :filled="!!selectedAccount"
       :aria-label="selectedAccount ? `Change account to ${accountDisplayName(selectedAccount)}` : 'Choose account'"
-    >
-      <AccountVisual :account="selectedAccount" :fallback-class="accountBgClass(selectedAccount)" size="sm" class="size-7" />
-    </button>
+    />
 
     <template #content>
       <div class="min-w-48 p-2">
