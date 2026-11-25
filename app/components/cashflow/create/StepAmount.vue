@@ -17,6 +17,7 @@ const accountId = defineModel<string | null>('accountId', { default: null })
 const entity = defineModel<string>('entity', { default: '' })
 const selectedEntity = defineModel<string | null>('selectedEntity', { default: null })
 const notes = defineModel<string>('notes', { default: '' })
+const tags = defineModel<string[]>('tags', { default: () => [] })
 
 const emit = defineEmits<{
   changeBudget: []
@@ -62,6 +63,14 @@ const entityButtonLabel = computed(() => isIncome.value ? 'Add payer' : 'Add pay
 const notesButtonLabel = computed(() => notesPreview.value ? 'Edit note' : 'Add note')
 const submitLabel = computed(() => isIncome.value ? 'Submit income' : 'Submit expense')
 
+// Tags are for expenses only. The pill shows the first tag and how many more there are.
+const tagsLabel = computed(() => {
+  if (!tags.value.length) return 'Add tags'
+  const [first] = tags.value
+  return tags.value.length > 1 ? `${first} +${tags.value.length - 1}` : first!
+})
+const tagField = ref<{ open: () => void } | null>(null)
+
 const isEntityModalOpen = ref(false)
 const isNotesModalOpen = ref(false)
 
@@ -94,7 +103,7 @@ function handleNotesSave(nextNotes: string) {
     <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div class="flex min-h-0 flex-1 flex-col">
         <div class="shrink-0 px-4 pt-4">
-          <div class="flex items-start justify-center gap-2">
+          <div class="flex flex-wrap items-start justify-center gap-2">
             <TagPill
               icon="heroicons:user"
               :label="entityLabel || entityButtonLabel"
@@ -109,6 +118,15 @@ function handleNotesSave(nextNotes: string) {
               :aria-label="notesButtonLabel"
               @click="openNotesModal"
             />
+            <TagPill
+              v-if="!isIncome"
+              icon="heroicons:hashtag"
+              :label="tagsLabel"
+              :filled="tags.length > 0"
+              :aria-label="tags.length ? `Edit tags, currently ${tags.join(', ')}` : 'Add tags'"
+              @click="tagField?.open()"
+            />
+            <TagField v-if="!isIncome" ref="tagField" v-model="tags" />
           </div>
         </div>
 

@@ -9,7 +9,7 @@ Planned features in priority order, highest first. Started 2026-11-18. This is a
 | # | Feature | Status | Builds on |
 | --- | --- | --- | --- |
 | 1 | Wishlist (savings impact planner) | Design agreed, not started | Savings totals (income minus expenses) |
-| 2 | Tags (replaces secondary budgets) | In progress: data layer built (database, API, store, offline queue); entering tags on expenses and the Settings page not built yet | Expenses (budget hits), offline outbox |
+| 2 | Tags (replaces secondary budgets) | In progress: data layer and entering/editing tags on expenses built; the Settings page is not built yet | Expenses (budget hits), offline outbox |
 | 3 | Recurring transactions | Not started | Idempotent creates, Vercel cron |
 | 4 | Activity history | Not started (needs definition) | `user_id` on budget hits |
 | 5 | User/household management | Not started | `Profile.household_id`, invite-only login |
@@ -88,7 +88,7 @@ Status values: Not started, In progress, Shipped, Dropped.
 
 **Decided 2026-11-25:** the open question on renaming is settled: renaming to a name that already exists is rejected with a message (no merge). Instead of client-generated tag ids, a queued expense carries tag names and the server creates or finds the tags in the same step that saves the expense (`create_expense_with_tags`, `set_budget_hit_tags`), so no tag has to be queued before an expense. A tag made offline shows with a provisional color until it syncs. Expense rows carry `tags`, the list of tag names; a new tag takes the palette color the fewest tags use. Rename, recolor, delete and list functions exist in the database for the Settings page.
 
-**Build slices:** 1) data layer (done), 2) tags on the create flow and the expense card, 3) tag management in Settings.
+**Build slices:** 1) data layer (done), 2) tags on the create flow and the expense card (done), 3) tag management in Settings.
 
 **Build order:** Tags come after the Settings page (item 10), which hosts tag management, and before Custom reports (item 11), which is where tags are used to answer questions.
 
