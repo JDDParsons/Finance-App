@@ -92,9 +92,9 @@ function handleNotesSave(nextNotes: string) {
     </div>
 
     <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div class="flex min-h-0 flex-1 flex-col justify-end">
-        <div class="px-4 py-24 text-center">
-        <div class="absolute top-4 left-4 flex w-[calc(100%_-_2rem)] items-start gap-2">
+      <div class="flex min-h-0 flex-1 flex-col">
+        <div class="shrink-0 px-4 pt-4">
+          <div class="flex items-start gap-2">
             <TagPill
               icon="heroicons:user"
               :label="entityLabel || entityButtonLabel"
@@ -110,14 +110,17 @@ function handleNotesSave(nextNotes: string) {
               @click="openNotesModal"
             />
           </div>
+        </div>
 
+        <!-- The amount takes the space between the two rows, so it stays centred when the screen is short. -->
+        <div class="flex min-h-0 flex-1 items-center justify-center px-4 text-center">
           <p class="text-7xl font-light tracking-tight text-gray-900 dark:text-white sm:text-8xl">
             {{ displayAmount }}
           </p>
         </div>
 
-        <div class="px-4 pb-4">
-          <div class="flex flex-wrap items-center justify-center gap-2">
+        <div class="shrink-0 px-4 pb-4">
+          <div class="flex flex-wrap items-center justify-start gap-2">
             <TagPill
               :icon="isIncome && !expensePillBudget ? 'heroicons:banknotes' : (expensePillBudget ? (expensePillBudget.icon ?? budgetIcon(expensePillBudget.name)) : 'heroicons:x-mark')"
               :label="typePillLabel"
