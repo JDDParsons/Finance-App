@@ -70,9 +70,10 @@ export function useHitsApi() {
     amount: string,
     entity: string,
     accountId: string | null = null,
-    notes: string | null = null
+    notes: string | null = null,
+    tags?: string[]
   ) {
-    return createOrQueueOffline('expense', { budgetId, date, amount, entity, accountId, notes })
+    return createOrQueueOffline('expense', { budgetId, date, amount, entity, accountId, notes, ...(tags ? { tags } : {}) })
   }
 
   function deleteBudgetHit(id: string) {
@@ -87,9 +88,10 @@ export function useHitsApi() {
     entity: string,
     accountId: string | null = null,
     notes?: string | null,
+    tags?: string[],
     existing?: Record<string, any>
   ) {
-    return editOrQueueOffline('expense', id, { budgetId, date, amount, entity, accountId, notes }, existing)
+    return editOrQueueOffline('expense', id, { budgetId, date, amount, entity, accountId, notes, ...(tags ? { tags } : {}) }, existing)
   }
 
   function getUserProfiles(userIds: string[]) {

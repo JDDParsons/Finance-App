@@ -12,5 +12,6 @@ export default defineEventHandler(async (event) => {
     entity,
     accountId: accountId ?? null,
     notes: notes ?? null,
+    tags: readTagNames(body.tags),
   })
 })

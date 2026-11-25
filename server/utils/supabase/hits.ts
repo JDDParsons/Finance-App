@@ -3,9 +3,34 @@ import { throwBudgetSupabaseError } from './budget-errors'
 import { throwIfRowMissing } from './missing-row'
 import type { ValidTransferInput } from '../transfer'
 import { buildTrailingSavingsTotals } from '../../../utils/savingsTotals'
+import { getTags, setBudgetHitTags, throwTagError } from './tags'
+import type { Tag } from '../../../utils/tags'
 
 function getClient(supabase: SupabaseClient) {
   return supabase.schema('finance-app')
+}
+
+// Expense rows carry `tags`: the names of their tags, which are unique per household.
+const EXPENSE_SELECT = '*, Budget_Hit_Tag(tag_id)'
+
+/** Replaces the joined tag ids of expense rows with a sorted list of tag names. */
+async function withTagNames(supabase: SupabaseClient, rows: any[]) {
+  if (!rows.some(row => row.Budget_Hit_Tag?.length)) {
+    return rows.map(({ Budget_Hit_Tag: _links, ...row }) => ({ ...row, tags: [] as string[] }))
+  }
+  const nameById = new Map((await getTags(supabase)).map(tag => [tag.id, tag.name]))
+  return rows.map(({ Budget_Hit_Tag: links, ...row }) => ({
+    ...row,
+    tags: ((links ?? []) as Array<{ tag_id: string }>)
+      .map(link => nameById.get(link.tag_id))
+      .filter((name): name is string => !!name)
+      .sort(),
+  }))
+}
+
+/** Row plus its tag names, for an expense that was just written. */
+function withTagDetails(row: any, details: Tag[]) {
+  return { ...row, tags: details.map(tag => tag.name).sort(), tag_details: details }
 }
 
 export interface IdempotentBudgetHitInput {
@@ -18,12 +43,36 @@ export interface IdempotentBudgetHitInput {
   accountId?: string | null
   destinationAccountId?: string | null
   budgetId?: string | null
+  /** Tag names for an expense. Left out, the expense gets no tags. */
+  tags?: string[]
 }
 
 export async function createBudgetHitIdempotent(
   supabase: SupabaseClient,
   input: IdempotentBudgetHitInput
 ) {
+  if (input.type === 'Expense') {
+    // The expense and its tags are saved together.
+    const { data, error } = await getClient(supabase).rpc('create_expense_with_tags', {
+      operation_id: input.operationId,
+      transaction_amount: Number(input.amount),
+      transaction_date: input.date,
+      transaction_entity: input.entity ?? null,
+      transaction_notes: input.notes ?? null,
+      source_account_id: input.accountId ?? null,
+      target_budget_id: input.budgetId ?? null,
+      tag_names: input.tags ?? [],
+    })
+    if (error) {
+      if (error.code === 'P0003' || error.code === 'P0004') {
+        throwBudgetSupabaseError(error, 'create an expense')
+      }
+      throwTagError(error)
+    }
+    const { tag_details: details = [], ...row } = data as Record<string, any>
+    return withTagDetails(row, details)
+  }
+
   const { data, error } = await getClient(supabase).rpc('create_budget_hit_idempotent', {
     operation_id: input.operationId,
     transaction_type: input.type,
@@ -82,24 +131,24 @@ export async function createBudgetHit(
 export async function getBudgetHits(supabase: SupabaseClient) {
   const { data: hits, error } = await getClient(supabase)
     .from('Budget_Hit')
-    .select('*')
+    .select(EXPENSE_SELECT)
     .eq('type', 'Expense')
     .order('date', { ascending: false })
 
   if (error) throw error
-  return hits || []
+  return withTagNames(supabase, hits || [])
 }
 
 export async function getBudgetHitsByBudgetId(supabase: SupabaseClient, budgetId: string) {
   const { data: hits, error } = await getClient(supabase)
     .from('Budget_Hit')
-    .select('*')
+    .select(EXPENSE_SELECT)
     .eq('budget_id', budgetId)
     .eq('type', 'Expense')
     .order('date', { ascending: false })
 
   if (error) throw error
-  return hits || []
+  return withTagNames(supabase, hits || [])
 }
 
 export async function deleteBudgetHit(supabase: SupabaseClient, id: string) {
@@ -120,7 +169,8 @@ export async function updateBudgetHit(
   amount: string,
   entity: string,
   accountId: string | null = null,
-  notes?: string | null
+  notes?: string | null,
+  tags?: string[]
 ) {
   const updatePayload: Record<string, unknown> = {
     budget_id: budgetId,
@@ -139,7 +189,7 @@ export async function updateBudgetHit(
     .update(updatePayload)
     .eq('id', id)
     .eq('type', 'Expense')
-    .select()
+    .select(EXPENSE_SELECT)
     .single()
 
   if (error) {
@@ -147,7 +197,15 @@ export async function updateBudgetHit(
     if (error.code === 'P0003' || error.code === 'P0004') throwBudgetSupabaseError(error, 'update an expense')
     throw error
   }
-  return data
+
+  // Tags are only changed when the request names them; a request without them keeps the tags.
+  if (tags !== undefined) {
+    const details = await setBudgetHitTags(supabase, id, tags)
+    const { Budget_Hit_Tag: _links, ...row } = data as Record<string, any>
+    return withTagDetails(row, details)
+  }
+  const [row] = await withTagNames(supabase, [data])
+  return row
 }
 
 export async function getIncome(supabase: SupabaseClient, householdId: string) {
@@ -313,14 +371,14 @@ export async function getBudgetHitsByMonth(supabase: SupabaseClient, year: numbe
 
   const { data, error } = await getClient(supabase)
     .from('Budget_Hit')
-    .select('*')
+    .select(EXPENSE_SELECT)
     .eq('type', 'Expense')
     .gte('date', startDate)
     .lt('date', endDate)
     .order('date', { ascending: false })
 
   if (error) throw error
-  return data || []
+  return withTagNames(supabase, data || [])
 }
 
 export async function createTransfer(

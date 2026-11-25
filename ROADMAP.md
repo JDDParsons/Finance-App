@@ -9,7 +9,7 @@ Planned features in priority order, highest first. Started 2026-11-18. This is a
 | # | Feature | Status | Builds on |
 | --- | --- | --- | --- |
 | 1 | Wishlist (savings impact planner) | Design agreed, not started | Savings totals (income minus expenses) |
-| 2 | Tags (replaces secondary budgets) | Design agreed, not started | Expenses (budget hits), offline outbox |
+| 2 | Tags (replaces secondary budgets) | In progress: data layer built (database, API, store, offline queue); entering tags on expenses and the Settings page not built yet | Expenses (budget hits), offline outbox |
 | 3 | Recurring transactions | Not started | Idempotent creates, Vercel cron |
 | 4 | Activity history | Not started (needs definition) | `user_id` on budget hits |
 | 5 | User/household management | Not started | `Profile.household_id`, invite-only login |
@@ -54,7 +54,7 @@ Status values: Not started, In progress, Shipped, Dropped.
 - Every projection should state its basis, for example "based on your average over the last 3 months", since it depends on how consistently the user tracks.
 - Fewer than 3 months of data: say how many months the figure is based on.
 
-**Proposed data model (not yet built):** one household-scoped table in the `finance-app` schema (for example `Wishlist_Item`: id, household_id, name, amount, target_date, color, icon, status, visibility, created_by, created_at) with RLS added by a forward migration. Household items follow the existing household policies (`get_user_household_id()`); personal items additionally require `created_by = auth.uid()` for every operation, so other members can neither read nor change them. Wishlist data is added to `/api/bootstrap` and the offline snapshot (see the offline decision above). Reads and writes go through the usual path: composable in `app/composables/api/`, server route, helper in `server/utils/supabase/`. Calculations can live in a pure `utils/` module with tests, like `savingsTotals.ts`.
+**Data model (built in `supabase/migrations/20261126120000_add_tags.sql`):** one household-scoped table in the `finance-app` schema (for example `Wishlist_Item`: id, household_id, name, amount, target_date, color, icon, status, visibility, created_by, created_at) with RLS added by a forward migration. Household items follow the existing household policies (`get_user_household_id()`); personal items additionally require `created_by = auth.uid()` for every operation, so other members can neither read nor change them. Wishlist data is added to `/api/bootstrap` and the offline snapshot (see the offline decision above). Reads and writes go through the usual path: composable in `app/composables/api/`, server route, helper in `server/utils/supabase/`. Calculations can live in a pure `utils/` module with tests, like `savingsTotals.ts`.
 
 **Open questions**
 - Replaying queued edits and deletes needs a conflict rule (for example, an item deleted by someone else while the change was queued). Decide that when offline editing is built (see item 6).
@@ -69,7 +69,7 @@ Status values: Not started, In progress, Shipped, Dropped.
 
 **Design decisions**
 - Expenses only for now. Income and transfers cannot be tagged.
-- An expense can have any number of tags, or none. Tagging is optional and skippable when entering an expense.
+- An expense can have up to 3 tags, or none (decided 2026-11-25: more would not fit on the card). Tagging is optional and skippable when entering an expense.
 - Tags are created on the spot by typing a new name in the expense form, and can be added or removed later when editing any expense (one expense at a time; no bulk tagging).
 - Names are normalized: lowercase, prefixed with `#`, and with spaces removed, so "Dinner Party" becomes `#dinnerparty`. Typing the `#` yourself does not double it. Two names that normalize to the same value are the same tag. Special characters (punctuation, symbols, emoji) are allowed. The only things blocked are whitespace (removed), control and zero-width characters (invisible, so they would create look-alike duplicates), and names longer than 20 characters, not counting the `#`. Names are Unicode-normalized before comparing, so look-alike forms of the same text count as one tag. Because names can contain symbols, they must be URL-encoded wherever they appear in routes or queries.
 - A tag has a name and a color. No icon and no target amount. The color is assigned automatically from the existing budget color palette when the tag is created, so nothing extra is asked while typing a name in the expense form.
@@ -85,6 +85,10 @@ Status values: Not started, In progress, Shipped, Dropped.
 
 **Open questions**
 - Renaming a tag to a name that already exists: reject with a message (the simple default), or merge the two tags?
+
+**Decided 2026-11-25:** the open question on renaming is settled: renaming to a name that already exists is rejected with a message (no merge). Instead of client-generated tag ids, a queued expense carries tag names and the server creates or finds the tags in the same step that saves the expense (`create_expense_with_tags`, `set_budget_hit_tags`), so no tag has to be queued before an expense. A tag made offline shows with a provisional color until it syncs. Expense rows carry `tags`, the list of tag names; a new tag takes the palette color the fewest tags use. Rename, recolor, delete and list functions exist in the database for the Settings page.
+
+**Build slices:** 1) data layer (done), 2) tags on the create flow and the expense card, 3) tag management in Settings.
 
 **Build order:** Tags come after the Settings page (item 10), which hosts tag management, and before Custom reports (item 11), which is where tags are used to answer questions.
 

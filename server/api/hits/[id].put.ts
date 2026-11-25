@@ -4,5 +4,15 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
 
   const { budgetId, date, amount, entity, accountId, notes } = body
-  return updateBudgetHit(supabase, id, budgetId ?? null, date, amount, entity, accountId ?? null, notes)
+  return updateBudgetHit(
+    supabase,
+    id,
+    budgetId ?? null,
+    date,
+    amount,
+    entity,
+    accountId ?? null,
+    notes,
+    readTagNames(body.tags)
+  )
 })

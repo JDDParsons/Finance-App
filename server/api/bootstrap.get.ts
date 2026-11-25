@@ -21,6 +21,7 @@ export default defineEventHandler(async (event) => {
     transfers,
     availableMonths,
     savings,
+    tags,
   ] = await Promise.all([
     getProfile(supabase, user.id),
     getAccounts(supabase),
@@ -32,6 +33,7 @@ export default defineEventHandler(async (event) => {
     getTransfersByMonth(supabase, householdId, year, month),
     getAvailableBudgetMonths(supabase, householdId),
     getTrailingSavingsTotals(supabase, householdId, year, month),
+    getTags(supabase),
   ])
 
   const budgetIds = [...budgets, ...incomeBudgets].map(budget => budget.id).filter(Boolean)
@@ -61,6 +63,7 @@ export default defineEventHandler(async (event) => {
         avatarLink: profileRow.avatar_link,
       }])),
       budgetEntities,
+      tags,
     },
     savings,
   }

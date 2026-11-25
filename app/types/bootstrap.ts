@@ -5,6 +5,8 @@ export interface SavingsTotal {
   expenses: number
 }
 
+import type { Tag } from '../../utils/tags'
+
 export interface FinanceBootstrapData {
   selectedMonth: { year: number; month: number }
   availableMonths: Array<{ year: number; month: number }>
@@ -16,6 +18,8 @@ export interface FinanceBootstrapData {
   transfers: any[]
   userProfiles: Record<string, { firstName: string | null; avatarLink: string | null }>
   budgetEntities: Record<string, string[]>
+  /** The household's tags. Missing in snapshots saved before tags existed. */
+  tags?: Tag[]
 }
 
 export interface BootstrapResponse {
