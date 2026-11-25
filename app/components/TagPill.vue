@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // The small pill used for payee, note, budget, date and account in the create flow.
-// Every pill has the same size and text size. An empty pill is grey, a pill with a
+// Every pill has the same height and text size, and is as wide as its text up to a maximum. An empty pill is grey, a pill with a
 // value is green, and a budget pill takes its own colour through `tint`. Text that
 // does not fit is cut off with "...".
 withDefaults(defineProps<{
@@ -24,7 +24,7 @@ withDefaults(defineProps<{
   <component
     :is="as"
     :type="as === 'button' ? 'button' : undefined"
-    class="relative inline-flex h-8 w-[6.5rem] shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-2 text-xs font-medium transition-colors"
+    class="relative inline-flex h-8 max-w-[6.5rem] shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-2 text-xs font-medium transition-colors"
     :class="tint
       ? 'text-gray-700 hover:brightness-95 dark:text-gray-200'
       : filled
@@ -35,7 +35,7 @@ withDefaults(defineProps<{
     <slot name="icon">
       <UIcon v-if="icon" :name="icon" class="size-4 shrink-0" :style="tint ? { color: tint } : undefined" aria-hidden="true" />
     </slot>
-    <span class="min-w-0 flex-1 truncate text-left">{{ label }}</span>
+    <span class="min-w-0 truncate text-left">{{ label }}</span>
     <slot />
   </component>
 </template>
