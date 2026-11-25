@@ -4,33 +4,6 @@ import { readFile } from 'node:fs/promises'
 
 const read = file => readFile(new URL(`../${file}`, import.meta.url), 'utf8')
 
-for (const [file, label] of [
-  ['app/components/IncomeEdit.vue', 'income'],
-]) {
-  test(`${label}: opens on a read-only summary and switches to editing with an icon`, async () => {
-    const source = await read(file)
-    assert.match(source, /const editing = ref\(false\)/)
-    assert.match(source, /<template v-(else-)?if="!editing">/)
-    assert.match(source, new RegExp(`aria-label="Edit ${label}"`))
-    assert.match(source, /@click="startEditing"/)
-    assert.match(source, /<SummaryField/)
-  })
-
-  test(`${label}: cancel in edit mode returns to the summary`, async () => {
-    const source = await read(file)
-    assert.match(source, /function cancelEditing\(\)[\s\S]*editing\.value = false/)
-    assert.match(source, /@click="cancelEditing"/)
-  })
-
-  test(`${label}: the entity is chosen with the shared picker, not a text box`, async () => {
-    const source = await read(file)
-    assert.match(source, /<EntityField v-model="entity"/)
-    assert.doesNotMatch(source, /placeholder="Enter a pay(ee|er)\.\.\."/)
-    assert.match(source, /budgetAllEntities/)
-    assert.match(source, /fetchBudgetEntities/)
-  })
-}
-
 test('the edit field reuses the create flow entity picker', async () => {
   const field = await read('app/components/EntityField.vue')
   assert.match(field, /<CashflowCreateStepEntity/)
@@ -126,4 +99,33 @@ test('lists show one expandable card per expense and tables keep the modal', asy
   assert.match(await read('app/components/cashflow/TransactionsTable.vue'), /<ExpenseCard[\s\S]*?modal/)
   // Choosing a budget opens over the card instead of replacing it.
   assert.match(await read('app/components/ExpenseCard.vue'), /<UModal v-model:open="choosingBudget">/)
+})
+
+test('the income card is the expense card for income: same fields, layout and gestures', async () => {
+  const card = await read('app/components/IncomeCard.vue')
+  const order = ['Edit amount', 'Edit payer', 'Edit notes', 'Edit date', 'Edit account'].map(label => card.indexOf(label))
+  assert.ok(order.every(position => position > -1))
+  assert.deepEqual(order, [...order].sort((x, y) => x - y))
+  assert.match(card, /<input[^>]*w-2\/5/)
+  assert.match(card, /<UTextarea[\s\S]*?:ui="\{ base: 'text-base' \}"/)
+  for (const icon of ['fa7-solid:user', 'fa7-solid:comment-dots', 'fa7-solid:calendar']) assert.match(card, new RegExp(icon))
+  // It reads and saves income records, one field at a time.
+  assert.match(card, /store\.income\.find/)
+  assert.match(card, /store\.updateIncome\(/)
+  assert.match(card, /store\.removeIncome\(/)
+  assert.match(card, /:is-income="true"/)
+  assert.match(card, /@change="onDateChange"/)
+  assert.match(card, /@pointerdown="onPointerDown"/)
+  assert.match(card, /aria-label="Delete income"/)
+  assert.match(card, /\.animate\(/)
+  assert.doesNotMatch(card, /updateExpense|removeExpense|budgetHits/)
+})
+
+test('income lists show one expandable card per record and the table keeps the modal', async () => {
+  for (const file of ['app/components/budgets/IncomeRecordsList.vue', 'app/components/cashflow/AllIncome.vue']) {
+    const source = await read(file)
+    assert.match(source, /<IncomeCard[\s\S]*?:expanded="expandedId === row\.id"/, file)
+    assert.doesNotMatch(source, /IncomeEdit|<UModal/, file)
+  }
+  assert.match(await read('app/components/cashflow/TransactionsTable.vue'), /<IncomeCard[\s\S]*?modal/)
 })
