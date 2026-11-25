@@ -32,6 +32,7 @@ const amount = computed(() => hit.value?.amount ?? 0)
 const date = computed(() => (hit.value?.date ?? '').slice(0, 10))
 const entity = computed<string>(() => hit.value?.entity ?? '')
 const notes = computed<string>(() => hit.value?.notes ?? '')
+const tags = computed<string[]>(() => hit.value?.tags ?? [])
 const budgetId = computed<string | null>(() => hit.value?.budget_id ?? null)
 const accountId = computed<string | null>(() => hit.value?.account_id ?? null)
 
@@ -45,6 +46,7 @@ const draft = ref('')
 const saving = ref(false)
 const choosingBudget = ref(false)
 const entityPicker = ref<{ open: () => void } | null>(null)
+const tagPicker = ref<{ open: () => void } | null>(null)
 const amountInput = ref<HTMLInputElement | null>(null)
 
 const chosenBudget = computed(() => budgetId.value ? store.budgets.find((b: any) => b.id === budgetId.value) ?? null : null)
@@ -96,6 +98,7 @@ interface ExpenseValues {
     notes: string
     budgetId: string | null
     accountId: string | null
+    tags: string[]
 }
 
 // Saves the whole record with one field changed.
@@ -107,6 +110,7 @@ async function commit(patch: Partial<ExpenseValues>): Promise<boolean> {
         notes: notes.value,
         budgetId: budgetId.value,
         accountId: accountId.value,
+        tags: tags.value,
         ...patch,
     }
     saving.value = true
@@ -119,7 +123,9 @@ async function commit(patch: Partial<ExpenseValues>): Promise<boolean> {
             String(next.amount),
             next.entity,
             next.accountId,
-            next.notes
+            next.notes,
+            // The tags are only sent when this edit changes them.
+            patch.tags
         )
         return true
     } catch (err: any) {
@@ -207,6 +213,17 @@ function openEntityPicker() {
         store.fetchBudgetEntities(id).catch(() => {})
     }
     entityPicker.value?.open()
+}
+
+function openTagPicker() {
+    if (!isOpen.value || activeField.value || saving.value) return
+    error.value = null
+    tagPicker.value?.open()
+}
+
+function handleTagsSelect(names: string[]) {
+    if (names.length === tags.value.length && names.every(name => tags.value.includes(name))) return
+    void commit({ tags: names })
 }
 
 function handleEntitySelect(value: string) {
@@ -481,6 +498,23 @@ function onClickCapture(event: MouseEvent) {
                     <span class="whitespace-pre-wrap">{{ notes || 'Add notes' }}</span>
                 </button>
             </ExpandRow>
+
+            <!-- Tags: up to 3. Tapping the row opens the picker. -->
+            <ExpandRow :open="isOpen || tags.length > 0" :expanded="isOpen">
+                <button
+                    type="button"
+                    class="flex w-full items-start gap-1.5 pl-2 text-left text-xs disabled:cursor-default"
+                    :class="isOpen ? 'cursor-pointer' : 'pointer-events-none'"
+                    aria-label="Edit tags"
+                    :disabled="!!activeField"
+                    @click="openTagPicker"
+                >
+                    <UIcon name="heroicons:hashtag" class="mt-0.5 size-3 shrink-0 text-gray-400" aria-hidden="true" />
+                    <TagChips v-if="tags.length" :names="tags" />
+                    <span v-else class="text-gray-300 dark:text-gray-600">Add tags</span>
+                </button>
+            </ExpandRow>
+            <TagField ref="tagPicker" :model-value="tags" @update:model-value="handleTagsSelect" />
 
             <!-- Date. A native date input sits over the text, so one tap opens the picker. -->
             <ExpandRow :expanded="isOpen">

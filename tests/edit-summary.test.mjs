@@ -139,7 +139,7 @@ test('the create flow pills share one style: same size and text, green when fill
   assert.match(pill, /bg-blue-100/)
   assert.match(pill, /\$\{tint\}33/)
   const step = await read('app/components/cashflow/create/StepAmount.vue')
-  assert.equal((step.match(/<TagPill/g) ?? []).length, 3)
+  assert.equal((step.match(/<TagPill/g) ?? []).length, 4)
   for (const file of ['DateTagPicker', 'AccountTagPicker', 'BudgetTagPicker']) {
     assert.match(await read(`app/components/${file}.vue`), /<TagPill/, file)
   }

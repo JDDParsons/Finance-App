@@ -46,6 +46,7 @@ const amount = ref('')
 const entity = ref('')
 const selectedEntity = ref<string | null>(null)
 const notes = ref('')
+const tags = ref<string[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 const accountId = ref<string | null>(null)
@@ -68,6 +69,7 @@ function resetForm() {
   entity.value = ''
   selectedEntity.value = null
   notes.value = ''
+  tags.value = []
   error.value = null
   fromAccountId.value = ''
   toAccountId.value = ''
@@ -146,7 +148,7 @@ async function handleSubmit() {
       await store.addIncome(parseFloat(amount.value), date.value, entity.value, activeBudgetId.value, accountId.value, notes.value)
     } else {
       const budgetIdToSubmit = noBudget.value ? null : selectedBudgetId.value
-      await store.addExpense(budgetIdToSubmit, date.value, amount.value, entity.value, accountId.value, notes.value)
+      await store.addExpense(budgetIdToSubmit, date.value, amount.value, entity.value, accountId.value, notes.value, tags.value)
     }
 
     await store.fetchAll()
@@ -225,6 +227,7 @@ async function handleSubmit() {
               v-model:entity="entity"
               v-model:selected-entity="selectedEntity"
               v-model:notes="notes"
+              v-model:tags="tags"
               :transaction-type="transactionType"
               :selected-budget-id="selectedBudgetId"
               :no-budget="noBudget"
