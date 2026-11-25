@@ -35,32 +35,12 @@ function selectBudget(budgetId: string | null) {
 
 <template>
   <UPopover v-model:open="open">
-    <button
-      type="button"
-      class="inline-flex cursor-pointer items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-sm text-gray-600 transition-colors hover:border-gray-300 dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-600"
+    <TagPill
+      :icon="selectedBudget ? (selectedBudget.icon ?? budgetIcon(selectedBudget.name)) : 'heroicons:x-mark'"
+      :label="selectedBudget?.name ?? 'No budget'"
+      :tint="selectedBudget?.color ?? null"
       :aria-label="selectedBudget ? `Change budget from ${selectedBudget.name}` : 'Choose budget'"
-    >
-      <div
-        v-if="selectedBudget"
-        class="flex size-7 shrink-0 items-center justify-center rounded-full"
-        :style="selectedBudget.color ? { backgroundColor: `${selectedBudget.color}33`, borderColor: selectedBudget.color, border: '1.5px solid' } : {}"
-        :class="!selectedBudget.color ? 'bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600' : ''"
-      >
-        <UIcon
-          :name="selectedBudget.icon ?? budgetIcon(selectedBudget.name)"
-          class="size-4"
-          :style="selectedBudget.color ? { color: selectedBudget.color } : {}"
-          :class="!selectedBudget.color ? 'text-gray-500 dark:text-gray-400' : ''"
-        />
-      </div>
-      <div
-        v-else
-        class="flex size-7 shrink-0 items-center justify-center rounded-full border border-dashed border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-gray-800"
-      >
-        <UIcon name="heroicons:x-mark" class="size-4 text-gray-400" />
-      </div>
-      <span class="max-w-32 truncate">{{ selectedBudget?.name ?? 'No budget' }}</span>
-    </button>
+    />
 
     <template #content>
       <div class="min-w-52 p-2">

@@ -23,7 +23,8 @@ const displayLabel = computed(() => {
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
-    year: 'numeric'
+    // The year only shows when it is not this year, so the label fits the pill.
+    ...(year === new Date().getFullYear() ? {} : { year: 'numeric' }),
   }).format(parsed)
 })
 
@@ -40,14 +41,14 @@ function openPicker() {
 </script>
 
 <template>
-  <label
-    class="relative inline-flex cursor-pointer items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-sm text-gray-600 transition-colors hover:border-gray-300 dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-600"
+  <TagPill
+    as="label"
+    icon="heroicons-solid:calendar-days"
+    :label="displayLabel"
+    :filled="!!props.modelValue"
     aria-label="Choose date"
     @click="openPicker"
   >
-      <UIcon name="heroicons-solid:calendar-days" class="size-6 text-gray-400" />
-      <span class="whitespace-nowrap">{{ displayLabel }}</span>
-
     <input
       ref="inputRef"
       :value="props.modelValue"
@@ -57,5 +58,5 @@ function openPicker() {
       @input="handleInput"
       @change="handleInput"
     />
-  </label>
+  </TagPill>
 </template>

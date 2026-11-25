@@ -92,95 +92,42 @@ function handleNotesSave(nextNotes: string) {
     </div>
 
     <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div class="flex min-h-0 flex-1 flex-col justify-end">
-        <div class="px-4 py-24 text-center">
-        <div class="absolute top-4 left-4 flex w-[calc(100%_-_2rem)] items-start gap-2 overflow-hidden">
-            <button
-              v-if="entityLabel"
-              type="button"
-              class="inline-flex min-w-0 max-w-[45%] shrink cursor-pointer items-center rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-sm text-green-700 transition-colors hover:border-green-300 hover:bg-green-100 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-300 dark:hover:bg-green-900/50"
-              :aria-label="isIncome ? 'Edit payer' : 'Edit payee'"
-              @click="openEntityModal"
-            >
-              <span class="truncate">{{ entityLabel }}</span>
-            </button>
-            <UButton
-              v-else
-              color="neutral"
-              variant="soft"
-              size="sm"
+      <div class="flex min-h-0 flex-1 flex-col">
+        <div class="shrink-0 px-4 pt-4">
+          <div class="flex items-start justify-center gap-2">
+            <TagPill
               icon="heroicons:user"
-              class="shrink-0 rounded-full"
-              :aria-label="entityButtonLabel"
+              :label="entityLabel || entityButtonLabel"
+              :filled="!!entityLabel"
+              :aria-label="entityLabel ? (isIncome ? 'Edit payer' : 'Edit payee') : entityButtonLabel"
               @click="openEntityModal"
-            >
-              {{ entityButtonLabel }}
-            </UButton>
-
-            <button
-              v-if="notesPreview"
-              type="button"
-              class="inline-flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-full border border-gray-200 bg-white/90 px-3 py-1.5 text-left text-sm text-gray-600 transition-colors hover:border-gray-300 hover:bg-white dark:border-gray-700 dark:bg-gray-900/90 dark:text-gray-300 dark:hover:border-gray-600"
-              :aria-label="notesButtonLabel"
-              @click="openNotesModal"
-            >
-              <UIcon name="heroicons:document-text" class="size-4 shrink-0 text-gray-400 dark:text-gray-500" />
-              <span class="truncate">{{ notesPreview }}</span>
-            </button>
-            <UButton
-              v-else
-              color="neutral"
-              variant="soft"
-              size="sm"
+            />
+            <TagPill
               icon="heroicons:document-text"
-              class="shrink-0 rounded-full"
+              :label="notesPreview || notesButtonLabel"
+              :filled="!!notesPreview"
               :aria-label="notesButtonLabel"
               @click="openNotesModal"
-            >
-              {{ notesButtonLabel }}
-            </UButton>
+            />
           </div>
+        </div>
 
+        <!-- The amount takes the space between the two rows, so it stays centred when the screen is short. -->
+        <div class="flex min-h-0 flex-1 items-center justify-center px-4 text-center">
           <p class="text-7xl font-light tracking-tight text-gray-900 dark:text-white sm:text-8xl">
             {{ displayAmount }}
           </p>
         </div>
 
-        <div class="px-4 pb-4">
-          <div class="flex flex-wrap items-center justify-center gap-3">
-            <button
-              type="button"
-              class="inline-flex cursor-pointer items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-sm text-gray-600 transition-colors hover:border-gray-300 dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-600"
+        <div class="shrink-0 px-4 pb-4">
+          <div class="flex flex-wrap items-center justify-center gap-2">
+            <TagPill
+              :icon="isIncome && !expensePillBudget ? 'heroicons:banknotes' : (expensePillBudget ? (expensePillBudget.icon ?? budgetIcon(expensePillBudget.name)) : 'heroicons:x-mark')"
+              :label="typePillLabel"
+              :tint="expensePillBudget?.color ?? null"
               :aria-label="typePillAriaLabel"
               @click="emit('changeBudget')"
-            >
-              <div
-                v-if="isIncome"
-                class="flex size-7 shrink-0 items-center justify-center rounded-full border border-green-400 bg-green-50 dark:border-green-500 dark:bg-green-900/30"
-              >
-                <UIcon name="heroicons:banknotes-solid" class="size-4 text-green-500" />
-              </div>
-              <div
-                v-else-if="expensePillBudget"
-                class="flex size-7 shrink-0 items-center justify-center rounded-full"
-                :style="expensePillBudget.color ? { backgroundColor: `${expensePillBudget.color}33`, borderColor: expensePillBudget.color, border: '1.5px solid' } : {}"
-                :class="!expensePillBudget.color ? 'border border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-gray-800' : ''"
-              >
-                <UIcon
-                  :name="expensePillBudget.icon ?? budgetIcon(expensePillBudget.name)"
-                  class="size-4"
-                  :style="expensePillBudget.color ? { color: expensePillBudget.color } : {}"
-                  :class="!expensePillBudget.color ? 'text-gray-500 dark:text-gray-400' : ''"
-                />
-              </div>
-              <div
-                v-else
-                class="flex size-7 shrink-0 items-center justify-center rounded-full border border-dashed border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-gray-800"
-              >
-                <UIcon name="heroicons:x-mark" class="size-4 text-gray-400" />
-              </div>
-              <span class="max-w-32 truncate">{{ typePillLabel }}</span>
-            </button>
+            />
 
             <DateTagPicker v-model="date" />
             <AccountTagPicker v-model="accountId" :accounts="store.accounts" />
