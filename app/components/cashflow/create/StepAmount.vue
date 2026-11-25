@@ -94,7 +94,7 @@ function handleNotesSave(nextNotes: string) {
     <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div class="flex min-h-0 flex-1 flex-col">
         <div class="shrink-0 px-4 pt-4">
-          <div class="flex items-start gap-2">
+          <div class="flex items-start justify-center gap-2">
             <TagPill
               icon="heroicons:user"
               :label="entityLabel || entityButtonLabel"
@@ -120,7 +120,7 @@ function handleNotesSave(nextNotes: string) {
         </div>
 
         <div class="shrink-0 px-4 pb-4">
-          <div class="flex flex-wrap items-center justify-start gap-2">
+          <div class="flex flex-wrap items-center justify-center gap-2">
             <TagPill
               :icon="isIncome && !expensePillBudget ? 'heroicons:banknotes' : (expensePillBudget ? (expensePillBudget.icon ?? budgetIcon(expensePillBudget.name)) : 'heroicons:x-mark')"
               :label="typePillLabel"
