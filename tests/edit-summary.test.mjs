@@ -56,7 +56,7 @@ test('the expense card has tap-to-edit fields laid out like the card, with the d
   assert.match(card, /<input[^>]*text-xl font-semibold text-info/)
   assert.match(card, /<input[^>]*w-\[calc\(40%-1\.5rem\)\]/)
   // The notes field is 16px so iOS does not zoom the page when it is focused.
-  assert.match(card, /<UTextarea[\s\S]*?:ui="\{ base: 'text-base' \}"/)
+  assert.match(card, /<textarea[^>]*text-base/)
   // Fields change a draft, and one green check saves every change in a single update.
   assert.match(card, /const draft = reactive/)
   assert.match(card, /async function saveAll\(\)/)

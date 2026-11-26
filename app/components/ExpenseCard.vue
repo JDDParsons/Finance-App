@@ -94,6 +94,7 @@ const choosingBudget = ref(false)
 const entityPicker = ref<{ open: () => void } | null>(null)
 const tagPicker = ref<{ open: () => void } | null>(null)
 const amountInput = ref<HTMLInputElement | null>(null)
+const notesInput = ref<HTMLTextAreaElement | null>(null)
 
 const chosenBudget = computed(() => draft.budgetId ? store.budgets.find((b: any) => b.id === draft.budgetId) ?? null : null)
 const budgetColor = computed<string | null>(() => chosenBudget.value?.color ?? null)
@@ -148,10 +149,12 @@ function startField(field: EditableField) {
     closeEditors()
     editing[field] = true
     if (field === 'amount') nextTick(() => amountInput.value?.focus())
+    if (field === 'notes') nextTick(() => notesInput.value?.focus())
 }
 
 // The date is a native date input laid over the date text, so one tap opens the picker.
 function onDateClick(event: MouseEvent) {
+    closeEditors()
     try { (event.target as HTMLInputElement).showPicker?.() } catch { /* the browser decides */ }
 }
 
@@ -172,11 +175,13 @@ function closeBudgetPicker() {
 function startBudgetChange() {
     if (!isOpen.value || saving.value) return
     error.value = null
+    closeEditors()
     choosingBudget.value = true
 }
 
 function openEntityPicker() {
     if (!isOpen.value || saving.value) return
+    closeEditors()
     const id = draft.budgetId
     if (id && !store.budgetAllEntities.has(id)) {
         // Offline or failed: the picker still works with typed names.
@@ -188,6 +193,7 @@ function openEntityPicker() {
 function openTagPicker() {
     if (!isOpen.value || saving.value) return
     error.value = null
+    closeEditors()
     tagPicker.value?.open()
 }
 
@@ -496,16 +502,14 @@ function onClickCapture(event: MouseEvent) {
                 <div v-if="editing.notes" class="flex items-start gap-1.5">
                     <UIcon name="fa7-solid:comment-dots" class="mt-2.5 size-3.5 shrink-0 text-gray-400" aria-hidden="true" />
                     <!-- 16px text: iOS zooms the page when a smaller field is focused. -->
-                    <UTextarea
+                    <!-- Only an underline marks it as being edited, like the amount. -->
+                    <textarea
+                        ref="notesInput"
                         v-model="draft.notes"
-                        class="flex-1"
-                        :ui="{ base: 'text-base' }"
-                        highlight
-                        color="info"
                         placeholder="Add notes..."
-                        :rows="3"
-                        autofocus
+                        rows="3"
                         aria-label="Notes"
+                        class="min-w-0 flex-1 resize-none border-b border-info/50 bg-transparent text-base text-gray-900 outline-none placeholder:text-gray-400 dark:text-white"
                     />
                 </div>
                 <button
@@ -544,7 +548,7 @@ function onClickCapture(event: MouseEvent) {
                 <div v-if="editing.account" class="flex items-center gap-2">
                     <USelect
                         v-model="accountChoice"
-                        class="flex-1"
+                        class="w-48 max-w-full"
                         :items="accountOptions"
                         color="info"
                         aria-label="Account"

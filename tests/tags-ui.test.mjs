@@ -111,3 +111,14 @@ test('only one field editor is open at a time, and cancel drops the draft', () =
   assert.match(card, /function startField[\s\S]*?closeEditors\(\)\s*editing\[field\] = true/)
   assert.match(card, /function cancel\(\)[\s\S]*?resetDraft\(\)\s*finish\(\)/)
 })
+
+test('opening a picker closes the open editor, notes are underlined while edited, and the account select is narrow', () => {
+  const card = read('app/components/ExpenseCard.vue')
+  for (const name of ['openEntityPicker', 'openTagPicker', 'startBudgetChange', 'onDateClick']) {
+    const body = card.slice(card.indexOf(`function ${name}`))
+    assert.ok(body.slice(0, body.indexOf('\n}')).includes('closeEditors()'), name)
+  }
+  assert.match(card, /<textarea[^>]*border-b border-info\/50 bg-transparent text-base/)
+  assert.doesNotMatch(card, /UTextarea/)
+  assert.match(card, /<USelect[^>]*class="w-48 max-w-full"/)
+})
