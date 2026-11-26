@@ -9,7 +9,7 @@ Planned features in priority order, highest first. Started 2026-11-18. This is a
 | # | Feature | Status | Builds on |
 | --- | --- | --- | --- |
 | 1 | Wishlist (savings impact planner) | Design agreed, not started | Savings totals (income minus expenses) |
-| 2 | Tags (replaces secondary budgets) | In progress: data layer and entering/editing tags on expenses built; the Settings page is not built yet | Expenses (budget hits), offline outbox |
+| 2 | Tags (replaces secondary budgets) | Built: data layer, entering/editing tags on expenses, and tag management in Settings; device check pending | Expenses (budget hits), offline outbox |
 | 3 | Recurring transactions | Not started | Idempotent creates, Vercel cron |
 | 4 | Activity history | Not started (needs definition) | `user_id` on budget hits |
 | 5 | User/household management | Not started | `Profile.household_id`, invite-only login |
@@ -17,7 +17,7 @@ Planned features in priority order, highest first. Started 2026-11-18. This is a
 | 7 | Remove CSV file upload | Planned removal | See README footprint |
 | 8 | Linked bank accounts | Not started | Accounts |
 | 9 | Language model integration for dynamic reports | Not started | `/api/bootstrap` data |
-| 10 | Settings page (manage entities and tags) | Settings, accounts move and entity rename and merge built, device check pending; tag management waits for item 2 | Entities on budget hits, tags (item 2) |
+| 10 | Settings page (manage entities and tags) | Settings, accounts move and entity rename and merge built, device check pending; tag management built (item 2), device check pending | Entities on budget hits, tags (item 2) |
 | 11 | Custom reports | Design agreed (layout to plan), not started | Tags (item 2), settings (item 10) |
 
 Status values: Not started, In progress, Shipped, Dropped.
@@ -88,7 +88,7 @@ Status values: Not started, In progress, Shipped, Dropped.
 
 **Decided 2026-11-25:** the open question on renaming is settled: renaming to a name that already exists is rejected with a message (no merge). Instead of client-generated tag ids, a queued expense carries tag names and the server creates or finds the tags in the same step that saves the expense (`create_expense_with_tags`, `set_budget_hit_tags`), so no tag has to be queued before an expense. A tag made offline shows with a provisional color until it syncs. Expense rows carry `tags`, the list of tag names; a new tag takes the palette color the fewest tags use. Rename, recolor, delete and list functions exist in the database for the Settings page.
 
-**Build slices:** 1) data layer (done), 2) tags on the create flow and the expense card (done), 3) tag management in Settings.
+**Build slices:** 1) data layer (done), 2) tags on the create flow and the expense card (done), 3) tag management in Settings (done: /settings/tags lists tags with expense counts; rename, recolor, delete with confirmation; online-only, syncs the queue first).
 
 **Build order:** Tags come after the Settings page (item 10), which hosts tag management, and before Custom reports (item 11), which is where tags are used to answer questions.
 

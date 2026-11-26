@@ -17,6 +17,12 @@ const categories = [
     title: 'Payment entities',
     description: 'Rename or merge your payment entities',
   },
+  {
+    to: '/settings/tags',
+    icon: 'heroicons-solid:hashtag',
+    title: 'Tags',
+    description: 'Rename, recolor or delete your tags',
+  },
 ]
 
 function goBack() {
