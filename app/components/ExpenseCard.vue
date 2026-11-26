@@ -144,6 +144,8 @@ function formatDate(value: string) {
 function startField(field: EditableField) {
     if (!isOpen.value || saving.value) return
     error.value = null
+    // One editor at a time. What was typed in the one being closed stays in the draft.
+    closeEditors()
     editing[field] = true
     if (field === 'amount') nextTick(() => amountInput.value?.focus())
 }
@@ -197,6 +199,13 @@ function handleEntitySelect(value: string) {
     draft.entity = value
 }
 
+// The cancel icon: drops the changes and collapses the card (a card in a modal stays open).
+function cancel() {
+    if (saving.value) return
+    resetDraft()
+    finish()
+}
+
 // Closes the editors and collapses the card (a card in a modal stays open).
 function finish() {
     closeEditors()
@@ -213,6 +222,7 @@ async function saveAll() {
     const value = amountNumber.value
     if (value === null || !Number.isFinite(value) || value === 0) {
         error.value = 'Please enter an amount'
+        closeEditors()
         editing.amount = true
         return
     }
@@ -422,7 +432,7 @@ function onClickCapture(event: MouseEvent) {
                         inputmode="decimal"
                         placeholder="0.00"
                         aria-label="Amount"
-                        class="w-2/5 min-w-0 flex-none border-b border-info/50 bg-transparent text-xl font-semibold text-info outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        class="w-[calc(40%-1.5rem)] min-w-0 flex-none border-b border-info/50 bg-transparent text-xl font-semibold text-info outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         @keydown.enter.prevent="saveAll"
                     />
                     <button
@@ -483,7 +493,7 @@ function onClickCapture(event: MouseEvent) {
 
             <!-- Notes. Hidden while collapsed when empty. -->
             <ExpandRow :open="isOpen || !!draft.notes" :expanded="isOpen">
-                <div v-if="editing.notes" class="flex items-start gap-1.5 pl-2">
+                <div v-if="editing.notes" class="flex items-start gap-1.5">
                     <UIcon name="fa7-solid:comment-dots" class="mt-2.5 size-3.5 shrink-0 text-gray-400" aria-hidden="true" />
                     <!-- 16px text: iOS zooms the page when a smaller field is focused. -->
                     <UTextarea
@@ -501,7 +511,7 @@ function onClickCapture(event: MouseEvent) {
                 <button
                     v-else
                     type="button"
-                    class="flex items-start gap-1.5 pl-2 text-left text-xs disabled:cursor-default"
+                    class="flex items-start gap-1.5 text-left text-xs disabled:cursor-default"
                     :class="[draft.notes ? 'text-gray-400 dark:text-gray-500' : 'text-gray-300 dark:text-gray-600', isOpen ? 'cursor-pointer' : 'pointer-events-none']"
                     aria-label="Edit notes"
                     @click="startField('notes')"
@@ -513,7 +523,7 @@ function onClickCapture(event: MouseEvent) {
 
             <!-- Date: only while expanded. A native date input sits over the text, so one tap opens the picker. -->
             <ExpandRow :open="isOpen" :expanded="isOpen">
-                <div class="relative ml-2 inline-flex items-center gap-1.5 text-xs text-gray-400">
+                <div class="relative inline-flex items-center gap-1.5 text-xs text-gray-400">
                     <UIcon name="fa7-solid:calendar" class="size-3.5 shrink-0" aria-hidden="true" />
                     <span>{{ formatDate(draft.date) }}</span>
                     <input
@@ -531,7 +541,7 @@ function onClickCapture(event: MouseEvent) {
 
             <!-- Account: only while expanded -->
             <ExpandRow :open="isOpen" :expanded="isOpen">
-                <div v-if="editing.account" class="flex items-center gap-2 pl-2">
+                <div v-if="editing.account" class="flex items-center gap-2">
                     <USelect
                         v-model="accountChoice"
                         class="flex-1"
@@ -540,7 +550,7 @@ function onClickCapture(event: MouseEvent) {
                         aria-label="Account"
                     />
                 </div>
-                <div v-else class="flex items-center gap-2 flex-wrap pl-2">
+                <div v-else class="flex items-center gap-2 flex-wrap">
                     <button
                         type="button"
                         class="flex items-center gap-1.5 disabled:cursor-default"
@@ -561,7 +571,7 @@ function onClickCapture(event: MouseEvent) {
             <ExpandRow :open="isOpen || draft.tags.length > 0" :expanded="isOpen">
                 <button
                     type="button"
-                    class="flex w-full items-start gap-1.5 pl-2 text-left text-xs disabled:cursor-default"
+                    class="flex w-full items-start gap-1.5 text-left text-xs disabled:cursor-default"
                     :class="isOpen ? 'cursor-pointer' : 'pointer-events-none'"
                     aria-label="Edit tags"
                     @click="openTagPicker"
@@ -597,17 +607,43 @@ function onClickCapture(event: MouseEvent) {
                 </div>
                 <span v-else />
 
-                <button
-                    type="button"
-                    class="-mb-1 -mr-1 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full disabled:cursor-default"
-                    :aria-label="isOpen ? 'Save changes' : 'Edit expense'"
-                    :disabled="saving"
-                    @click="isOpen ? saveAll() : undefined"
-                >
-                    <UIcon v-if="saving" name="heroicons-solid:arrow-path" class="size-6 animate-spin text-gray-400" />
-                    <UIcon v-else-if="isOpen" name="heroicons-solid:check-circle" class="size-7 text-green-500" />
-                    <UIcon v-else name="heroicons-solid:pencil-square" class="size-5 text-gray-400" />
-                </button>
+                <div class="-mb-1 -mr-1 flex shrink-0 items-center">
+                    <!-- The check appears once something has changed and pushes the cancel icon left. -->
+                    <div
+                        class="overflow-hidden transition-[max-width,opacity] duration-300 ease-out motion-reduce:transition-none"
+                        :class="isOpen && dirty ? 'max-w-8 opacity-100' : 'max-w-0 opacity-0'"
+                        :inert="!(isOpen && dirty)"
+                    >
+                        <button
+                            type="button"
+                            class="flex size-8 cursor-pointer items-center justify-center rounded-full disabled:cursor-default"
+                            aria-label="Save changes"
+                            :disabled="saving"
+                            @click="saveAll"
+                        >
+                            <UIcon v-if="saving" name="heroicons-solid:arrow-path" class="size-6 animate-spin text-gray-400" />
+                            <UIcon v-else name="heroicons-solid:check-circle" class="size-7 text-green-500" />
+                        </button>
+                    </div>
+                    <button
+                        v-if="isOpen"
+                        type="button"
+                        class="flex size-8 cursor-pointer items-center justify-center rounded-full disabled:cursor-default"
+                        aria-label="Cancel changes"
+                        :disabled="saving"
+                        @click="cancel"
+                    >
+                        <UIcon name="heroicons-solid:x-circle" class="size-7 text-gray-400" />
+                    </button>
+                    <button
+                        v-else
+                        type="button"
+                        class="flex size-8 cursor-pointer items-center justify-center rounded-full"
+                        aria-label="Edit expense"
+                    >
+                        <UIcon name="heroicons-solid:pencil-square" class="size-5 text-gray-400" />
+                    </button>
+                </div>
             </div>
         </UCard>
     </div>

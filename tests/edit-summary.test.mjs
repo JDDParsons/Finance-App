@@ -43,7 +43,8 @@ test('the expense card has tap-to-edit fields laid out like the card, with the d
   // Field order: amount, payee, notes, date, account. The date uses the small text size.
   const order = ['Edit amount', 'Edit payee', 'Edit notes', 'Edit date', 'Edit account'].map(label => card.indexOf(label))
   assert.deepEqual(order, [...order].sort((x, y) => x - y))
-  assert.match(card, /<div class="relative ml-2 inline-flex items-center gap-1.5 text-xs text-gray-400">/)
+  assert.match(card, /<div class="relative inline-flex items-center gap-1.5 text-xs text-gray-400">/)
+  assert.doesNotMatch(card, /pl-2|ml-2/)
   // The payee is not indented and has the library icon; comment and date are indented a little.
   assert.match(card, /<UIcon name="heroicons-solid:building-library"/)
   assert.match(card, /<button\s+type="button"\s+class="flex items-center gap-1.5 text-left text-sm/)
@@ -53,7 +54,7 @@ test('the expense card has tap-to-edit fields laid out like the card, with the d
   }
   // The amount keeps its size and color while it is edited.
   assert.match(card, /<input[^>]*text-xl font-semibold text-info/)
-  assert.match(card, /<input[^>]*w-2\/5/)
+  assert.match(card, /<input[^>]*w-\[calc\(40%-1\.5rem\)\]/)
   // The notes field is 16px so iOS does not zoom the page when it is focused.
   assert.match(card, /<UTextarea[\s\S]*?:ui="\{ base: 'text-base' \}"/)
   // Fields change a draft, and one green check saves every change in a single update.

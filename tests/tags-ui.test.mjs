@@ -82,13 +82,19 @@ test('the creator sits under the tags, not indented, beside an edit icon that be
   assert.ok(card.indexOf('aria-label="Edit tags"') < card.indexOf('<!-- Who created the expense'))
   assert.match(footer, /heroicons-solid:pencil-square/)
   assert.match(footer, /heroicons-solid:check-circle/)
-  assert.match(footer, /:aria-label="isOpen \? 'Save changes' : 'Edit expense'"/)
+  assert.match(footer, /aria-label="Save changes"/)
+  assert.match(footer, /aria-label="Cancel changes"/)
+  assert.match(footer, /heroicons-solid:x-circle/)
+  assert.match(footer, /aria-label="Edit expense"/)
   assert.doesNotMatch(footer.slice(0, footer.indexOf('<button')), /pl-2/)
+  // The check only shows once something changed, fading in and pushing the cancel icon left.
+  assert.match(footer, /isOpen && dirty \? 'max-w-8 opacity-100' : 'max-w-0 opacity-0'/)
+  assert.ok(footer.indexOf('aria-label="Save changes"') < footer.indexOf('aria-label="Cancel changes"'))
 })
 
 test('collapsed cards hide the date and account, and empty notes and tags; hidden rows fade', () => {
   const card = read('app/components/ExpenseCard.vue')
-  assert.match(card, /<ExpandRow :open="isOpen" :expanded="isOpen">\s*<div class="relative ml-2/)
+  assert.match(card, /<ExpandRow :open="isOpen" :expanded="isOpen">\s*<div class="relative inline-flex/)
   assert.match(card, /<!-- Account: only while expanded -->\s*<ExpandRow :open="isOpen"/)
   assert.match(card, /:open="isOpen \|\| !!draft\.notes"/)
   assert.match(card, /:open="isOpen \|\| draft\.tags\.length > 0"/)
@@ -98,4 +104,10 @@ test('collapsed cards hide the date and account, and empty notes and tags; hidde
 test('a tap away does not collapse a card with unsaved changes', () => {
   const card = read('app/components/ExpenseCard.vue')
   assert.match(card, /if \(anyEditing\.value \|\| dirty\.value\) return\n\s*if \(!\(event\.target as HTMLElement\)\.closest/)
+})
+
+test('only one field editor is open at a time, and cancel drops the draft', () => {
+  const card = read('app/components/ExpenseCard.vue')
+  assert.match(card, /function startField[\s\S]*?closeEditors\(\)\s*editing\[field\] = true/)
+  assert.match(card, /function cancel\(\)[\s\S]*?resetDraft\(\)\s*finish\(\)/)
 })
