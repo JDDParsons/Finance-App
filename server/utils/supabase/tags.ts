@@ -73,5 +73,5 @@ export async function recolorTag(supabase: SupabaseClient, id: string, color: st
 
 export async function deleteTag(supabase: SupabaseClient, id: string) {
   const { error } = await getClient(supabase).rpc('delete_tag', { target_tag_id: id })
-  if (error) throw error
+  if (error) throwTagError(error)
 }

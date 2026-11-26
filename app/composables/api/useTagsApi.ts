@@ -1,4 +1,4 @@
-import type { Tag } from '../../../utils/tags'
+import type { Tag, TagSummary } from '../../../utils/tags'
 import { apiFetch } from '~/composables/useApiToken'
 
 export function useTagsApi() {
@@ -6,5 +6,17 @@ export function useTagsApi() {
     return apiFetch<Tag[]>('/api/tags')
   }
 
-  return { getTags }
+  function listTags() {
+    return apiFetch<TagSummary[]>('/api/tags/summary')
+  }
+
+  function updateTag(id: string, changes: { name?: string; color?: string }) {
+    return apiFetch<Tag>(`/api/tags/${id}`, { method: 'PUT', body: changes })
+  }
+
+  function deleteTag(id: string) {
+    return apiFetch<{ success: boolean }>(`/api/tags/${id}`, { method: 'DELETE' })
+  }
+
+  return { getTags, listTags, updateTag, deleteTag }
 }
