@@ -7,7 +7,7 @@ const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8'
 test('the create flow has a Tags pill for expenses, shown like the other pills', () => {
   const step = read('app/components/cashflow/create/StepAmount.vue')
   assert.match(step, /defineModel<string\[\]>\('tags'/)
-  assert.match(step, /<TagPill\s+v-if="!isIncome"\s+icon="heroicons:hashtag"/)
+  assert.match(step, /<TagPill\s+v-if="!isIncome"\s+icon="fa7-solid:tag"/)
   assert.match(step, /:filled="tags\.length > 0"/)
   assert.match(step, /<TagField v-if="!isIncome" ref="tagField" v-model="tags" \/>/)
   // One tag shows its name; more show the first and how many others.
@@ -44,8 +44,8 @@ test('the expense card shows its tags and saves a change to them on their own', 
   assert.match(card, /void commit\(\{ tags: names \}\)/)
   // Tags are only sent when the edit changes them.
   assert.match(card, /next\.notes,[\s\S]*?patch\.tags/)
-  // Field order: payee, notes, tags, date.
-  const order = ['Edit payee', 'Edit notes', 'Edit tags', 'Edit date'].map(label => card.indexOf(label))
+  // Field order: payee, notes, date, account, tags last.
+  const order = ['Edit payee', 'Edit notes', 'Edit date', 'Edit account', 'Edit tags'].map(label => card.indexOf(label))
   assert.deepEqual(order, [...order].sort((a, b) => a - b))
   assert.ok(order.every(position => position > -1))
   // Income cards do not have tags.
@@ -55,4 +55,24 @@ test('the expense card shows its tags and saves a change to them on their own', 
 test('tag chips use the tag color and the household list', () => {
   assert.match(read('app/components/TagChip.vue'), /\$\{color \|\| '#9ca3af'\}33/)
   assert.match(read('app/components/TagChips.vue'), /store\.tagsByName\.get\(name\)\?\.color/)
+})
+
+test('tags use the tag icon, have no color dot, and the picker does not focus its input', () => {
+  assert.match(read('app/components/ExpenseCard.vue'), /fa7-solid:tag/)
+  assert.match(read('app/pages/settings/index.vue'), /fa7-solid:tag/)
+  assert.doesNotMatch(read('app/components/TagChip.vue'), /rounded-full" :style/)
+  const field = read('app/components/TagField.vue')
+  assert.doesNotMatch(field, /\.focus\(/)
+})
+
+test('the card shows the account with a credit-card icon, the creator beside the tags, and larger row icons', () => {
+  const card = read('app/components/ExpenseCard.vue')
+  assert.match(card, /fa7-solid:credit-card/)
+  assert.doesNotMatch(card, /institutionLogo/)
+  const tagsRow = card.slice(card.indexOf('aria-label="Edit tags"'))
+  assert.match(tagsRow, /creator\.firstName/)
+  assert.doesNotMatch(card.slice(card.indexOf('aria-label="Edit account"'), card.indexOf('<!-- Tags (up to 3')), /creator/)
+  for (const icon of ['user', 'comment-dots', 'calendar', 'credit-card', 'tag']) {
+    assert.match(card, new RegExp(`fa7-solid:${icon}" class="[^"]*size-3\.5`))
+  }
 })

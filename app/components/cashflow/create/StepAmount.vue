@@ -120,7 +120,7 @@ function handleNotesSave(nextNotes: string) {
             />
             <TagPill
               v-if="!isIncome"
-              icon="heroicons:hashtag"
+              icon="fa7-solid:tag"
               :label="tagsLabel"
               :filled="tags.length > 0"
               :aria-label="tags.length ? `Edit tags, currently ${tags.join(', ')}` : 'Add tags'"

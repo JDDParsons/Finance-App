@@ -15,18 +15,13 @@ const isOpen = ref(false)
 const draft = ref<string[]>([])
 const typed = ref('')
 const message = ref<string | null>(null)
-const inputWrapper = ref<HTMLElement | null>(null)
 
 function open() {
   draft.value = [...props.modelValue]
   typed.value = ''
   message.value = null
+  // The input is not focused here: on iOS that would raise the keyboard over the chosen tags.
   isOpen.value = true
-  if (!import.meta.client) return
-  nextTick(() => requestAnimationFrame(() => {
-    const input = inputWrapper.value?.querySelector('input')
-    if (input instanceof HTMLInputElement) input.focus({ preventScroll: true })
-  }))
 }
 
 defineExpose({ open })
@@ -101,7 +96,7 @@ function done() {
           />
         </div>
 
-        <div ref="inputWrapper">
+        <div>
           <UInput
             v-model="typed"
             variant="soft"

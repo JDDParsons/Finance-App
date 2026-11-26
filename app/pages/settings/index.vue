@@ -19,7 +19,7 @@ const categories = [
   },
   {
     to: '/settings/tags',
-    icon: 'heroicons-solid:hashtag',
+    icon: 'fa7-solid:tag',
     title: 'Tags',
     description: 'Rename, recolor or delete your tags',
   },
