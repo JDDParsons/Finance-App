@@ -499,23 +499,6 @@ function onClickCapture(event: MouseEvent) {
                 </button>
             </ExpandRow>
 
-            <!-- Tags: up to 3. Tapping the row opens the picker. -->
-            <ExpandRow :open="isOpen || tags.length > 0" :expanded="isOpen">
-                <button
-                    type="button"
-                    class="flex w-full items-start gap-1.5 pl-2 text-left text-xs disabled:cursor-default"
-                    :class="isOpen ? 'cursor-pointer' : 'pointer-events-none'"
-                    aria-label="Edit tags"
-                    :disabled="!!activeField"
-                    @click="openTagPicker"
-                >
-                    <UIcon name="heroicons:hashtag" class="mt-0.5 size-3 shrink-0 text-gray-400" aria-hidden="true" />
-                    <TagChips v-if="tags.length" :names="tags" />
-                    <span v-else class="text-gray-300 dark:text-gray-600">Add tags</span>
-                </button>
-            </ExpandRow>
-            <TagField ref="tagPicker" :model-value="tags" @update:model-value="handleTagsSelect" />
-
             <!-- Date. A native date input sits over the text, so one tap opens the picker. -->
             <ExpandRow :expanded="isOpen">
                 <div class="relative ml-2 inline-flex items-center gap-1.5 text-xs text-gray-400">
@@ -590,6 +573,23 @@ function onClickCapture(event: MouseEvent) {
                     </div>
                 </div>
             </ExpandRow>
+
+            <!-- Tags: up to 3. Tapping the row opens the picker. -->
+            <ExpandRow :open="isOpen || tags.length > 0" :expanded="isOpen">
+                <button
+                    type="button"
+                    class="flex w-full items-start gap-1.5 pl-2 text-left text-xs disabled:cursor-default"
+                    :class="isOpen ? 'cursor-pointer' : 'pointer-events-none'"
+                    aria-label="Edit tags"
+                    :disabled="!!activeField"
+                    @click="openTagPicker"
+                >
+                    <UIcon name="fa7-solid:tag" class="mt-0.5 size-3 shrink-0 text-gray-400" aria-hidden="true" />
+                    <TagChips v-if="tags.length" :names="tags" />
+                    <span v-else class="text-gray-300 dark:text-gray-600">Add tags</span>
+                </button>
+            </ExpandRow>
+            <TagField ref="tagPicker" :model-value="tags" @update:model-value="handleTagsSelect" />
         </UCard>
     </div>
 </template>
