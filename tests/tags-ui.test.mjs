@@ -35,16 +35,16 @@ test('the picker adds by tap or typing, creates new tags, and stops at the limit
   assert.match(field, /Cancel/)
 })
 
-test('the expense card shows its tags and saves a change to them on their own', () => {
+test('the expense card shows its tags and saves a change to them with the other changes', () => {
   const card = read('app/components/ExpenseCard.vue')
-  assert.match(card, /const tags = computed<string\[\]>\(\(\) => hit\.value\?\.tags \?\? \[\]\)/)
+  assert.match(card, /tags: \[\.\.\.\(row\?\.tags \?\? \[\]\)\]/)
   assert.match(card, /aria-label="Edit tags"/)
-  assert.match(card, /<TagChips v-if="tags\.length" :names="tags" \/>/)
+  assert.match(card, /<TagChips v-if="draft\.tags\.length" :names="draft\.tags" \/>/)
   assert.match(card, /<TagField ref="tagPicker"/)
-  assert.match(card, /void commit\(\{ tags: names \}\)/)
+  assert.match(card, /draft\.tags = \[\.\.\.names\]/)
   // Tags are only sent when the edit changes them.
-  assert.match(card, /next\.notes,[\s\S]*?patch\.tags/)
-  // Field order: payee, notes, date, account, tags last.
+  assert.match(card, /next\.notes,[\s\S]*?next\.tags : undefined/)
+  // Field order: payee, notes, date, account, tags last (the creator and edit icon come after).
   const order = ['Edit payee', 'Edit notes', 'Edit date', 'Edit account', 'Edit tags'].map(label => card.indexOf(label))
   assert.deepEqual(order, [...order].sort((a, b) => a - b))
   assert.ok(order.every(position => position > -1))
@@ -65,14 +65,37 @@ test('tags use the tag icon, have no color dot, and the picker does not focus it
   assert.doesNotMatch(field, /\.focus\(/)
 })
 
-test('the card shows the account with a credit-card icon, the creator beside the tags, and larger row icons', () => {
+test('the card shows the account with a credit-card icon and larger row icons', () => {
   const card = read('app/components/ExpenseCard.vue')
   assert.match(card, /fa7-solid:credit-card/)
   assert.doesNotMatch(card, /institutionLogo/)
-  const tagsRow = card.slice(card.indexOf('aria-label="Edit tags"'))
-  assert.match(tagsRow, /creator\.firstName/)
-  assert.doesNotMatch(card.slice(card.indexOf('aria-label="Edit account"'), card.indexOf('<!-- Tags (up to 3')), /creator/)
-  for (const icon of ['user', 'comment-dots', 'calendar', 'credit-card', 'tag']) {
-    assert.match(card, new RegExp(`fa7-solid:${icon}" class="[^"]*size-3\.5`))
+  for (const icon of ['comment-dots', 'calendar', 'credit-card', 'tag']) {
+    assert.match(card, new RegExp(`fa7-solid:${icon}" class="[^"]*size-3\\.5`))
   }
+  assert.match(card, /heroicons-solid:building-library" class="size-3\.5/)
+})
+
+test('the creator sits under the tags, not indented, beside an edit icon that becomes the green save check', () => {
+  const card = read('app/components/ExpenseCard.vue')
+  const footer = card.slice(card.indexOf('<!-- Who created the expense'))
+  assert.match(footer, /creator\.firstName/)
+  assert.ok(card.indexOf('aria-label="Edit tags"') < card.indexOf('<!-- Who created the expense'))
+  assert.match(footer, /heroicons-solid:pencil-square/)
+  assert.match(footer, /heroicons-solid:check-circle/)
+  assert.match(footer, /:aria-label="isOpen \? 'Save changes' : 'Edit expense'"/)
+  assert.doesNotMatch(footer.slice(0, footer.indexOf('<button')), /pl-2/)
+})
+
+test('collapsed cards hide the date and account, and empty notes and tags; hidden rows fade', () => {
+  const card = read('app/components/ExpenseCard.vue')
+  assert.match(card, /<ExpandRow :open="isOpen" :expanded="isOpen">\s*<div class="relative ml-2/)
+  assert.match(card, /<!-- Account: only while expanded -->\s*<ExpandRow :open="isOpen"/)
+  assert.match(card, /:open="isOpen \|\| !!draft\.notes"/)
+  assert.match(card, /:open="isOpen \|\| draft\.tags\.length > 0"/)
+  assert.match(read('app/components/ExpandRow.vue'), /transition-\[grid-template-rows,opacity\]/)
+})
+
+test('a tap away does not collapse a card with unsaved changes', () => {
+  const card = read('app/components/ExpenseCard.vue')
+  assert.match(card, /if \(anyEditing\.value \|\| dirty\.value\) return\n\s*if \(!\(event\.target as HTMLElement\)\.closest/)
 })
