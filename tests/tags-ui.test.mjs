@@ -71,7 +71,7 @@ test('the card shows the account with a credit-card icon, the creator beside the
   assert.doesNotMatch(card, /institutionLogo/)
   const tagsRow = card.slice(card.indexOf('aria-label="Edit tags"'))
   assert.match(tagsRow, /creator\.firstName/)
-  assert.doesNotMatch(card.slice(card.indexOf('aria-label="Edit account"'), card.indexOf('aria-label="Edit tags"')), /creator/)
+  assert.doesNotMatch(card.slice(card.indexOf('aria-label="Edit account"'), card.indexOf('<!-- Tags (up to 3')), /creator/)
   for (const icon of ['user', 'comment-dots', 'calendar', 'credit-card', 'tag']) {
     assert.match(card, new RegExp(`fa7-solid:${icon}" class="[^"]*size-3\.5`))
   }
