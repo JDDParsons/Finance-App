@@ -21,7 +21,6 @@ const emit = defineEmits<{
 
 const store = useFinanceStore()
 const { budgetIcon } = useBudgetIcon()
-const { institutionLogo, institutionIcon, institutionBgClass } = useInstitutionBranding()
 
 // Everything shown comes from the expense in the store, so the card follows refreshes,
 // queued changes and edits made elsewhere.
@@ -55,7 +54,6 @@ const borderColor = computed(() => budgetColor.value || '#E5E7EB')
 
 const chosenAccount = computed(() => accountId.value ? store.accounts.find((a: any) => a.id === accountId.value) ?? null : null)
 const accountName = computed(() => chosenAccount.value ? accountDisplayName(chosenAccount.value) : null)
-const accountInstitution = computed<string | null>(() => chosenAccount.value?.institution ?? null)
 
 const accountOptions = computed(() => [
     { label: 'No account', value: '__none__' },
@@ -454,7 +452,7 @@ function onClickCapture(event: MouseEvent) {
                     :disabled="!!activeField"
                     @click="openEntityPicker"
                 >
-                    <UIcon name="fa7-solid:user" class="size-3 shrink-0 text-gray-400" aria-hidden="true" />
+                    <UIcon name="fa7-solid:user" class="size-3.5 shrink-0 text-gray-400" aria-hidden="true" />
                     <span>{{ entity || 'Add a payee' }}</span>
                 </button>
             </ExpandRow>
@@ -470,7 +468,7 @@ function onClickCapture(event: MouseEvent) {
             <!-- Notes -->
             <ExpandRow :open="isOpen || !!notes" :expanded="isOpen">
                 <div v-if="activeField === 'notes'" class="flex items-start gap-1.5 pl-2">
-                    <UIcon name="fa7-solid:comment-dots" class="mt-2.5 size-3 shrink-0 text-gray-400" aria-hidden="true" />
+                    <UIcon name="fa7-solid:comment-dots" class="mt-2.5 size-3.5 shrink-0 text-gray-400" aria-hidden="true" />
                     <!-- 16px text: iOS zooms the page when a smaller field is focused. -->
                     <UTextarea
                         v-model="draft"
@@ -494,7 +492,7 @@ function onClickCapture(event: MouseEvent) {
                     :disabled="!!activeField"
                     @click="startField('notes')"
                 >
-                    <UIcon name="fa7-solid:comment-dots" class="mt-0.5 size-3 shrink-0 text-gray-400" aria-hidden="true" />
+                    <UIcon name="fa7-solid:comment-dots" class="mt-0.5 size-3.5 shrink-0 text-gray-400" aria-hidden="true" />
                     <span class="whitespace-pre-wrap">{{ notes || 'Add notes' }}</span>
                 </button>
             </ExpandRow>
@@ -502,7 +500,7 @@ function onClickCapture(event: MouseEvent) {
             <!-- Date. A native date input sits over the text, so one tap opens the picker. -->
             <ExpandRow :expanded="isOpen">
                 <div class="relative ml-2 inline-flex items-center gap-1.5 text-xs text-gray-400">
-                    <UIcon name="fa7-solid:calendar" class="size-3 shrink-0" aria-hidden="true" />
+                    <UIcon name="fa7-solid:calendar" class="size-3.5 shrink-0" aria-hidden="true" />
                     <span>{{ formatDate(date) }}</span>
                     <input
                         type="date"
@@ -517,8 +515,8 @@ function onClickCapture(event: MouseEvent) {
                 </div>
             </ExpandRow>
 
-            <!-- Account, and who created the expense (not editable) -->
-            <ExpandRow :open="isOpen || !!accountName || !!creator?.firstName" :expanded="isOpen">
+            <!-- Account -->
+            <ExpandRow :open="isOpen || !!accountName" :expanded="isOpen">
                 <div v-if="activeField === 'account'" class="flex items-center gap-2 pl-2">
                     <USelect
                         v-model="draft"
@@ -540,21 +538,31 @@ function onClickCapture(event: MouseEvent) {
                         @click="startField('account')"
                     >
                         <template v-if="accountName">
-                            <div :class="['shrink-0 w-5 h-5 rounded-full flex items-center justify-center overflow-hidden', institutionBgClass(accountInstitution, accountName)]">
-                                <img
-                                    v-if="institutionLogo(accountInstitution, accountName)"
-                                    :src="institutionLogo(accountInstitution, accountName)!.src"
-                                    :alt="institutionLogo(accountInstitution, accountName)!.alt"
-                                    class="w-3 h-3 object-contain"
-                                />
-                                <UIcon v-else :name="institutionIcon(accountInstitution, accountName)" class="w-3 h-3 text-primary-500" />
-                            </div>
+                            <UIcon name="fa7-solid:credit-card" class="size-3.5 shrink-0 text-gray-400" aria-hidden="true" />
                             <span class="text-xs text-gray-400">{{ accountName }}</span>
                         </template>
                         <span v-else class="text-xs text-gray-300 dark:text-gray-600">Add an account</span>
                     </button>
+                </div>
+            </ExpandRow>
 
-                    <div v-if="creator?.firstName" class="flex items-center gap-1.5 ml-auto">
+            <!-- Tags (up to 3; tapping opens the picker) and, at the right, who created the expense (not editable). -->
+            <ExpandRow :open="isOpen || tags.length > 0 || !!creator?.firstName" :expanded="isOpen">
+                <div class="flex items-start gap-2 pl-2">
+                    <button
+                        v-if="isOpen || tags.length > 0"
+                        type="button"
+                        class="flex min-w-0 flex-1 items-start gap-1.5 text-left text-xs disabled:cursor-default"
+                        :class="isOpen ? 'cursor-pointer' : 'pointer-events-none'"
+                        aria-label="Edit tags"
+                        :disabled="!!activeField"
+                        @click="openTagPicker"
+                    >
+                        <UIcon name="fa7-solid:tag" class="mt-0.5 size-3.5 shrink-0 text-gray-400" aria-hidden="true" />
+                        <TagChips v-if="tags.length" :names="tags" />
+                        <span v-else class="text-gray-300 dark:text-gray-600">Add tags</span>
+                    </button>
+                    <div v-if="creator?.firstName" class="flex items-center gap-1.5 ml-auto shrink-0">
                         <img
                             v-if="creator.avatarLink"
                             :src="creator.avatarLink"
@@ -572,22 +580,6 @@ function onClickCapture(event: MouseEvent) {
                         <span class="text-xs text-gray-400">{{ creator.firstName }}</span>
                     </div>
                 </div>
-            </ExpandRow>
-
-            <!-- Tags: up to 3. Tapping the row opens the picker. -->
-            <ExpandRow :open="isOpen || tags.length > 0" :expanded="isOpen">
-                <button
-                    type="button"
-                    class="flex w-full items-start gap-1.5 pl-2 text-left text-xs disabled:cursor-default"
-                    :class="isOpen ? 'cursor-pointer' : 'pointer-events-none'"
-                    aria-label="Edit tags"
-                    :disabled="!!activeField"
-                    @click="openTagPicker"
-                >
-                    <UIcon name="fa7-solid:tag" class="mt-0.5 size-3 shrink-0 text-gray-400" aria-hidden="true" />
-                    <TagChips v-if="tags.length" :names="tags" />
-                    <span v-else class="text-gray-300 dark:text-gray-600">Add tags</span>
-                </button>
             </ExpandRow>
             <TagField ref="tagPicker" :model-value="tags" @update:model-value="handleTagsSelect" />
         </UCard>

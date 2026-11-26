@@ -64,3 +64,15 @@ test('tags use the tag icon, have no color dot, and the picker does not focus it
   const field = read('app/components/TagField.vue')
   assert.doesNotMatch(field, /\.focus\(/)
 })
+
+test('the card shows the account with a credit-card icon, the creator beside the tags, and larger row icons', () => {
+  const card = read('app/components/ExpenseCard.vue')
+  assert.match(card, /fa7-solid:credit-card/)
+  assert.doesNotMatch(card, /institutionLogo/)
+  const tagsRow = card.slice(card.indexOf('aria-label="Edit tags"'))
+  assert.match(tagsRow, /creator\.firstName/)
+  assert.doesNotMatch(card.slice(card.indexOf('aria-label="Edit account"'), card.indexOf('aria-label="Edit tags"')), /creator/)
+  for (const icon of ['user', 'comment-dots', 'calendar', 'credit-card', 'tag']) {
+    assert.match(card, new RegExp(`fa7-solid:${icon}" class="[^"]*size-3\.5`))
+  }
+})
