@@ -33,7 +33,6 @@ test('tapping an existing entity saves it right away and reopening shows the lis
 
 test('the expense card has tap-to-edit fields laid out like the card, with the date under the amount', async () => {
   const card = await read('app/components/ExpenseCard.vue')
-  const check = await read('app/components/FieldConfirmButton.vue')
   assert.match(card, /borderLeft: .4px solid \$\{borderColor\}./)
   for (const label of ['amount', 'payee', 'notes', 'account']) {
     assert.match(card, new RegExp(`aria-label="Edit ${label}"`))
@@ -44,30 +43,34 @@ test('the expense card has tap-to-edit fields laid out like the card, with the d
   // Field order: amount, payee, notes, date, account. The date uses the small text size.
   const order = ['Edit amount', 'Edit payee', 'Edit notes', 'Edit date', 'Edit account'].map(label => card.indexOf(label))
   assert.deepEqual(order, [...order].sort((x, y) => x - y))
-  assert.match(card, /<div class="relative ml-2 inline-flex items-center gap-1.5 text-xs text-gray-400">/)
-  // Icons beside payee, comment and date, which are indented a little.
-  for (const icon of ['fa7-solid:user', 'fa7-solid:comment-dots', 'fa7-solid:calendar']) {
+  assert.match(card, /<div class="relative inline-flex items-center gap-1.5 text-xs text-gray-400">/)
+  assert.doesNotMatch(card, /pl-2|ml-2/)
+  // The payee is not indented and has the library icon; comment and date are indented a little.
+  assert.match(card, /<UIcon name="heroicons-solid:building-library"/)
+  assert.match(card, /<button\s+type="button"\s+class="flex items-center gap-1.5 text-left text-sm/)
+  for (const icon of ['fa7-solid:comment-dots', 'fa7-solid:calendar']) {
     assert.match(card, new RegExp(icon))
     assert.match(await read('nuxt.config.ts'), new RegExp(`'${icon}'`))
   }
   // The amount keeps its size and color while it is edited.
   assert.match(card, /<input[^>]*text-xl font-semibold text-info/)
-  assert.match(card, /<input[^>]*w-2\/5/)
+  assert.match(card, /<input[^>]*w-\[calc\(40%-1\.5rem\)\]/)
   // The notes field is 16px so iOS does not zoom the page when it is focused.
-  assert.match(card, /<UTextarea[\s\S]*?:ui="\{ base: 'text-base' \}"/)
-  // Only one field is edited at a time, and each is saved on its own.
-  assert.match(card, /:disabled="!!activeField"/)
-  assert.match(check, /heroicons-solid:check-circle/)
-  assert.match(card, /async function commit\(patch/)
-  assert.match(card, /store\.updateExpense\(/)
+  assert.match(card, /<textarea[^>]*text-base/)
+  // Fields change a draft, and one green check saves every change in a single update.
+  assert.match(card, /const draft = reactive/)
+  assert.match(card, /async function saveAll\(\)/)
+  assert.equal((card.match(/store\.updateExpense\(/g) ?? []).length, 1)
+  assert.doesNotMatch(card, /FieldConfirmButton/)
+  assert.match(card, /heroicons-solid:check-circle" class="size-7 text-green-500"/)
 })
 
-test('the date opens the picker on one tap and saves as soon as a date is chosen', async () => {
+test('the date opens the picker on one tap and the chosen date goes into the draft', async () => {
   const card = await read('app/components/ExpenseCard.vue')
   assert.match(card, /type="date"/)
   assert.match(card, /showPicker/)
   assert.match(card, /@change="onDateChange"/)
-  assert.match(card, /function onDateChange[\s\S]*?void commit\(\{ date: value \}\)/)
+  assert.match(card, /function onDateChange[\s\S]*?draft\.date = value/)
   assert.doesNotMatch(card, /'date'/)
 })
 
