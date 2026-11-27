@@ -130,3 +130,9 @@ test('the tag picker blocks the modal from focusing anything when it opens', () 
   // The payee picker blocks it the same way.
   assert.match(read('app/components/EntityField.vue'), /<UModal[^>]*onOpenAutoFocus: \(event: Event\) => event\.preventDefault\(\)/)
 })
+
+test('collapsed expense and income cards show only the first two lines of the notes', () => {
+  for (const file of ['app/components/ExpenseCard.vue', 'app/components/IncomeCard.vue']) {
+    assert.match(read(file), /class="whitespace-pre-wrap" :class="isOpen \? '' : 'line-clamp-2'"/, file)
+  }
+})
