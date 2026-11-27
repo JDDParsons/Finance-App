@@ -19,6 +19,7 @@ Planned features in priority order, highest first. Started 2026-11-18. This is a
 | 9 | Language model integration for dynamic reports | Not started | `/api/bootstrap` data |
 | 10 | Settings page (manage entities and tags) | Settings, accounts move and entity rename and merge built, device check pending; tag management built (item 2), device check pending | Entities on budget hits, tags (item 2) |
 | 11 | Custom reports | Design agreed (layout to plan), not started | Tags (item 2), settings (item 10) |
+| 12 | Receipt scanning (extract details from a photo) | Idea, not started | Expense create flow, item 9 (language model plumbing) |
 
 Status values: Not started, In progress, Shipped, Dropped.
 
@@ -309,6 +310,29 @@ This work is independent of the other features and can be done at any time. It a
 - Include income and transfers later, and how do budget and tag filters apply to them?
 - Maximum date range, and how large a result is shown or paged.
 - Relationship to item 9: could a language model later produce the filters from a question?
+
+## 12. Receipt scanning (extract details from a photo)
+
+**Idea (2026-11-27):** from the expense form, take a photo of a receipt. The photo is read by a vision-capable language model and the result is a fixed JSON shape (date, vendor, line items, tax, total). The details prefill the expense form for the user to check and save. The photo itself is not kept.
+
+**Today:** nothing like this exists. Expenses are typed by hand. There is no file storage in use and no language model call (item 9 would be the first).
+
+**Design sketch (not yet agreed)**
+- Extract only, no stored image. This avoids a storage bucket, access rules and file cleanup. Keeping the photo as proof is a separate, later idea (Supabase Storage, a private bucket with household-only access, signed URLs).
+- The phone resizes and recompresses the photo first (about 1600px and a few hundred KB), then sends it to one new server route (for example `/api/receipts/extract`) that calls the model with a fixed schema and validates the reply before returning it. At that size the image fits in a normal Vercel function request.
+- The result is never saved silently. A review step shows the extracted values; the user corrects them, and the date, vendor (payee) and total fill the existing expense fields.
+- The API key stays on the server like the other secrets. A request limit per user or household guards against runaway cost.
+- Online only. The extraction needs a connection; queueing a photo to extract later is a possible extension.
+- Shares plumbing with item 9 (model client, key handling, cost limits), so it makes sense to build the two with one approach.
+
+**Open questions**
+- Where do line items and tax go? Options: drop them, a JSON column on the expense, or a line-items table. Nothing reads them yet; Custom reports (item 11) might later.
+- Which model and what cost ceiling is acceptable per receipt and per month?
+- The image leaves the system and goes to the model provider. Is that acceptable for receipts (card digits, addresses, items bought), and what are the provider's retention terms?
+- What if extraction is wrong or partial (faded or crumpled receipts, unusual layouts)? How is that shown, and can the user still enter the expense by hand?
+- Should the photo also be kept as proof of purchase (storage, offline handling, deletion with the expense)?
+- Multi-page or long receipts, and receipts in other currencies or languages.
+- Capture: a file input with `capture="environment"` (works in a PWA without libraries) versus an in-app camera.
 
 ## Cross-cutting notes
 
