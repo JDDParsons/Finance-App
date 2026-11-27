@@ -10,7 +10,7 @@ Verified against `package.json`, `nuxt.config.ts` and the source tree.
 | UI | `@nuxt/ui` v4 with Iconify icon collections (heroicons, lucide, streamline, etc.), bundled locally via `icon.serverBundle` (server) and `icon.clientBundle` (embedded in the precached client bundle so icons render offline) |
 | State | Pinia (`profile`, `accounts`, `finance`, `savings` stores) |
 | Charts | Chart.js with vue-chartjs |
-| PWA | `@vite-pwa/nuxt` (autoUpdate service worker, standalone manifest) |
+| PWA | `@vite-pwa/nuxt` (service worker updated at launch behind the splash screen, standalone manifest) |
 | Offline storage | IndexedDB through `idb` (database `budgify-offline`: snapshots, preferences, outbox) |
 | Server | Nitro routes in `server/api/`, deployed as Vercel functions |
 

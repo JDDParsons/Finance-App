@@ -68,7 +68,12 @@ export default defineNuxtConfig({
     },
   },
   pwa: {
-    registerType: 'autoUpdate',
+    // A new service worker waits until the app tells it to take over, which only
+    // happens behind the splash screen (utils/appUpdate.ts, called from app.vue).
+    // The module's own registration is off because it can reload the page mid-use.
+    registerType: 'prompt',
+    injectRegister: false,
+    client: { registerPlugin: false },
     manifest: {
       name: 'Budgify',
       short_name: 'Budgify',
@@ -106,6 +111,8 @@ export default defineNuxtConfig({
       ],
       navigateFallback: baseURL,
       cleanupOutdatedCaches: true,
+      // Lets the first-ever visit work offline without needing a reload first.
+      clientsClaim: true,
     },
   },
   runtimeConfig: {
