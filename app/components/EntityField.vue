@@ -53,7 +53,8 @@ function handleSave(payload: { entity: string; selectedEntity: string | null }) 
     </button>
   </UFormField>
 
-  <UModal v-model:open="isOpen">
+  <!-- Nothing is focused when it opens, so the close button is not outlined. -->
+  <UModal v-model:open="isOpen" :content="{ onOpenAutoFocus: (event: Event) => event.preventDefault() }">
     <template #content>
       <UCard>
         <template #header>

@@ -127,4 +127,6 @@ test('the tag picker blocks the modal from focusing anything when it opens', () 
   const field = read('app/components/TagField.vue')
   assert.match(field, /<UModal[^>]*onOpenAutoFocus: \(event: Event\) => event\.preventDefault\(\)/)
   assert.doesNotMatch(field, /Close tag picker/)
+  // The payee picker blocks it the same way.
+  assert.match(read('app/components/EntityField.vue'), /<UModal[^>]*onOpenAutoFocus: \(event: Event\) => event\.preventDefault\(\)/)
 })
