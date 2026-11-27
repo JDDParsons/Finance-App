@@ -19,6 +19,7 @@ Planned features in priority order, highest first. Started 2026-11-18. This is a
 | 9 | Language model integration for dynamic reports | Not started | `/api/bootstrap` data |
 | 10 | Settings page (manage entities and tags) | Settings, accounts move and entity rename and merge built, device check pending; tag management built (item 2), device check pending | Entities on budget hits, tags (item 2) |
 | 11 | Custom reports | Design agreed (layout to plan), not started | Tags (item 2), settings (item 10) |
+| 12 | Receipt scanning (extract details from a photo) | Scope agreed (extract only, line items in notes), not started | Expense create flow, item 9 (language model plumbing) |
 
 Status values: Not started, In progress, Shipped, Dropped.
 
@@ -309,6 +310,34 @@ This work is independent of the other features and can be done at any time. It a
 - Include income and transfers later, and how do budget and tag filters apply to them?
 - Maximum date range, and how large a result is shown or paged.
 - Relationship to item 9: could a language model later produce the filters from a question?
+
+## 12. Receipt scanning (extract details from a photo)
+
+**Idea (2026-11-27):** from the expense form, take a photo of a receipt. The photo is read by a vision-capable language model and the result is a fixed JSON shape (date, vendor, line items, tax, total). The details prefill the expense form for the user to check and save. The photo itself is not kept. Scope was settled the same day, see "Decided" below.
+
+**Today:** nothing like this exists. Expenses are typed by hand. There is no file storage in use and no language model call (item 9 would be the first).
+
+**Decided (2026-11-27)**
+- First iteration is extract only: the photo is not kept. Keeping it as proof of purchase is a later idea (Supabase Storage, a private bucket with household-only access, signed URLs).
+- Sending receipt images to the model provider is acceptable.
+- Line items are saved in the expense's notes field, one per line (new lines between items), with the tax as the final line. No new column or table. The date, vendor (payee) and total fill the existing expense fields.
+- Notes length (checked 2026-11-27): the notes column is plain `text` with no limit in the database, the routes, the offline queue or the input boxes, so a long receipt fits. To keep a long list from making collapsed cards very tall, a collapsed card shows only the first two lines of its notes, and the full text shows when expanded (built for both expense and income cards).
+- Capture: the phone camera for the first pass. Pasting an image from the clipboard on the phone is wanted as a second way in, ideally included.
+
+**Design sketch (not yet agreed in detail)**
+- The phone resizes and recompresses the photo first (about 1600px and a few hundred KB), then sends it to one new server route (for example `/api/receipts/extract`) that calls a vision-capable model with a fixed schema and validates the reply before returning it. At that size the image fits in a normal Vercel function request.
+- The result is never saved silently. A review step shows the extracted values; the user corrects them (including the notes text) and saves through the normal expense flow.
+- Camera capture can be a file input with `capture="environment"`, which works in a PWA without libraries. Clipboard paste needs an input that accepts pasted images (a paste handler, or the async clipboard API where the browser allows it), so check how it behaves in an installed iOS PWA before promising it.
+- The API key stays on the server like the other secrets. A request limit per user or household guards against runaway cost.
+- Online only. The extraction needs a connection; queueing a photo to extract later is a possible extension.
+- Shares plumbing with item 9 (model client, key handling, cost limits), so it makes sense to build the two with one approach.
+
+**Open questions**
+- Which model and what cost ceiling per receipt and per month? Candidates are a small, cheap model (Claude Haiku 5.5) and a larger one (Claude Sonnet 5.5). Compare accuracy on a few real receipts and the current pricing before choosing; this depends on the options, so it is not decided.
+- What if extraction is wrong or partial (faded or crumpled receipts, unusual layouts)? How is that shown, and can the user still enter the expense by hand?
+- Does the prefill replace values the user already typed, or only fill empty fields?
+- Multi-page or long receipts, and receipts in other currencies or languages.
+- Does clipboard paste work in the installed iOS PWA, and what is the fallback if it does not?
 
 ## Cross-cutting notes
 
