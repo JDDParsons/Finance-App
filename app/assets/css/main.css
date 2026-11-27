@@ -57,6 +57,10 @@ html:not(.app-loaded) body {
   top: calc(env(safe-area-inset-top, 0px) + 4rem);
 }
 
+@utility bottom-safe-12 {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 3rem);
+}
+
 @utility pt-safe {
   padding-top: env(safe-area-inset-top, 0px);
 }

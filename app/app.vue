@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useAppData } from '~/composables/useAppData'
+import { applyUpdateAtLaunch, type LaunchUpdateResult } from '../utils/appUpdate'
 
 const appData = useAppData()
 const route = useRoute()
@@ -17,6 +18,29 @@ useHead(() => ({
 
 const isLoading = ref(true)
 const loadError = ref(false)
+const isUpdating = ref(false)
+// Started once per launch; the splash does not drop until it has settled.
+let launchUpdate: Promise<LaunchUpdateResult> = Promise.resolve('continue')
+
+function startLaunchUpdate() {
+  const { baseURL } = runtimeConfig.app
+  return applyUpdateAtLaunch({
+    // There is no service worker in development.
+    container: import.meta.dev ? undefined : navigator.serviceWorker,
+    scriptUrl: `${baseURL}sw.js`,
+    scope: baseURL,
+    isOnline: () => navigator.onLine,
+    reload: () => window.location.reload(),
+    onUpdating: () => { isUpdating.value = true },
+  })
+}
+
+// True when the app is about to reload into a new version, so the splash stays up.
+async function isReloadingForUpdate() {
+  if (await launchUpdate === 'reloading') return true
+  isUpdating.value = false
+  return false
+}
 
 const isAuthenticated = computed(() => route.path !== '/')
 const showMonthShortcut = computed(() => false)
@@ -42,10 +66,13 @@ async function loadAndStart() {
   loadError.value = false
   try {
     await appData.load()
+    if (await isReloadingForUpdate()) return
     document.documentElement.classList.add('app-loaded')
     isLoading.value = false
     appData.startPolling()
   } catch {
+    // A new version may be what fixes the load, so let it apply first.
+    if (await isReloadingForUpdate()) return
     // Keep the splash visible as an error screen; don't start polling on failure.
     document.documentElement.classList.add('app-loaded')
     loadError.value = true
@@ -54,9 +81,12 @@ async function loadAndStart() {
 }
 
 onMounted(async () => {
+  // Runs alongside the data load, so a launch without an update is barely slower.
+  launchUpdate = startLaunchUpdate()
   await router.isReady()
   if (route.path === '/') {
     // Login page: user isn't authenticated yet, nothing to fetch
+    if (await isReloadingForUpdate()) return
     document.documentElement.classList.add('app-loaded')
     isLoading.value = false
     return
@@ -105,6 +135,18 @@ watch(() => route.path, async (newPath, oldPath) => {
             Try again
           </button>
         </div>
+
+        <!-- A new version is being installed before the app opens -->
+        <Transition enter-active-class="transition-opacity duration-300" enter-from-class="opacity-0">
+          <div
+            v-if="isUpdating && !loadError"
+            class="absolute inset-x-0 bottom-safe-12 flex items-center justify-center gap-2 text-sm font-semibold text-white/90"
+            role="status"
+          >
+            <span class="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true" />
+            Updating…
+          </div>
+        </Transition>
       </div>
     </Transition>
 
