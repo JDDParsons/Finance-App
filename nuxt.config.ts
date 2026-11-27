@@ -62,7 +62,10 @@ export default defineNuxtConfig({
         { name: 'theme-color', content: '#22c55e' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
-        { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+        // Not black-translucent: iOS 26 and later blur the top of installed apps that
+        // draw under the status bar, which blurs the header. iOS reads this only when
+        // the app is added to the Home Screen.
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
         { name: 'apple-mobile-web-app-title', content: 'Budgify' },
       ],
     },

@@ -31,7 +31,15 @@ html {
 html.app-loaded {
   background-color: #ffffff;
   background-image: none;
-  min-height: unset;
+}
+
+/* In the installed app, every page must be at least as tall as the screen. On
+   short pages iOS can otherwise leave fixed elements (BottomNav) above the bottom
+   edge. 100vh, because dvh can come up short there. */
+@media (display-mode: standalone) {
+  html.app-loaded {
+    min-height: 100vh;
+  }
 }
 
 html.dark.app-loaded {

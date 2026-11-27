@@ -9,15 +9,22 @@ const runtimeConfig = useRuntimeConfig()
 const colorMode = useColorMode()
 const transactionModal = useTransactionCreateModalStore()
 
-// Dynamically update theme-color so the iOS PWA status bar matches dark/light mode
+const isLoading = ref(true)
+const loadError = ref(false)
+
+// The iOS PWA status bar takes theme-color: the splash green while the splash is
+// up, then the page color for dark/light mode.
 useHead(() => ({
   meta: [
-    { name: 'theme-color', content: colorMode.value === 'dark' ? '#030712' : '#ffffff' },
+    {
+      name: 'theme-color',
+      content: isLoading.value || loadError.value
+        ? '#22c55e'
+        : colorMode.value === 'dark' ? '#0f172b' : '#ffffff',
+    },
   ],
 }))
 
-const isLoading = ref(true)
-const loadError = ref(false)
 const isUpdating = ref(false)
 // Started once per launch; the splash does not drop until it has settled.
 let launchUpdate: Promise<LaunchUpdateResult> = Promise.resolve('continue')
