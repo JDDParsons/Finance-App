@@ -74,9 +74,9 @@ watch(() => props.open, (open) => {
 </script>
 
 <template>
-  <div class="p-4 pt-0">
-    <div class="min-h-0">
-      <div ref="fieldRef">
+  <div class="flex min-h-0 flex-col p-4 pt-0">
+    <div class="flex min-h-0 flex-col">
+      <div ref="fieldRef" class="shrink-0">
         <UInput
           v-model="draftEntity"
           variant="soft"
@@ -94,7 +94,8 @@ watch(() => props.open, (open) => {
         </UInput>
       </div>
 
-      <div v-if="filteredSuggestions.length" class="mt-4 flex flex-wrap gap-2">
+      <!-- Only the suggestions scroll, so the search field and buttons stay on screen. -->
+      <div v-if="filteredSuggestions.length" class="mt-4 flex min-h-0 flex-wrap content-start gap-2 overflow-y-auto overscroll-contain">
         <button
           v-for="suggestion in filteredSuggestions"
           :key="suggestion"
@@ -107,7 +108,7 @@ watch(() => props.open, (open) => {
       </div>
     </div>
 
-    <div class="mt-6 flex justify-end gap-2">
+    <div class="mt-6 flex shrink-0 justify-end gap-2">
       <UButton color="neutral" variant="ghost" @click="emit('cancel')">
         Cancel
       </UButton>

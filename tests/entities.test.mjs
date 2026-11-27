@@ -7,6 +7,7 @@ import {
   filterEntities,
   normalizeEntityKey,
   planRename,
+  rankEntitiesByBudget,
   sortEntities,
   summarizeEntities,
 } from '../utils/entities.ts'
@@ -135,4 +136,20 @@ test('routes, page and sync-first rule are wired together', async () => {
   assert.match(page, /failedSyncCount/)
   assert.match(page, /precacheRecentMonths\(true\)/)
   assert.match(page, /source === 'cache'/)
+})
+
+test('payee and payer suggestions are ranked by use, then by most recent, per budget', () => {
+  // Newest first, as the query returns them.
+  const ranked = rankEntitiesByBudget([
+    { budget_id: 'a', entity: 'Recent Once' },
+    { budget_id: 'a', entity: 'Often' },
+    { budget_id: 'a', entity: 'Older Once' },
+    { budget_id: 'a', entity: ' Often ' },
+    { budget_id: 'b', entity: 'Older Once' },
+    { budget_id: 'a', entity: '  ' },
+    { budget_id: null, entity: 'No Budget' },
+  ])
+  assert.deepEqual(ranked.get('a'), ['Often', 'Recent Once', 'Older Once'])
+  assert.deepEqual(ranked.get('b'), ['Older Once'])
+  assert.equal(ranked.size, 2)
 })
