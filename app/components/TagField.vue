@@ -73,27 +73,16 @@ function done() {
 </script>
 
 <template>
-  <UModal v-model:open="isOpen">
+  <!-- Nothing is focused when it opens: focusing the input would raise the iOS keyboard over the chosen tags. -->
+  <UModal v-model:open="isOpen" :content="{ onOpenAutoFocus: (event: Event) => event.preventDefault() }">
     <template #content>
       <UCard>
         <template #header>
-          <!-- The close button comes first in the modal, so it is what the modal focuses when it
-               opens (as in the payee picker). Focusing the input would raise the iOS keyboard. -->
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Choose tags</h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Up to {{ MAX_TAGS_PER_EXPENSE }} tags ({{ draft.length }} chosen)
-              </p>
-            </div>
-            <UButton
-              icon="heroicons:x-mark"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              aria-label="Close tag picker"
-              @click="isOpen = false"
-            />
+          <div>
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Choose tags</h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Up to {{ MAX_TAGS_PER_EXPENSE }} tags ({{ draft.length }} chosen)
+            </p>
           </div>
         </template>
 

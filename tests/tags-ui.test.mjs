@@ -123,8 +123,8 @@ test('opening a picker closes the open editor, notes are underlined while edited
   assert.match(card, /<USelect[^>]*class="w-48 max-w-full"/)
 })
 
-test('the tag picker starts with a close button before the input, like the payee picker', () => {
+test('the tag picker blocks the modal from focusing anything when it opens', () => {
   const field = read('app/components/TagField.vue')
-  assert.ok(field.indexOf('aria-label="Close tag picker"') > -1)
-  assert.ok(field.indexOf('aria-label="Close tag picker"') < field.indexOf('<UInput'))
+  assert.match(field, /<UModal[^>]*onOpenAutoFocus: \(event: Event\) => event\.preventDefault\(\)/)
+  assert.doesNotMatch(field, /Close tag picker/)
 })
