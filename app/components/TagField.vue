@@ -73,7 +73,8 @@ function done() {
 </script>
 
 <template>
-  <UModal v-model:open="isOpen">
+  <!-- Nothing is focused when it opens: focusing the input would raise the iOS keyboard over the chosen tags. -->
+  <UModal v-model:open="isOpen" :content="{ onOpenAutoFocus: (event: Event) => event.preventDefault() }">
     <template #content>
       <UCard>
         <template #header>
