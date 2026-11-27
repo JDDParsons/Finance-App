@@ -46,6 +46,20 @@ html.dark.app-loaded {
   background-color: var(--ui-bg);
 }
 
+/* Behind the full-screen create modal, so the iOS status bar can match its header.
+   Mobile only: on desktop the page stays visible around the modal. */
+@media (width < 64rem) {
+  html.app-loaded.create-modal-open,
+  html.app-loaded.create-modal-open body {
+    background-color: #f0fdf4;
+  }
+
+  html.dark.app-loaded.create-modal-open,
+  html.dark.app-loaded.create-modal-open body {
+    background-color: #07261c;
+  }
+}
+
 /* Prevent Nuxt UI's body { background-color: var(--ui-bg) } from covering
    the html gradient with white/dark before the app is loaded. */
 html:not(.app-loaded) body {
