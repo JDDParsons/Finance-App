@@ -103,7 +103,7 @@ test('collapsed cards hide the date and account, and empty notes and tags; hidde
 
 test('a tap away does not collapse a card with unsaved changes', () => {
   const card = read('app/components/ExpenseCard.vue')
-  assert.match(card, /if \(anyEditing\.value \|\| dirty\.value\) return\n\s*if \(!\(event\.target as HTMLElement\)\.closest/)
+  assert.match(card, /if \(anyEditing\.value \|\| dirty\.value\) return\s+if \(!\(event\.target as HTMLElement\)\.closest/)
 })
 
 test('only one field editor is open at a time, and cancel drops the draft', () => {
@@ -121,4 +121,10 @@ test('opening a picker closes the open editor, notes are underlined while edited
   assert.match(card, /<textarea[^>]*border-b border-info\/50 bg-transparent text-base/)
   assert.doesNotMatch(card, /UTextarea/)
   assert.match(card, /<USelect[^>]*class="w-48 max-w-full"/)
+})
+
+test('the tag picker starts with a close button before the input, like the payee picker', () => {
+  const field = read('app/components/TagField.vue')
+  assert.ok(field.indexOf('aria-label="Close tag picker"') > -1)
+  assert.ok(field.indexOf('aria-label="Close tag picker"') < field.indexOf('<UInput'))
 })
