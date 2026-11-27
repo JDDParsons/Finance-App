@@ -31,11 +31,33 @@ html {
 html.app-loaded {
   background-color: #ffffff;
   background-image: none;
-  min-height: unset;
+}
+
+/* In the installed app, every page must be at least as tall as the screen. On
+   short pages iOS can otherwise leave fixed elements (BottomNav) above the bottom
+   edge. 100vh, because dvh can come up short there. */
+@media (display-mode: standalone) {
+  html.app-loaded {
+    min-height: 100vh;
+  }
 }
 
 html.dark.app-loaded {
   background-color: var(--ui-bg);
+}
+
+/* Behind the full-screen create modal, so the iOS status bar can match its header.
+   Mobile only: on desktop the page stays visible around the modal. */
+@media (width < 64rem) {
+  html.app-loaded.create-modal-open,
+  html.app-loaded.create-modal-open body {
+    background-color: #f0fdf4;
+  }
+
+  html.dark.app-loaded.create-modal-open,
+  html.dark.app-loaded.create-modal-open body {
+    background-color: #07261c;
+  }
 }
 
 /* Prevent Nuxt UI's body { background-color: var(--ui-bg) } from covering

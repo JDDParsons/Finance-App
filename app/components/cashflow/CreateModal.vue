@@ -12,6 +12,18 @@ const emit = defineEmits<{
   closed: []
 }>()
 
+// The installed iOS app cannot draw behind its status bar, so color the bar to
+// match this screen's header. iOS may take the color from theme-color, the page
+// background (create-modal-open in main.css) or the topmost fixed element (the
+// modal content below). The hex values are the header color as a solid.
+const colorMode = useColorMode()
+useHead(() => ({
+  htmlAttrs: { class: 'create-modal-open' },
+  meta: [
+    { name: 'theme-color', content: colorMode.value === 'dark' ? '#07261c' : '#f0fdf4' },
+  ],
+}))
+
 const store = useFinanceStore()
 const transactionView = useTransactionViewStore()
 const { show: showOverlay } = useSuccessOverlay()
@@ -173,7 +185,7 @@ async function handleSubmit() {
     fullscreen
     :dismissible="!loading"
     :ui="{
-      content: 'lg:inset-auto lg:top-1/2 lg:left-1/2 lg:h-[min(52rem,calc(100dvh-4rem))] lg:w-[min(42rem,calc(100vw-4rem))] lg:-translate-x-1/2 lg:-translate-y-1/2 lg:overflow-hidden lg:rounded-xl lg:shadow-2xl lg:ring lg:ring-default',
+      content: 'bg-[#f0fdf4] dark:bg-[#07261c] lg:inset-autolg:top-1/2 lg:left-1/2 lg:h-[min(52rem,calc(100dvh-4rem))] lg:w-[min(42rem,calc(100vw-4rem))] lg:-translate-x-1/2 lg:-translate-y-1/2 lg:overflow-hidden lg:rounded-xl lg:shadow-2xl lg:ring lg:ring-default',
     }"
     @update:open="(value) => { if (!value) close() }"
   >
