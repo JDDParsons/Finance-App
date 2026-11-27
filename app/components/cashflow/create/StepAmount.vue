@@ -178,7 +178,7 @@ function handleNotesSave(nextNotes: string) {
 
     <UModal v-model:open="isEntityModalOpen">
       <template #content>
-        <UCard>
+        <UCard class="flex max-h-[min(36rem,70dvh)] flex-col" :ui="{ header: 'shrink-0', body: 'flex min-h-0 flex-col' }">
           <template #header>
             <div class="flex items-center justify-between gap-3">
               <div>

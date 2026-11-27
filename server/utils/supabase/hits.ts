@@ -3,6 +3,7 @@ import { throwBudgetSupabaseError } from './budget-errors'
 import { throwIfRowMissing } from './missing-row'
 import type { ValidTransferInput } from '../transfer'
 import { buildTrailingSavingsTotals } from '../../../utils/savingsTotals'
+import { rankEntitiesByBudget } from '../../../utils/entities'
 import { getTags, setBudgetHitTags, throwTagError } from './tags'
 import type { Tag } from '../../../utils/tags'
 
@@ -302,31 +303,6 @@ export async function deleteIncome(supabase: SupabaseClient, id: string) {
   if (error) throw error
 }
 
-function collectDistinctEntities(rows: Array<{ budget_id?: string | null; entity?: string | null }>) {
-  const seenByBudget = new Map<string, Set<string>>()
-  const entitiesByBudget = new Map<string, string[]>()
-
-  for (const row of rows) {
-    const budgetId = row.budget_id ?? null
-    const entity = row.entity?.trim()
-
-    if (!budgetId || !entity) continue
-
-    if (!seenByBudget.has(budgetId)) {
-      seenByBudget.set(budgetId, new Set())
-      entitiesByBudget.set(budgetId, [])
-    }
-
-    const seen = seenByBudget.get(budgetId)
-    if (!seen || seen.has(entity)) continue
-
-    seen.add(entity)
-    entitiesByBudget.get(budgetId)?.push(entity)
-  }
-
-  return entitiesByBudget
-}
-
 export async function getDistinctEntitiesByBudget(supabase: SupabaseClient, budgetId: string): Promise<string[]> {
   const { data, error } = await getClient(supabase)
     .from('Budget_Hit')
@@ -338,7 +314,7 @@ export async function getDistinctEntitiesByBudget(supabase: SupabaseClient, budg
 
   if (error) throw error
 
-  return collectDistinctEntities(data || []).get(budgetId) ?? []
+  return rankEntitiesByBudget(data || []).get(budgetId) ?? []
 }
 
 export async function getDistinctEntitiesByBudgets(
@@ -358,7 +334,7 @@ export async function getDistinctEntitiesByBudgets(
 
   if (error) throw error
 
-  const distinctEntities = collectDistinctEntities(data || [])
+  const distinctEntities = rankEntitiesByBudget(data || [])
   return Object.fromEntries(
     normalizedBudgetIds.map(budgetId => [budgetId, distinctEntities.get(budgetId) ?? []])
   )

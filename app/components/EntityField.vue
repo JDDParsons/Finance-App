@@ -56,7 +56,7 @@ function handleSave(payload: { entity: string; selectedEntity: string | null }) 
   <!-- Nothing is focused when it opens, so the close button is not outlined. -->
   <UModal v-model:open="isOpen" :content="{ onOpenAutoFocus: (event: Event) => event.preventDefault() }">
     <template #content>
-      <UCard>
+      <UCard class="flex max-h-[min(36rem,70dvh)] flex-col" :ui="{ header: 'shrink-0', body: 'flex min-h-0 flex-col' }">
         <template #header>
           <div class="flex items-center justify-between gap-3">
             <div>

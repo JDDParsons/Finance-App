@@ -93,6 +93,32 @@ export function summarizeEntities(
   })
 }
 
+/**
+ * The payee or payer suggestions of each budget, most used first. Rows must be
+ * newest first: entities used equally often keep that order, so the most
+ * recently used comes first.
+ */
+export function rankEntitiesByBudget(rows: Array<{ budget_id?: string | null; entity?: string | null }>) {
+  const usesByBudget = new Map<string, Map<string, number>>()
+
+  for (const row of rows) {
+    const budgetId = row.budget_id
+    const entity = row.entity?.trim()
+    if (!budgetId || !entity) continue
+
+    const uses = usesByBudget.get(budgetId) ?? new Map<string, number>()
+    uses.set(entity, (uses.get(entity) ?? 0) + 1)
+    usesByBudget.set(budgetId, uses)
+  }
+
+  return new Map(
+    [...usesByBudget].map(([budgetId, uses]) => [
+      budgetId,
+      [...uses].sort(([, a], [, b]) => b - a).map(([entity]) => entity),
+    ])
+  )
+}
+
 export function sortEntities(entities: EntitySummary[], sort: EntitySort) {
   const byName = (a: EntitySummary, b: EntitySummary) =>
     a.name.toLowerCase().localeCompare(b.name.toLowerCase()) || a.key.localeCompare(b.key)
