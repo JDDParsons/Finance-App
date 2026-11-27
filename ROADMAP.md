@@ -321,6 +321,7 @@ This work is independent of the other features and can be done at any time. It a
 - First iteration is extract only: the photo is not kept. Keeping it as proof of purchase is a later idea (Supabase Storage, a private bucket with household-only access, signed URLs).
 - Sending receipt images to the model provider is acceptable.
 - Line items are saved in the expense's notes field, one per line (new lines between items), with the tax as the final line. No new column or table. The date, vendor (payee) and total fill the existing expense fields.
+- Notes length (checked 2026-11-27): the notes column is plain `text` with no limit in the database, the routes, the offline queue or the input boxes, so a long receipt fits. To keep a long list from making collapsed cards very tall, a collapsed card shows only the first two lines of its notes, and the full text shows when expanded (built for both expense and income cards).
 - Capture: the phone camera for the first pass. Pasting an image from the clipboard on the phone is wanted as a second way in, ideally included.
 
 **Design sketch (not yet agreed in detail)**
@@ -334,7 +335,6 @@ This work is independent of the other features and can be done at any time. It a
 **Open questions**
 - Which model and what cost ceiling per receipt and per month? Candidates are a small, cheap model (Claude Haiku 5.5) and a larger one (Claude Sonnet 5.5). Compare accuracy on a few real receipts and the current pricing before choosing; this depends on the options, so it is not decided.
 - What if extraction is wrong or partial (faded or crumpled receipts, unusual layouts)? How is that shown, and can the user still enter the expense by hand?
-- How long can the notes field be? A long receipt with many items may need a limit or a cut-off, so check the field's length limit before building.
 - Does the prefill replace values the user already typed, or only fill empty fields?
 - Multi-page or long receipts, and receipts in other currencies or languages.
 - Does clipboard paste work in the installed iOS PWA, and what is the fallback if it does not?
