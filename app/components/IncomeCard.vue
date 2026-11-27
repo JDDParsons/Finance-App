@@ -482,7 +482,7 @@ function onClickCapture(event: MouseEvent) {
                     @click="startField('notes')"
                 >
                     <UIcon name="fa7-solid:comment-dots" class="mt-0.5 size-3 shrink-0 text-gray-400" aria-hidden="true" />
-                    <span class="whitespace-pre-wrap">{{ notes || 'Add notes' }}</span>
+                    <span class="whitespace-pre-wrap" :class="isOpen ? '' : 'line-clamp-2'">{{ notes || 'Add notes' }}</span>
                 </button>
             </ExpandRow>
 
