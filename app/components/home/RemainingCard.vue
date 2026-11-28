@@ -59,7 +59,8 @@ onUnmounted(stopCounting)
   >
     <!-- A soft light behind the tree -->
     <div class="pointer-events-none absolute -right-10 -top-16 -z-10 size-52 rounded-full bg-white/15 blur-2xl" />
-    <HomeMoneyTree class="pointer-events-none absolute -bottom-1 right-2 -z-10 h-[calc(100%-0.25rem)] text-white/40" />
+    <!-- Small enough to stay out from behind the white text, which it would hide -->
+    <HomeMoneyTree class="pointer-events-none absolute bottom-0 right-2 -z-10 h-28 text-white max-[359px]:h-20" />
 
     <!-- Kept clear of the tree on the right -->
     <div class="flex min-h-24 flex-col justify-center pr-28">
