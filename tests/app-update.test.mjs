@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
-import { applyUpdateAtLaunch } from '../utils/appUpdate.ts'
+import { applyUpdateAtLaunch, applyUpdateOnReturn, RESUME_UPDATE_AFTER_MS } from '../utils/appUpdate.ts'
 
 class FakeWorker extends EventTarget {
   constructor(state, container) {
@@ -153,7 +153,95 @@ test('an update that does not take over opens the app and is not reloaded later'
   assert.equal(calls.reload, 0)
 })
 
-test('the app applies updates only through the launch check', async () => {
+const comeBack = (container, calls, overrides = {}) => applyUpdateOnReturn({
+  container,
+  scope: '/',
+  hiddenForMs: RESUME_UPDATE_AFTER_MS,
+  isOnline: () => true,
+  reload: () => { calls.reload++ },
+  onUpdating: () => { calls.updating++ },
+  activateTimeoutMs: 20,
+  ...overrides,
+})
+
+test('a long absence applies a downloaded update without checking first', async () => {
+  const { container, calls, registration } = setup()
+  const worker = new FakeWorker('installed', container)
+  registration.waiting = worker
+  assert.equal(await comeBack(container, calls), 'reloading')
+  assert.deepEqual(worker.messages, [{ type: 'SKIP_WAITING' }])
+  assert.deepEqual(calls, { update: 0, register: 0, reload: 1, updating: 1 })
+})
+
+test('a downloaded update is applied after a long absence even offline', async () => {
+  const { container, calls, registration } = setup()
+  registration.waiting = new FakeWorker('installed', container)
+  assert.equal(await comeBack(container, calls, { isOnline: () => false }), 'reloading')
+  assert.equal(calls.reload, 1)
+})
+
+test('a short absence leaves a downloaded update waiting but still checks', async () => {
+  const { container, calls, registration } = setup()
+  const worker = new FakeWorker('installed', container)
+  registration.waiting = worker
+  const result = await comeBack(container, calls, { hiddenForMs: RESUME_UPDATE_AFTER_MS - 1 })
+  assert.equal(result, 'continue')
+  assert.deepEqual(worker.messages, [])
+  assert.deepEqual(calls, { update: 1, register: 0, reload: 0, updating: 0 })
+})
+
+test('an update found on return is not applied during that visit', async () => {
+  const { container, calls, registration, download } = setup()
+  let worker
+  registration.update = async () => { worker = download() }
+  assert.equal(await comeBack(container, calls), 'continue')
+  await new Promise(resolve => setTimeout(resolve, 20))
+  assert.equal(registration.waiting, worker)
+  assert.deepEqual(worker.messages, [])
+  assert.equal(calls.reload, 0)
+  assert.equal(calls.updating, 0)
+})
+
+test('the check on return is not waited for', async () => {
+  const { container, calls, registration } = setup()
+  registration.update = () => new Promise(() => {})
+  assert.equal(await comeBack(container, calls), 'continue')
+})
+
+test('returning offline or during a download does not check', async () => {
+  const offline = setup()
+  await comeBack(offline.container, offline.calls, { isOnline: () => false })
+  assert.equal(offline.calls.update, 0)
+
+  const downloading = setup()
+  downloading.download(null)
+  await comeBack(downloading.container, downloading.calls)
+  assert.equal(downloading.calls.update, 0)
+})
+
+test('a failing check on return is ignored', async () => {
+  const { container, calls, registration } = setup()
+  registration.update = async () => { throw new TypeError('Failed to fetch') }
+  assert.equal(await comeBack(container, calls), 'continue')
+})
+
+test('an update that does not take over on return is not reloaded later', async () => {
+  const { container, calls, registration } = setup()
+  registration.waiting = new FakeWorker('installed', container)
+  registration.waiting.takesOver = false
+  assert.equal(await comeBack(container, calls), 'continue')
+  container.dispatchEvent(new Event('controllerchange'))
+  assert.equal(calls.reload, 0)
+})
+
+test('returning without service worker support or a registration does nothing', async () => {
+  const { container, calls } = setup({ registered: false, controlled: false })
+  assert.equal(await comeBack(undefined, calls), 'continue')
+  assert.equal(await comeBack(container, calls), 'continue')
+  assert.deepEqual(calls, { update: 0, register: 0, reload: 0, updating: 0 })
+})
+
+test('the app applies updates only through its own checks', async () => {
   const config = await readFile(new URL('../nuxt.config.ts', import.meta.url), 'utf8')
   assert.match(config, /registerType: 'prompt'/)
   assert.match(config, /registerPlugin: false/)
