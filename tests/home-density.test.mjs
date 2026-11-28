@@ -7,7 +7,7 @@ test('home dashboard uses compact spacing between and within cards', async () =>
   const gaugeNeedle = await readFile(new URL('../app/components/GaugeNeedle.vue', import.meta.url), 'utf8')
   const cumulativeChart = await readFile(new URL('../app/components/home/CumulativeSpendingChart.vue', import.meta.url), 'utf8')
 
-  assert.match(homePage, /grid grid-cols-2 gap-3 pb-20 pt-3/)
+  assert.match(homePage, /grid grid-cols-2 gap-3 pb-28 pt-3/)
   assert.match(homePage, /body: 'p-3 sm:p-4'/)
   assert.equal(homePage.match(/:ui="compactCardUi"/g)?.length, 2)
   assert.match(homePage, /donutIncome\.value\.amount - totalExpenses\.value/)

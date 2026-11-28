@@ -1,6 +1,6 @@
 <template>
   <nav class="fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 pb-safe">
-    <div class="flex justify-around items-center h-16">
+    <div class="flex justify-around items-center h-[4.25rem]">
       <!-- Left two nav items -->
       <NuxtLink
         v-for="item in leftNav"
@@ -16,7 +16,7 @@
       <!-- Center FAB -->
       <div class="flex-1 flex justify-center">
         <button
-          class="fab flex items-center justify-center w-14 h-14 rounded-full bg-primary-500 hover:bg-primary-600 transition-transform shadow-lg shadow-black/40 -mt-6"
+          class="fab -mt-7 flex size-16 items-center justify-center rounded-full border-4 border-white bg-primary-500 shadow-lg shadow-green-600/30 transition-transform hover:bg-primary-600 dark:border-gray-900"
           :class="{ 'fab--pressing': isPressing }"
           @click="openTransactionModal"
           @mousedown="isPressing = true"
@@ -26,7 +26,10 @@
           @touchend="isPressing = false"
           aria-label="Add transaction"
         >
-          <UIcon name="heroicons:plus-solid" class="text-white size-6" />
+          <!-- A thick plus with round ends -->
+          <svg viewBox="0 0 24 24" class="size-7 text-white" fill="none" stroke="currentColor" stroke-width="3.25" stroke-linecap="round" aria-hidden="true">
+            <path d="M12 5.5v13M5.5 12h13" />
+          </svg>
         </button>
       </div>
 
@@ -80,13 +83,13 @@ const transactionModal = useTransactionCreateModalStore()
 
 @keyframes pulse-ring {
   0% {
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55), 0 10px 25px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55), 0 8px 20px rgba(22, 163, 74, 0.3);
   }
   70% {
-    box-shadow: 0 0 0 14px rgba(34, 197, 94, 0), 0 10px 25px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 0 14px rgba(34, 197, 94, 0), 0 8px 20px rgba(22, 163, 74, 0.3);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0), 0 10px 25px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0), 0 8px 20px rgba(22, 163, 74, 0.3);
   }
 }
 </style>
