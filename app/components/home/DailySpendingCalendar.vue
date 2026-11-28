@@ -68,8 +68,8 @@ function transactionColor(budgetId: string | null) {
     <div class="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_85%_0%,rgb(92_204_133/0.16),transparent_50%)]" />
 
     <figcaption>
-      <h3 class="text-sm font-semibold text-muted">Daily spending</h3>
-      <p class="text-2xl font-extrabold tracking-tight">{{ monthLabel }}</p>
+      <h3 class="text-2xl font-extrabold tracking-tight">Daily activity</h3>
+      <p class="text-sm font-semibold text-muted">{{ monthLabel }}</p>
     </figcaption>
 
     <div class="mt-3 grid grid-cols-7" aria-hidden="true">
@@ -82,7 +82,7 @@ function transactionColor(budgetId: string | null) {
       </span>
     </div>
 
-    <div class="grid grid-cols-7 gap-1 sm:gap-2" :aria-label="`Daily spending and income calendar for ${monthLabel}`">
+    <div class="grid grid-cols-7 gap-1 sm:gap-2" :aria-label="`Daily activity calendar for ${monthLabel}`">
       <div
         v-for="(cell, index) in cells"
         :key="cell?.dateKey ?? `empty-${index}`"
