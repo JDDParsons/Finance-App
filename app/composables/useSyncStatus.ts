@@ -8,6 +8,7 @@ export function useSyncStatus() {
   return computed(() => getSyncStatus({
     isOffline: appData.isOffline.value,
     syncing: appData.syncing.value,
+    refreshing: appData.refreshing.value,
     pendingCount: appData.pendingSyncCount.value,
     failedCount: appData.failedSyncCount.value,
   }))

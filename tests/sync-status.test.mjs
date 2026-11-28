@@ -35,6 +35,27 @@ test('a running sync is blue and spins', () => {
   assert.equal(status.label, 'Syncing 1 change')
 })
 
+test('fetching fresh data shows as syncing', () => {
+  const status = getSyncStatus({ ...idle, refreshing: true })
+  assert.equal(status.state, 'syncing')
+  assert.equal(status.color, 'info')
+  assert.equal(status.label, 'Syncing')
+  assert.equal(getSyncStatus({ ...idle, isOffline: true, refreshing: true }).state, 'offline')
+})
+
+test('a sync in progress pulses the dot at the bottom left of the avatar, without a banner', async () => {
+  const header = await readFile(new URL('../app/components/AppHeader.vue', import.meta.url), 'utf8')
+  const composable = await readFile(new URL('../app/composables/useSyncStatus.ts', import.meta.url), 'utf8')
+  const app = await readFile(new URL('../app/app.vue', import.meta.url), 'utf8')
+
+  assert.match(header, /position="bottom-left"/)
+  assert.match(header, /after:animate-ping/)
+  assert.match(composable, /refreshing: appData\.refreshing\.value/)
+  const notice = app.match(/const syncNotice = computed\(\(\) => \{[\s\S]*?\n\}\)/)?.[0] ?? ''
+  assert.ok(notice.length > 0)
+  assert.doesNotMatch(notice, /appData\.syncing|appData\.refreshing|Updating|Syncing/)
+})
+
 test('changes waiting while online are blue but do not spin', () => {
   const status = getSyncStatus({ ...idle, pendingCount: 2 })
   assert.equal(status.state, 'syncing')
@@ -74,7 +95,7 @@ test('every status icon is bundled so it renders offline', async () => {
 test('the banner sits below the header, not at the top edge', async () => {
   const app = await readFile(new URL('../app/app.vue', import.meta.url), 'utf8')
   const css = await readFile(new URL('../app/assets/css/main.css', import.meta.url), 'utf8')
-  const banner = app.match(/<div\s+v-if="isAuthenticated && syncStatus[\s\S]*?role="status"/)?.[0] ?? ''
+  const banner = app.match(/<div\s+v-if="isAuthenticated && syncNotice[\s\S]*?role="status"/)?.[0] ?? ''
   assert.ok(banner.length > 0)
   assert.match(banner, /top-below-header/)
   assert.doesNotMatch(banner, /top-safe/)

@@ -6,7 +6,6 @@ import { useStatusMessage } from '~/composables/useStatusMessage'
 import CumulativeSpendingChart from '~/components/home/CumulativeSpendingChart.vue'
 import DailySpendingCalendar from '~/components/home/DailySpendingCalendar.vue'
 import DailySpendingFigure from '~/components/home/DailySpendingFigure.vue'
-import { formatDashboardPeriodLabel } from '../../utils/dateFormat'
 import { resolveDonutIncome } from '../../utils/homeChart'
 
 useHead({ title: 'Home | Budgify' })
@@ -15,6 +14,7 @@ import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement } from 'chart.js'
 ChartJS.register(Title, Tooltip, Legend, ArcElement)
 
 const store = useFinanceStore()
+const profileStore = useProfileStore()
 const { budgetIcon } = useBudgetIcon()
 const { monthTitle } = useSelectedMonthTitle()
 const UNCATEGORIZED_ICON = 'heroicons:question-mark-circle-solid'
@@ -114,12 +114,6 @@ const dailySpendingHits = computed(() => [
   ...store.budgetHits,
 ])
 
-const today = new Date()
-const periodLabel = computed(() => formatDashboardPeriodLabel(
-  store.selectedMonth.year,
-  store.selectedMonth.month,
-  today,
-))
 const projectedBalance = computed(() => {
   if (daysRemaining.value <= 0) return remaining.value
   const projectedTotalExpenses = elapsedDailySpending.value * daysInMonth.value
@@ -313,18 +307,22 @@ const compactCardUi = {
           :class="{ 'opacity-40 pointer-events-none': store.refreshing }"
         >
         <div class="space-y-2">
-            <div class="grid grid-cols-2 gap-3 pb-20 pt-3 lg:grid-rows-[auto_1fr] lg:pb-6">
-                <UCard class="col-span-2 shadow" :ui="compactCardUi">
-                    <div class="text-center">
-                        <p class="text-2xl font-semibold">{{ periodLabel }}</p>
-                        <p class="mt-2 text-sm font-semibold">{{ statusMessage.headline }}</p>
-                        <p class="mt-0.5 text-sm text-muted">{{ statusMessage.subtitle }}</p>
-                    </div>
-                </UCard>
+            <div class="grid grid-cols-2 gap-3 pb-20 pt-3 lg:grid-rows-[auto_auto_1fr]lg:pb-6">
+                <div class="col-span-2 py-2">
+                    <HomeGreeting :first-name="profileStore.profile?.first_name" />
+                </div>
+
+                <HomeRemainingCard
+                    class="col-span-2"
+                    :income="donutIncome.amount"
+                    :expenses="totalExpenses"
+                    :month-name="monthTitle"
+                    :loading="store.loading"
+                />
 
                 <UCard class="col-span-2 shadow lg:col-span-1" :ui="compactCardUi">
                     <h3 class="text-center font-semibold">Total expenses and income</h3>
-                    <h4 class="text-center text-sm">Track your financial well-being this month</h4>
+                    <h4 class="text-center text-sm">{{ statusMessage.subtitle }}</h4>
 
                     <div v-if="store.loading" class="mx-auto h-[200px] w-full max-w-sm">
                         <USkeleton class="w-full h-full opacity-40" style="border-radius: 50% 50% 0 0 / 100% 100% 0 0;" />
