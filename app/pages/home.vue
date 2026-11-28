@@ -320,6 +320,14 @@ const compactCardUi = {
                     :loading="store.loading"
                 />
 
+                <DailySpendingCalendar
+                    :year="store.selectedMonth.year"
+                    :month="store.selectedMonth.month"
+                    :hits="store.budgetHits"
+                    :income="store.income"
+                    :budgets="store.budgets"
+                />
+
                 <UCard class="col-span-2 shadow lg:col-span-1" :ui="compactCardUi">
                     <h3 class="text-center font-semibold">Total expenses and income</h3>
                     <h4 class="text-center text-sm">{{ statusMessage.subtitle }}</h4>
@@ -354,14 +362,6 @@ const compactCardUi = {
                     <h4 class="text-center text-sm">Compare your spending to previous months</h4>
                     <CumulativeSpendingChart />
                 </UCard>
-
-                <DailySpendingCalendar
-                    :year="store.selectedMonth.year"
-                    :month="store.selectedMonth.month"
-                    :hits="dailySpendingHits"
-                    :budgets="store.budgets"
-                    :daily-budgeted-income="dailyBudgetedIncome"
-                />
 
                 <DailySpendingFigure
                     :year="store.selectedMonth.year"
