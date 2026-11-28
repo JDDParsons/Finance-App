@@ -21,7 +21,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex items-center justify-center gap-3">
+  <div class="flex items-center gap-3">
     <UIcon
       :name="isDaytime(now) ? 'heroicons:sun' : 'heroicons:moon'"
       class="size-10 shrink-0"

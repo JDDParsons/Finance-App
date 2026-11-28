@@ -308,9 +308,9 @@ const compactCardUi = {
         >
         <div class="space-y-2">
             <div class="grid grid-cols-2 gap-3 pb-20 pt-3 lg:grid-rows-[auto_1fr] lg:pb-6">
-                <UCard class="col-span-2 shadow" :ui="compactCardUi">
+                <div class="col-span-2 py-2">
                     <HomeGreeting :first-name="profileStore.profile?.first_name" />
-                </UCard>
+                </div>
 
                 <UCard class="col-span-2 shadow lg:col-span-1" :ui="compactCardUi">
                     <h3 class="text-center font-semibold">Total expenses and income</h3>
