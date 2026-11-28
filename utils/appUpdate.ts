@@ -1,6 +1,6 @@
-// Looks for a new app version while the splash screen is up, so an update never
-// reloads the page after the user has started using it. A new service worker
-// waits until this code tells it to take over, and that only happens at launch.
+// Applies new app versions only behind the splash screen. A new service worker
+// waits until this code tells it to take over, which happens at launch, or on
+// return to the app after a long time in the background.
 
 /** How long the splash waits to hear whether there is an update. */
 export const UPDATE_CHECK_TIMEOUT_MS = 2500
@@ -8,6 +8,8 @@ export const UPDATE_CHECK_TIMEOUT_MS = 2500
 export const UPDATE_INSTALL_TIMEOUT_MS = 10_000
 /** How long a downloaded update gets to take over before the app opens anyway. */
 export const UPDATE_ACTIVATE_TIMEOUT_MS = 5000
+/** How long the app must be in the background before an update is applied on return. */
+export const RESUME_UPDATE_AFTER_MS = 30 * 60 * 1000
 
 export type LaunchUpdateResult = 'reloading' | 'continue'
 
@@ -105,6 +107,50 @@ export async function applyUpdateAtLaunch(options: LaunchUpdateOptions): Promise
     if (!await activate(container, waiting, options.activateTimeoutMs ?? UPDATE_ACTIVATE_TIMEOUT_MS)) return 'continue'
     reload()
     return 'reloading'
+  } catch {
+    return 'continue'
+  }
+}
+
+export interface ReturnUpdateOptions {
+  /** `navigator.serviceWorker`, or undefined where service workers are unsupported. */
+  container: ServiceWorkerContainer | undefined
+  scope: string
+  /** How long the app was in the background. */
+  hiddenForMs: number
+  isOnline: () => boolean
+  reload: () => void
+  /** Called just before an update is applied; the splash must go up now. */
+  onUpdating?: () => void
+  activateTimeoutMs?: number
+}
+
+/**
+ * Called when the app returns to the foreground. After a long enough absence, a
+ * version that has already downloaded is applied and this resolves to 'reloading'.
+ * Otherwise it starts a background check and resolves to 'continue' without
+ * waiting for it, so whatever that finds is left for a later return or launch.
+ * Never rejects. Unsaved input is not checked for before reloading.
+ */
+export async function applyUpdateOnReturn(options: ReturnUpdateOptions): Promise<LaunchUpdateResult> {
+  const { container, scope, hiddenForMs, isOnline, reload, onUpdating } = options
+  if (!container) return 'continue'
+
+  try {
+    const registration = await container.getRegistration(scope)
+    if (!registration) return 'continue'
+
+    // Only what is waiting now: nothing is downloaded while the user watches.
+    const waiting = registration.waiting
+    if (waiting && container.controller && hiddenForMs >= RESUME_UPDATE_AFTER_MS) {
+      onUpdating?.()
+      if (!await activate(container, waiting, options.activateTimeoutMs ?? UPDATE_ACTIVATE_TIMEOUT_MS)) return 'continue'
+      reload()
+      return 'reloading'
+    }
+
+    if (!registration.installing && isOnline()) void registration.update().catch(() => {})
+    return 'continue'
   } catch {
     return 'continue'
   }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useAppData } from '~/composables/useAppData'
-import { applyUpdateAtLaunch, type LaunchUpdateResult } from '../utils/appUpdate'
+import { applyUpdateAtLaunch, applyUpdateOnReturn, type LaunchUpdateResult } from '../utils/appUpdate'
 
 const appData = useAppData()
 const route = useRoute()
@@ -11,6 +11,9 @@ const transactionModal = useTransactionCreateModalStore()
 
 const isLoading = ref(true)
 const loadError = ref(false)
+// Puts the splash back up while an update is applied on return to the app.
+const isApplyingOnReturn = ref(false)
+const showSplash = computed(() => isLoading.value || loadError.value || isApplyingOnReturn.value)
 
 // The iOS PWA status bar takes theme-color: the splash green while the splash is
 // up, then the page color for dark/light mode.
@@ -18,7 +21,7 @@ useHead(() => ({
   meta: [
     {
       name: 'theme-color',
-      content: isLoading.value || loadError.value
+      content: showSplash.value
         ? '#22c55e'
         : colorMode.value === 'dark' ? '#0f172b' : '#ffffff',
     },
@@ -29,17 +32,51 @@ const isUpdating = ref(false)
 // Started once per launch; the splash does not drop until it has settled.
 let launchUpdate: Promise<LaunchUpdateResult> = Promise.resolve('continue')
 
+// There is no service worker in development.
+function serviceWorkerContainer() {
+  return import.meta.dev ? undefined : navigator.serviceWorker
+}
+
 function startLaunchUpdate() {
   const { baseURL } = runtimeConfig.app
   return applyUpdateAtLaunch({
-    // There is no service worker in development.
-    container: import.meta.dev ? undefined : navigator.serviceWorker,
+    container: serviceWorkerContainer(),
     scriptUrl: `${baseURL}sw.js`,
     scope: baseURL,
     isOnline: () => navigator.onLine,
     reload: () => window.location.reload(),
     onUpdating: () => { isUpdating.value = true },
   })
+}
+
+let hiddenAt: number | null = null
+
+async function handleVisibilityChange() {
+  if (document.visibilityState === 'hidden') {
+    hiddenAt = Date.now()
+    return
+  }
+  if (hiddenAt === null) return
+  const hiddenForMs = Date.now() - hiddenAt
+  hiddenAt = null
+  // A launch or an earlier return is already handling updates.
+  if (isLoading.value || isApplyingOnReturn.value) return
+
+  const result = await applyUpdateOnReturn({
+    container: serviceWorkerContainer(),
+    scope: runtimeConfig.app.baseURL,
+    hiddenForMs,
+    isOnline: () => navigator.onLine,
+    reload: () => window.location.reload(),
+    onUpdating: () => {
+      isApplyingOnReturn.value = true
+      isUpdating.value = true
+    },
+  })
+  if (result === 'continue' && isApplyingOnReturn.value) {
+    isApplyingOnReturn.value = false
+    isUpdating.value = false
+  }
 }
 
 // True when the app is about to reload into a new version, so the splash stays up.
@@ -90,6 +127,7 @@ async function loadAndStart() {
 onMounted(async () => {
   // Runs alongside the data load, so a launch without an update is barely slower.
   launchUpdate = startLaunchUpdate()
+  document.addEventListener('visibilitychange', handleVisibilityChange)
   await router.isReady()
   if (route.path === '/') {
     // Login page: user isn't authenticated yet, nothing to fetch
@@ -100,6 +138,8 @@ onMounted(async () => {
   }
   await loadAndStart()
 })
+
+onUnmounted(() => document.removeEventListener('visibilitychange', handleVisibilityChange))
 
 // Post-login: when the user authenticates and is redirected away from '/'
 watch(() => route.path, async (newPath, oldPath) => {
@@ -113,7 +153,7 @@ watch(() => route.path, async (newPath, oldPath) => {
   <UApp class="overflow-x-hidden">
     <Transition leave-active-class="transition-opacity duration-500 ease-in-out" leave-to-class="opacity-0">
       <div
-        v-if="isLoading || loadError"
+        v-if="showSplash"
         class="fixed inset-0 z-[100] flex flex-col items-center pt-safe bg-linear-to-b from-green-500 to-emerald-600"
       >
         <!-- Normal loading state -->
