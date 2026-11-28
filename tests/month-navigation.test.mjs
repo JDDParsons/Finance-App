@@ -48,13 +48,24 @@ test('the month picker is arrows around the month, without a popover', async () 
   assert.doesNotMatch(picker, /UPopover|MONTHS_ABBR/)
 })
 
-test('the home header holds the greeting, and the page body the picker even without data', async () => {
-  const homePage = await read('app/pages/home.vue')
+test('the header holds the greeting on every page, without the picker or logo', async () => {
   const header = await read('app/components/AppHeader.vue')
 
+  assert.match(header, /<template #left>\s*<HomeGreeting :first-name="profile\?\.first_name" \/>\s*<\/template>/)
+  assert.doesNotMatch(header, /MonthSelector|Budgify.*\.png/)
+})
+
+test('pages that depend on the month have the picker in their body', async () => {
+  for (const page of ['home', 'budgets/index', 'budgets/[id]', 'budgets/create', 'cashflow/index', 'savings/index']) {
+    const source = await read(`app/pages/${page}.vue`)
+    assert.match(source, /<UContainer[^>]*>[\s\S]*<MonthSelector \/>/, page)
+  }
+})
+
+test('the home page keeps the picker even without data', async () => {
+  const homePage = await read('app/pages/home.vue')
+
   assert.match(homePage, /<MonthSelector \/>\s*<\/div>\s*<template v-if="store\.loading \|\| hasData">/)
-  assert.match(header, /<slot name="title">\s*<MonthSelector v-if="showMonth" \/>\s*<\/slot>/)
-  assert.doesNotMatch(header, /Budgify.*\.png/)
   // The two desktop classes once ran together, so neither applied.
   assert.match(homePage, /lg:grid-rows-\[auto_1fr\] lg:pb-6/)
 })

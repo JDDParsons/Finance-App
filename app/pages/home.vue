@@ -14,7 +14,6 @@ import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement } from 'chart.js'
 ChartJS.register(Title, Tooltip, Legend, ArcElement)
 
 const store = useFinanceStore()
-const profileStore = useProfileStore()
 const { budgetIcon } = useBudgetIcon()
 const { monthTitle } = useSelectedMonthTitle()
 const UNCATEGORIZED_ICON = 'heroicons:question-mark-circle-solid'
@@ -298,11 +297,7 @@ const compactCardUi = {
 
 <template>
   <div class="min-h-screen">
-    <AppHeader title="Summary">
-      <template #title>
-        <HomeGreeting :first-name="profileStore.profile?.first_name" />
-      </template>
-    </AppHeader>
+    <AppHeader title="Summary" />
 
     <UContainer class="max-w-none">
         <!-- Outside the content below, so a month without data can still be left -->

@@ -52,6 +52,10 @@ watch(
     <AppHeader title="Budgets" />
 
     <UContainer class="max-w-none lg:px-0">
+      <div class="flex justify-center pt-3">
+        <MonthSelector />
+      </div>
+
       <div class="mt-4 mb-2 lg:hidden">
         <div class="mb-4 grid grid-cols-2 rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
           <UButton :variant="selectedType === 'Expense' ? 'solid' : 'ghost'" block @click="selectType('Expense')">Expenses</UButton>

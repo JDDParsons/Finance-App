@@ -4,10 +4,8 @@ import { storeToRefs } from 'pinia'
 
 const props = withDefaults(defineProps<{
   title?: string
-  showMonth?: boolean
   showProfile?: boolean
 }>(), {
-  showMonth: true,
   showProfile: true,
 })
 
@@ -30,10 +28,7 @@ const profileInitial = computed(() => {
     :ui="{ container: 'max-w-none lg:pl-6', left: 'min-w-0', right: 'shrink-0' }"
   >
     <template #left>
-      <!-- The month picker, unless the page puts something else here -->
-      <slot name="title">
-        <MonthSelector v-if="showMonth" />
-      </slot>
+      <HomeGreeting :first-name="profile?.first_name" />
     </template>
     <template #right>
       <div class="flex items-center gap-2">

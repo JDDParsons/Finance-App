@@ -105,7 +105,12 @@ async function handleDeleteBudget() {
     <div class="min-h-screen">
         <AppHeader title="Budget Details" />
 
-        <UContainer class="max-w-none py-6 pb-24 lg:pb-8">
+        <UContainer class="max-w-none pt-3 pb-24 lg:pb-8">
+
+        <div class="mb-4 flex justify-center">
+          <MonthSelector />
+        </div>
+
 
         <!-- Back + Title row -->
         <div class="flex items-center gap-3 mb-6">

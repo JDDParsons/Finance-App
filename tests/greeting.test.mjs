@@ -27,10 +27,8 @@ test('writes the date in long form', () => {
   assert.equal(formatLongDate(at(9)), 'Friday, November 27, 2026')
 })
 
-test('the home page greets the user in the header and shows the status line on the income chart', async () => {
+test('the home page shows the status line on the income chart', async () => {
   const homePage = await readFile(new URL('../app/pages/home.vue', import.meta.url), 'utf8')
-
-  assert.match(homePage, /<template #title>\s*<HomeGreeting :first-name="profileStore\.profile\?\.first_name" \/>/)
   assert.match(homePage, />Total expenses and income<\/h3>\s*<h4 class="text-center text-sm">\{\{ statusMessage\.subtitle \}\}<\/h4>/)
   assert.doesNotMatch(homePage, /statusMessage\.headline|periodLabel|Track your financial well-being/)
 })

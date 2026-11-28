@@ -42,10 +42,10 @@ test('counts from one amount to another and stops on it', () => {
   assert.equal(countUpValue(400, 100, -1), 400)
 })
 
-test('the home page shows the remaining card under the greeting, with the chart figures', async () => {
+test('the home page shows the remaining card under the month picker, with the chart figures', async () => {
   const homePage = await readFile(new URL('../app/pages/home.vue', import.meta.url), 'utf8')
 
-  assert.match(homePage, /<HomeGreeting[\s\S]*?<HomeRemainingCard[\s\S]*?Total expenses and income/)
+  assert.match(homePage, /<MonthSelector[\s\S]*?<HomeRemainingCard[\s\S]*?Total expenses and income/)
   assert.match(homePage, /:income="donutIncome\.amount"\s+:expenses="totalExpenses"/)
 })
 
