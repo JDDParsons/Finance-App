@@ -3,6 +3,8 @@ export type SyncState = 'offline' | 'syncing' | 'synced' | 'attention'
 export interface SyncStatusInput {
   isOffline: boolean
   syncing: boolean
+  /** Fresh data is being fetched from the server. */
+  refreshing?: boolean
   pendingCount: number
   failedCount: number
 }
@@ -27,8 +29,9 @@ function changes(count: number) {
  * One status for the whole app, so the header chip, the profile page and the
  * banner cannot disagree. Offline wins (nothing can sync), then a running sync,
  * then failed changes (which need the user), then changes still waiting.
+ * Fetching fresh data counts as a running sync: the header dot is its only sign.
  */
-export function getSyncStatus({ isOffline, syncing, pendingCount, failedCount }: SyncStatusInput): SyncStatus {
+export function getSyncStatus({ isOffline, syncing, refreshing = false, pendingCount, failedCount }: SyncStatusInput): SyncStatus {
   if (isOffline) {
     const waiting = pendingCount + failedCount
     return {
@@ -40,7 +43,7 @@ export function getSyncStatus({ isOffline, syncing, pendingCount, failedCount }:
     }
   }
 
-  if (syncing) {
+  if (syncing || refreshing) {
     return {
       state: 'syncing',
       color: 'info',

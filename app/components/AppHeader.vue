@@ -19,6 +19,8 @@ const profileStore = useProfileStore()
 const { profile } = storeToRefs(profileStore)
 
 const syncStatus = useSyncStatus()
+// A ring that ripples out from the blue dot while the app is syncing.
+const syncingDotClass = 'motion-safe:animate-pulse motion-safe:after:absolute motion-safe:after:inset-0 motion-safe:after:rounded-full motion-safe:after:bg-info motion-safe:after:animate-ping'
 
 const profileInitial = computed(() => {
   return profile.value?.first_name?.charAt(0)?.toUpperCase() || '?'
@@ -52,7 +54,9 @@ const profileInitial = computed(() => {
           v-if="showProfile"
           :color="syncStatus.color"
           size="2xl"
-          :ui="{ base: syncStatus.state === 'syncing' ? 'motion-safe:animate-pulse' : '' }"
+          position="bottom-left"
+          inset
+          :ui="{ base: syncStatus.state === 'syncing' ? syncingDotClass : '' }"
         >
           <NuxtLink
             to="/profile"

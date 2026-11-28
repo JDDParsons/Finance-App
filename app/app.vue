@@ -89,15 +89,15 @@ async function isReloadingForUpdate() {
 const isAuthenticated = computed(() => route.path !== '/')
 const showMonthShortcut = computed(() => false)
 const showProfileShortcut = computed(() => false)
-const syncStatus = computed(() => {
-  if (appData.syncing.value) return 'Syncing offline changes…'
+// Only what needs words. A sync in progress shows on the header's status dot.
+const syncNotice = computed(() => {
   if (appData.failedSyncCount.value) return `${appData.failedSyncCount.value} change${appData.failedSyncCount.value === 1 ? '' : 's'} need attention`
   if (appData.pendingSyncCount.value) return `${appData.pendingSyncCount.value} change${appData.pendingSyncCount.value === 1 ? '' : 's'} waiting to sync`
   if (appData.isOffline.value) {
     if (!appData.lastSyncedAt.value) return 'Offline'
     return `Offline · saved ${new Date(appData.lastSyncedAt.value).toLocaleString()}`
   }
-  return appData.refreshing.value ? 'Updating…' : null
+  return null
 })
 
 async function discardFailedChanges() {
@@ -198,11 +198,11 @@ watch(() => route.path, async (newPath, oldPath) => {
     </Transition>
 
     <div
-      v-if="isAuthenticated && syncStatus && !isLoading && !loadError"
+      v-if="isAuthenticated && syncNotice && !isLoading && !loadError"
       class="fixed left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-b-lg bg-gray-900/90 px-3 py-1.5 text-xs font-medium text-white shadow-lg top-below-header dark:bg-gray-100/90 dark:text-gray-900"
       role="status"
     >
-      <span>{{ syncStatus }}</span>
+      <span>{{ syncNotice }}</span>
       <template v-if="appData.failedSyncCount.value">
         <button class="underline" :disabled="appData.syncing.value" @click="appData.retryFailed()">
           Retry

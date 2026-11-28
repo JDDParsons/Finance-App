@@ -307,10 +307,18 @@ const compactCardUi = {
           :class="{ 'opacity-40 pointer-events-none': store.refreshing }"
         >
         <div class="space-y-2">
-            <div class="grid grid-cols-2 gap-3 pb-20 pt-3 lg:grid-rows-[auto_1fr] lg:pb-6">
+            <div class="grid grid-cols-2 gap-3 pb-20 pt-3 lg:grid-rows-[auto_auto_1fr]lg:pb-6">
                 <div class="col-span-2 py-2">
                     <HomeGreeting :first-name="profileStore.profile?.first_name" />
                 </div>
+
+                <HomeRemainingCard
+                    class="col-span-2"
+                    :income="donutIncome.amount"
+                    :expenses="totalExpenses"
+                    :month-name="monthTitle"
+                    :loading="store.loading"
+                />
 
                 <UCard class="col-span-2 shadow lg:col-span-1" :ui="compactCardUi">
                     <h3 class="text-center font-semibold">Total expenses and income</h3>
