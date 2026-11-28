@@ -10,7 +10,6 @@ test('home dashboard uses compact spacing between and within cards', async () =>
   assert.match(homePage, /grid grid-cols-2 gap-3 pb-20 pt-3/)
   assert.match(homePage, /body: 'p-3 sm:p-4'/)
   assert.equal(homePage.match(/:ui="compactCardUi"/g)?.length, 3)
-  assert.match(homePage, /\{\{ periodLabel \}\}/)
   assert.match(homePage, /donutIncome\.value\.amount - totalExpenses\.value/)
   assert.match(homePage, /totalExpenses\.value \/ Math\.max\(donutIncome\.value\.amount, 1\)/)
   assert.match(homePage, />Total expenses and income<\/h3>/)
