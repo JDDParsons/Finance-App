@@ -87,7 +87,6 @@ async function isReloadingForUpdate() {
 }
 
 const isAuthenticated = computed(() => route.path !== '/')
-const showMonthShortcut = computed(() => false)
 const showProfileShortcut = computed(() => false)
 // Only what needs words. A sync in progress shows on the header's status dot.
 const syncNotice = computed(() => {
@@ -199,6 +198,7 @@ watch(() => route.path, async (newPath, oldPath) => {
 
     <div
       v-if="isAuthenticated && syncNotice && !isLoading && !loadError"
+      data-sync-notice
       class="fixed left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-b-lg bg-gray-900/90 px-3 py-1.5 text-xs font-medium text-white shadow-lg top-below-header dark:bg-gray-100/90 dark:text-gray-900"
       role="status"
     >
@@ -216,12 +216,6 @@ watch(() => route.path, async (newPath, oldPath) => {
     <SideNav v-if="isAuthenticated" class="hidden lg:flex" />
     <div :class="isAuthenticated ? 'lg:pl-56' : ''" class="relative">
       <NuxtPage />
-    </div>
-    <div
-      v-if="showMonthShortcut"
-      class="fixed left-4 z-40 lg:left-auto lg:right-20 top-safe-4"
-    >
-      <MonthSelector icon-only />
     </div>
     <NuxtLink
       v-if="showProfileShortcut"

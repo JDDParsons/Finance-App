@@ -9,8 +9,13 @@ const transactionView = useTransactionViewStore()
 <template>
   <div>
     <AppHeader title="Cashflow" />
+    <OtherMonthBanner />
 
     <UContainer class="max-w-none lg:px-0">
+      <div class="flex justify-center pt-3 lg:pb-3">
+        <MonthSelector />
+      </div>
+
     <!-- Mobile/tablet: segmented transaction view -->
     <div class="pb-24 lg:pb-6 lg:hidden">
       <div class="mt-4 mb-2">

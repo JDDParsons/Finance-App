@@ -123,8 +123,13 @@ function formatCurrency(value: number | string | null | undefined) {
     />
 
     <AppHeader :title="`Add ${budgetType === 'Income' ? 'Income ' : ''}Budget`" />
+    <OtherMonthBanner />
 
-    <UContainer class="max-w-none py-6 pb-24 lg:pb-8">
+    <UContainer class="max-w-none pt-3 pb-24 lg:pb-8">
+      <div class="mb-4 flex justify-center">
+        <MonthSelector />
+      </div>
+
       <div class="mb-6 flex items-center gap-3">
         <UButton
           icon="heroicons-solid:arrow-left"

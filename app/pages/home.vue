@@ -14,7 +14,6 @@ import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement } from 'chart.js'
 ChartJS.register(Title, Tooltip, Legend, ArcElement)
 
 const store = useFinanceStore()
-const profileStore = useProfileStore()
 const { budgetIcon } = useBudgetIcon()
 const { monthTitle } = useSelectedMonthTitle()
 const UNCATEGORIZED_ICON = 'heroicons:question-mark-circle-solid'
@@ -299,25 +298,35 @@ const compactCardUi = {
 <template>
   <div class="min-h-screen">
     <AppHeader title="Summary" />
+    <OtherMonthBanner />
 
     <UContainer class="max-w-none">
+        <!-- Outside the content below, so a month without data can still be left -->
+        <div class="flex justify-center pt-3">
+            <MonthSelector />
+        </div>
+
         <template v-if="store.loading || hasData">
         <div
           class="transition-opacity duration-300"
           :class="{ 'opacity-40 pointer-events-none': store.refreshing }"
         >
         <div class="space-y-2">
-            <div class="grid grid-cols-2 gap-3 pb-20 pt-3 lg:grid-rows-[auto_auto_1fr]lg:pb-6">
-                <div class="col-span-2 py-2">
-                    <HomeGreeting :first-name="profileStore.profile?.first_name" />
-                </div>
-
+            <div class="grid grid-cols-2 gap-3 pb-20 pt-3 lg:grid-rows-[auto_1fr] lg:pb-6">
                 <HomeRemainingCard
                     class="col-span-2"
                     :income="donutIncome.amount"
                     :expenses="totalExpenses"
                     :month-name="monthTitle"
                     :loading="store.loading"
+                />
+
+                <DailySpendingCalendar
+                    :year="store.selectedMonth.year"
+                    :month="store.selectedMonth.month"
+                    :hits="store.budgetHits"
+                    :income="store.income"
+                    :budgets="store.budgets"
                 />
 
                 <UCard class="col-span-2 shadow lg:col-span-1" :ui="compactCardUi">
@@ -354,14 +363,6 @@ const compactCardUi = {
                     <h4 class="text-center text-sm">Compare your spending to previous months</h4>
                     <CumulativeSpendingChart />
                 </UCard>
-
-                <DailySpendingCalendar
-                    :year="store.selectedMonth.year"
-                    :month="store.selectedMonth.month"
-                    :hits="dailySpendingHits"
-                    :budgets="store.budgets"
-                    :daily-budgeted-income="dailyBudgetedIncome"
-                />
 
                 <DailySpendingFigure
                     :year="store.selectedMonth.year"

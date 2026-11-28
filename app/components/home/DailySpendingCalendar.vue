@@ -1,34 +1,43 @@
 <script setup lang="ts">
-import {
-  buildDailySpendingCalendarCells,
-  buildDailySpendingCells,
-  dailySpendingColors,
-} from '../../../utils/dailySpending'
+import { buildMonthCalendarCells, type MonthCalendarCell, type MonthCalendarIncome } from '../../../utils/monthCalendar'
+import type { DailySpendingHit } from '../../../utils/dailySpending'
 
 const props = defineProps<{
   year: number
   month: number
-  hits: Array<{
-    id?: string | null
-    date?: string | null
-    amount?: number | string | null
-    budget_id?: string | null
-    entity?: string | null
-  }>
+  hits: DailySpendingHit[]
+  income: MonthCalendarIncome[]
   budgets: Array<{ id: string, color?: string | null }>
-  dailyBudgetedIncome: number
 }>()
 
 const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-const spendingCells = computed(() => buildDailySpendingCells(
+// The app can stay open past midnight, so "today" is read again on return.
+const now = ref(new Date())
+const refresh = () => { now.value = new Date() }
+let timer: ReturnType<typeof setInterval> | undefined
+
+onMounted(() => {
+  timer = setInterval(refresh, 60_000)
+  document.addEventListener('visibilitychange', refresh)
+})
+
+onUnmounted(() => {
+  clearInterval(timer)
+  document.removeEventListener('visibilitychange', refresh)
+})
+
+const cells = computed(() => buildMonthCalendarCells(
   props.year,
   props.month,
   props.hits,
-  props.dailyBudgetedIncome,
+  props.income,
+  now.value,
 ))
 
-const calendarCells = computed(() => buildDailySpendingCalendarCells(spendingCells.value))
+const monthDate = computed(() => new Date(props.year, props.month - 1, 1))
+const monthName = computed(() => monthDate.value.toLocaleDateString('en-US', { month: 'long' }))
+const monthLabel = computed(() => monthDate.value.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }))
 
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -37,39 +46,15 @@ const currency = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 })
 
-function dateFromKey(dateKey: string) {
-  const [year, month, day] = dateKey.split('-').map(Number)
-  return new Date(year, month - 1, day)
-}
-
-function formatDay(dateKey: string) {
-  return Number(dateKey.slice(-2))
-}
-
-function formatDate(dateKey: string) {
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(dateFromKey(dateKey))
-}
-
-const dateRangeLabel = computed(() => {
-  const first = spendingCells.value[0]
-  const last = spendingCells.value.at(-1)
-  if (!first || !last) return ''
-
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-  return `${formatter.format(dateFromKey(first.dateKey))} – ${formatter.format(dateFromKey(last.dateKey))}`
-})
-
-function dayStyle(amount: number) {
-  return dailySpendingColors(amount, props.dailyBudgetedIncome)
-}
-
-function dayLabel(dateKey: string, amount: number, transactionCount: number) {
-  const transactionLabel = transactionCount === 1 ? 'transaction' : 'transactions'
-  return `${formatDate(dateKey)}: ${currency.format(amount)} spent across ${transactionCount} ${transactionLabel}`
+function dayLabel(cell: MonthCalendarCell) {
+  const count = cell.transactions.length
+  const parts = [
+    `${monthName.value} ${cell.day}${cell.isToday ? ', today' : ''}: ${currency.format(cell.spent)} spent across ${count} ${count === 1 ? 'transaction' : 'transactions'}`,
+  ]
+  if (cell.income) {
+    parts.push(`${currency.format(cell.income.amount)} ${cell.income.isPlanned ? 'planned income' : 'income'}`)
+  }
+  return parts.join(', ')
 }
 
 function transactionColor(budgetId: string | null) {
@@ -78,65 +63,75 @@ function transactionColor(budgetId: string | null) {
 </script>
 
 <template>
-  <UCard class="col-span-2 shadow lg:hidden" :ui="{ body: 'p-3 sm:p-4' }">
-    <figure>
-      <figcaption class="text-center">
-        <h3 class="font-semibold">Daily spending</h3>
-        <p class="text-sm text-muted">{{ dateRangeLabel }}</p>
-      </figcaption>
+  <!-- Shaped and lit like the remaining card above, on a plain background -->
+  <figure class="relative isolate col-span-2 overflow-hidden rounded-2xl bg-default p-4 shadow-lg shadow-emerald-600/15 ring-1 ring-green-500/20 lg:hidden">
+    <div class="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_85%_0%,rgb(92_204_133/0.16),transparent_50%)]" />
 
-      <div class="mt-3 grid grid-cols-7" aria-hidden="true">
-        <span
-          v-for="weekday in weekdays"
-          :key="weekday"
-          class="pb-1 text-center text-[10px] font-medium text-muted sm:text-xs"
-        >
-          {{ weekday }}
-        </span>
-      </div>
+    <figcaption>
+      <h3 class="text-2xl font-extrabold tracking-tight">Daily activity</h3>
+      <p class="text-sm font-semibold text-muted">{{ monthLabel }}</p>
+    </figcaption>
 
-      <div class="grid grid-cols-7 gap-1.5 sm:gap-2" aria-label="Daily spending calendar for the last 31 days">
+    <div class="mt-3 grid grid-cols-7" aria-hidden="true">
+      <span
+        v-for="weekday in weekdays"
+        :key="weekday"
+        class="pb-1.5 text-center text-[10px] font-bold uppercase tracking-wide text-green-600 sm:text-xs dark:text-green-400"
+      >
+        {{ weekday }}
+      </span>
+    </div>
+
+    <div class="grid grid-cols-7 gap-1 sm:gap-2" :aria-label="`Daily activity calendar for ${monthLabel}`">
+      <div
+        v-for="(cell, index) in cells"
+        :key="cell?.dateKey ?? `empty-${index}`"
+        class="aspect-square min-w-0"
+      >
         <div
-          v-for="(cell, index) in calendarCells"
-          :key="cell?.dateKey ?? `empty-${index}`"
-          class="aspect-square min-w-0"
+          v-if="cell"
+          class="relative flex size-full flex-col rounded-xl border-2 p-1"
+          :class="cell.isToday
+            ? 'border-green-500 bg-green-500/10'
+            : 'border-transparent bg-gray-500/5 dark:bg-white/5'"
+          role="img"
+          :aria-current="cell.isToday ? 'date' : undefined"
+          :aria-label="dayLabel(cell)"
+          :title="dayLabel(cell)"
         >
-          <div
-            v-if="cell"
-            class="relative flex size-full flex-col rounded-md border p-1"
-            :style="{
-              backgroundColor: dayStyle(cell.amount).backgroundColor,
-              borderColor: dayStyle(cell.amount).borderColor,
-            }"
-            role="img"
-            :aria-label="dayLabel(cell.dateKey, cell.amount, cell.transactions.length)"
-            :title="dayLabel(cell.dateKey, cell.amount, cell.transactions.length)"
+          <span class="text-xs font-bold leading-none sm:text-sm">{{ cell.day }}</span>
+          <!-- The logo's coin: filled once the day arrives, an outline while planned -->
+          <span
+            v-if="cell.income"
+            class="absolute right-px top-0.5 flex size-3.5 items-center max-[359px]:right-0 max-[359px]:top-auto max-[359px]:bottom-0 max-[359px]:size-3 justify-center rounded-full border-[1.5px] border-green-500 text-[9px] font-extrabold leading-none sm:size-5 sm:text-xs"
+            :class="cell.income.isPlanned ? 'text-green-600 dark:text-green-400' : 'bg-green-500 text-white'"
+            aria-hidden="true"
+          >$</span>
+          <span
+            class="mt-auto flex flex-wrap items-end gap-0.5"
+            :class="{ 'max-[359px]:pr-3': cell.income }"
+            aria-hidden="true"
           >
-            <span class="text-xs font-semibold text-gray-950 sm:text-sm">{{ formatDay(cell.dateKey) }}</span>
-            <span class="mt-auto flex flex-wrap items-end gap-0.5" aria-hidden="true">
-              <span
-                v-for="transaction in cell.transactions"
-                :key="transaction.id"
-                class="size-1.5 rounded-full ring-1 ring-white/70 sm:size-2"
-                :style="{ backgroundColor: transactionColor(transaction.budgetId) }"
-              />
-            </span>
-          </div>
+            <span
+              v-for="transaction in cell.transactions"
+              :key="transaction.id"
+              class="size-1.5 rounded-full sm:size-2"
+              :style="{ backgroundColor: transactionColor(transaction.budgetId) }"
+            />
+          </span>
         </div>
       </div>
+    </div>
 
-      <div class="mx-auto mt-3 max-w-sm text-xs text-muted" aria-hidden="true">
-        <div
-          class="h-2 rounded-full"
-          style="background: linear-gradient(to right, hsl(120 75% 78%), hsl(50 75% 78%), hsl(28 75% 78%), hsl(0 75% 78%));"
-        />
-        <div class="mt-1 flex justify-between">
-          <span>$0</span>
-          <span>100%</span>
-          <span>200%</span>
-          <span>300%+</span>
-        </div>
-      </div>
-    </figure>
-  </UCard>
+    <div class="mt-3 flex items-center justify-center gap-4 text-xs text-muted" aria-hidden="true">
+      <span class="flex items-center gap-1.5">
+        <span class="flex size-3.5 items-center justify-center rounded-full border-[1.5px] border-green-500 bg-green-500 text-[9px] font-extrabold leading-none text-white">$</span>
+        Income
+      </span>
+      <span class="flex items-center gap-1.5">
+        <span class="flex size-3.5 items-center justify-center rounded-full border-[1.5px] border-green-500 text-[9px] font-extrabold leading-none text-green-600 dark:text-green-400">$</span>
+        Planned income
+      </span>
+    </div>
+  </figure>
 </template>

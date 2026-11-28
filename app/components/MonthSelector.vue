@@ -1,156 +1,70 @@
 <script setup lang="ts">
 import { useFinanceStore } from '~/stores/finance'
-
-const props = withDefaults(defineProps<{
-  iconOnly?: boolean
-  plain?: boolean
-}>(), {
-  iconOnly: false,
-  plain: false
-})
+import { adjacentMonth, monthPickerLabel, type Month } from '../../utils/monthNavigation'
 
 const store = useFinanceStore()
 const appData = useAppData()
 const selectionError = ref<string | null>(null)
 
-const MONTHS_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-const MONTHS_FULL = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
-]
+// A month being loaded. It is shown at once, so that tapping again moves on from
+// it. Shallow, so that the object can be compared with the one asked for.
+const pending = shallowRef<Month | null>(null)
+const shown = computed(() => pending.value ?? store.selectedMonth)
 
-const open = ref(false)
+const previous = computed(() => adjacentMonth(store.availableMonths, shown.value, -1))
+const next = computed(() => adjacentMonth(store.availableMonths, shown.value, 1))
 
-const now = new Date()
-const currentYear = now.getFullYear()
-const currentMonth = now.getMonth() + 1
-
-// Tab defaults to the selected month's year so the active month is always visible on open
-const activeTab = ref(store.selectedMonth.year)
-watch(open, (val) => { if (val) activeTab.value = store.selectedMonth.year })
-
-// Sorted descending so newest year appears first; always include the current year
-const availableYears = computed(() => {
-  const years = new Set(store.availableMonths.map(m => m.year))
-  years.add(currentYear)
-  return [...years].sort((a, b) => b - a)
-})
-
-const availableKeys = computed(() =>
-  new Set(store.availableMonths.map(m => m.year * 100 + m.month))
-)
-
-function isAvailable(year: number, month: number) {
-  // The current calendar month is always selectable even if it has no data yet
-  if (year === currentYear && month === currentMonth) return true
-  return availableKeys.value.has(year * 100 + month)
-}
-
-function isSelected(year: number, month: number) {
-  return store.selectedMonth.year === year && store.selectedMonth.month === month
-}
-
-async function selectMonth(year: number, month: number) {
-  if (!isAvailable(year, month)) return
+async function select(target: Month | null) {
+  if (!target) return
   selectionError.value = null
+  pending.value = target
   try {
-    await appData.selectMonth(year, month)
-    open.value = false
+    await appData.selectMonth(target.year, target.month)
   } catch (error: any) {
-    selectionError.value = error?.message || 'Could not load that month.'
+    if (pending.value === target) selectionError.value = error?.message || 'Could not load that month.'
+  } finally {
+    if (pending.value === target) pending.value = null
   }
 }
-
-const monthLabel = computed(() => {
-  const { year, month } = store.selectedMonth
-  const now = new Date()
-  const yearSuffix = year !== now.getFullYear() ? ` ${year}` : ''
-  return MONTHS_FULL[month - 1] + yearSuffix
-})
-
-const relativeHeading = computed(() => {
-  const { year, month } = store.selectedMonth
-  const now = new Date()
-  const currentMonthIndex = now.getFullYear() * 12 + now.getMonth()
-  const selectedMonthIndex = year * 12 + (month - 1)
-  const monthDiff = currentMonthIndex - selectedMonthIndex
-
-  if (monthDiff <= 0) return 'This month'
-  if (monthDiff === 1) return 'Previous month'
-  return `${monthDiff} months ago`
-})
 </script>
 
 <template>
-  <div class="inline-flex items-center">
-    <UPopover v-model:open="open">
+  <div class="flex flex-col items-center">
+    <div class="inline-flex items-center gap-1">
       <UButton
         color="neutral"
         variant="ghost"
         size="sm"
-        :loading="store.loading"
-        :class="props.plain
-          ? ''
-          : props.iconOnly
-          ? 'inline-flex items-center justify-center rounded-full border border-gray-200 bg-white/90 p-3 text-gray-600 shadow-lg shadow-black/10 backdrop-blur transition-colors hover:text-primary-500 dark:border-gray-700 dark:bg-gray-900/90 dark:text-gray-300 dark:hover:text-primary-400'
-          : 'drop-shadow'"
-        :aria-label="`Select month: ${monthLabel} (${relativeHeading})`"
-        :title="`${monthLabel} (${relativeHeading})`"
+        square
+        :disabled="!previous"
+        class="disabled:opacity-30"
+        aria-label="Previous month"
+        @click="select(previous)"
       >
-        <UIcon v-if="(props.iconOnly || props.plain) && !store.loading" name="heroicons:calendar-days-solid" class="size-6" />
-        <div v-if="!props.iconOnly && !props.plain" class="flex flex-col items-center leading-tight px-3 py-2">
-          <span class="text-xl font-semibold text-highlighted">
-            {{ relativeHeading }}
-          </span>
-          <span class="text-lg text-muted">
-            {{ monthLabel }}
-          </span>
-        </div>
+        <UIcon name="heroicons:chevron-left" class="size-5" />
       </UButton>
-
-      <template #content>
-        <div class="p-3 min-w-48">
-          <!-- Year tabs -->
-          <div class="flex gap-1 mb-3 border-b border-gray-200 dark:border-gray-700">
-            <button
-              v-for="year in availableYears"
-              :key="year"
-              :class="[
-                'px-3 py-1 text-sm font-medium transition-colors -mb-px border-b-2',
-                activeTab === year
-                  ? 'border-primary-500 text-primary-500'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer'
-              ]"
-              @click="activeTab = year"
-            >
-              {{ year }}
-            </button>
-          </div>
-
-          <!-- Months for the active year -->
-          <div class="grid grid-cols-4 gap-1">
-            <button
-              v-for="(abbr, idx) in MONTHS_ABBR"
-              :key="idx"
-              :disabled="!isAvailable(activeTab, idx + 1)"
-              :class="[
-                'rounded px-2 py-1 text-sm transition-colors',
-                isSelected(activeTab, idx + 1)
-                  ? 'bg-primary-500 text-white font-semibold'
-                  : isAvailable(activeTab, idx + 1)
-                    ? 'hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer'
-                    : 'opacity-30 cursor-not-allowed'
-              ]"
-              @click="selectMonth(activeTab, idx + 1)"
-            >
-              {{ abbr }}
-            </button>
-          </div>
-          <p v-if="selectionError" class="mt-2 text-xs text-red-600 dark:text-red-400">
-            {{ selectionError }}
-          </p>
-        </div>
-      </template>
-    </UPopover>
+      <span
+        class="min-w-36 text-center text-lg font-bold whitespace-nowrap text-highlighted"
+        :class="{ 'motion-safe:animate-pulse': pending }"
+        aria-live="polite"
+      >
+        {{ monthPickerLabel(shown) }}
+      </span>
+      <UButton
+        color="neutral"
+        variant="ghost"
+        size="sm"
+        square
+        :disabled="!next"
+        class="disabled:opacity-30"
+        aria-label="Next month"
+        @click="select(next)"
+      >
+        <UIcon name="heroicons:chevron-right" class="size-5" />
+      </UButton>
+    </div>
+    <p v-if="selectionError" class="text-center text-xs text-red-600 dark:text-red-400" role="alert">
+      {{ selectionError }}
+    </p>
   </div>
 </template>

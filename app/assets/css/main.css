@@ -98,3 +98,9 @@ header[data-slot="root"] {
   padding-top: env(safe-area-inset-top);
   --ui-header-height: calc(env(safe-area-inset-top) + 4rem);
 }
+
+/* On a month other than the current one, a banner sits under the header
+   (OtherMonthBanner.vue). The sync notice moves down so it does not cover it. */
+html:has([data-month-banner]) [data-sync-notice] {
+  top: calc(env(safe-area-inset-top, 0px) + 6rem);
+}
