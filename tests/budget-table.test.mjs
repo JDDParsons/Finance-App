@@ -12,7 +12,7 @@ const budgetsPage = await readFile(
 )
 
 test('renders budget cards on mobile and the budget table on desktop', () => {
-  assert.match(budgetsPage, /grid grid-cols-3 gap-3 pb-24 sm:grid-cols-3 lg:hidden/)
+  assert.match(budgetsPage, /grid grid-cols-3 gap-3 pb-28 sm:grid-cols-3 lg:hidden/)
   assert.match(budgetsPage, /hidden pb-6 lg:block/)
   assert.match(budgetsPage, /<BudgetsTable :budgets="desktopBudgets" @select="openBudget" @add="addBudget"/)
   assert.doesNotMatch(budgetsPage, /<BudgetsBudgetsTable/)

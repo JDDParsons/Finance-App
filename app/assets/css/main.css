@@ -66,6 +66,21 @@ html:not(.app-loaded) body {
   background: transparent !important;
 }
 
+/* iOS blurs the top of an installed app, and the header's contents with it. There
+   the header is made taller by this much, which moves its contents down. It is
+   zero everywhere else. */
+:root {
+  --header-drop: 0px;
+}
+
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) {
+    :root {
+      --header-drop: 0.75rem;
+    }
+  }
+}
+
 /* Safe-area-aware utilities for elements taken out of normal flow.
    - top-safe-4: use instead of top-4 on position:fixed elements near the top
    - pt-safe:    use instead of inline padding-top on panels/modals that start flush at the top
@@ -76,7 +91,7 @@ html:not(.app-loaded) body {
 
 /* Just below the sticky UHeader (safe area plus 4rem, see the header rule below). */
 @utility top-below-header {
-  top: calc(env(safe-area-inset-top, 0px) + 4rem);
+  top: calc(env(safe-area-inset-top, 0px) + 4rem + var(--header-drop));
 }
 
 @utility bottom-safe-12 {
@@ -87,6 +102,12 @@ html:not(.app-loaded) body {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
+/* Keeps a bottom bar's contents clear of the iOS home indicator. A little less
+   than the full inset, which leaves more space than the indicator needs. */
+@utility pb-safe {
+  padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) - 0.75rem), 0.5rem);
+}
+
 /* Extend sticky UHeader to cover the status bar area.
    - margin-top cancels the body padding-top so the header sits flush at y=0
    - --ui-header-height grows to include the safe area (box-sizing: border-box, so total height = safe area + 4rem)
@@ -95,12 +116,12 @@ html:not(.app-loaded) body {
 header[data-slot="root"] {
   top: 0;
   margin-top: calc(-1 * env(safe-area-inset-top));
-  padding-top: env(safe-area-inset-top);
-  --ui-header-height: calc(env(safe-area-inset-top) + 4rem);
+  padding-top: calc(env(safe-area-inset-top) + var(--header-drop));
+  --ui-header-height: calc(env(safe-area-inset-top) + 4rem + var(--header-drop));
 }
 
 /* On a month other than the current one, a banner sits under the header
    (OtherMonthBanner.vue). The sync notice moves down so it does not cover it. */
 html:has([data-month-banner]) [data-sync-notice] {
-  top: calc(env(safe-area-inset-top, 0px) + 6rem);
+  top: calc(env(safe-area-inset-top, 0px) + 6rem + var(--header-drop));
 }

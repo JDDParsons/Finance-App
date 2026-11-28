@@ -312,7 +312,7 @@ const compactCardUi = {
           :class="{ 'opacity-40 pointer-events-none': store.refreshing }"
         >
         <div class="space-y-2">
-            <div class="grid grid-cols-2 gap-3 pb-20 pt-3 lg:grid-rows-[auto_1fr] lg:pb-6">
+            <div class="grid grid-cols-2 gap-3 pb-28 pt-3 lg:grid-rows-[auto_1fr] lg:pb-6">
                 <HomeRemainingCard
                     class="col-span-2"
                     :income="donutIncome.amount"
@@ -337,7 +337,7 @@ const compactCardUi = {
                         <USkeleton class="w-full h-full opacity-40" style="border-radius: 50% 50% 0 0 / 100% 100% 0 0;" />
                     </div>
 
-                    <div v-else class="relative mx-auto h-[200px] w-full max-w-sm">
+                    <div v-else class="relative isolate mx-auto h-[200px] w-full max-w-sm">
                         <Doughnut class="relative z-20" :data="chartData" :options="chartOptions" />
                         <GaugeNeedle :angle="needleAngle" :color="chartColors.expenses" />
                     </div>

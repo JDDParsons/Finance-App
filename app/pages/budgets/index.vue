@@ -77,7 +77,7 @@ watch(
       </div>
 
       <template v-else>
-        <div class="grid grid-cols-3 gap-3 pb-24 sm:grid-cols-3 lg:hidden">
+        <div class="grid grid-cols-3 gap-3 pb-28 sm:grid-cols-3 lg:hidden">
           <BudgetsBudgetCard
             v-for="budget in displayBudgets"
             :key="budget.id"

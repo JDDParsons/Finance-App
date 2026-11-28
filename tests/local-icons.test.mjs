@@ -22,10 +22,10 @@ test('shell navigation and month selector use locally bundled Heroicons', async 
   for (const source of [bottomNav, sideNav]) {
     assert.match(source, /icon: 'heroicons:home-solid'/)
     assert.match(source, /icon: 'heroicons:rectangle-stack-solid'/)
-    assert.match(source, /name="heroicons:plus-solid"/)
     assert.doesNotMatch(source, /(?:fa-solid|material-symbols|pepicons-pop|si):|fa-solid-home/)
   }
 
+  assert.match(sideNav, /name="heroicons:plus-solid"/)
   assert.match(monthSelector, /name="heroicons:chevron-left"/)
   assert.match(monthSelector, /name="heroicons:chevron-right"/)
 

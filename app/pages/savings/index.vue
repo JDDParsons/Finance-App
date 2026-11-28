@@ -247,7 +247,7 @@ const compoundProjection = computed(() => {
         <MonthSelector />
       </div>
 
-    <div class="pt-4 pb-24 lg:pb-6 flex flex-col gap-1">
+    <div class="pt-4 pb-28 lg:pb-6 flex flex-col gap-1">
 
       <!-- Savings trend summary -->
       <div class="flex flex-col items-center text-center gap-1 pt-1">
