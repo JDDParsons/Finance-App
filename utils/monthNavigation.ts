@@ -35,3 +35,19 @@ export function monthPickerLabel({ year, month }: Month, now = new Date()) {
   const name = new Date(year, month - 1, 1).toLocaleDateString('en-US', { month: 'long' })
   return year === now.getFullYear() ? name : `${name} ${year}`
 }
+
+/**
+ * What the warning banner says while a month other than the current one is
+ * selected, or null on the current month.
+ */
+export function otherMonthNotice(selected: Month, now = new Date()) {
+  const current = { year: now.getFullYear(), month: now.getMonth() + 1 }
+  const difference = monthIndex(selected) - monthIndex(current)
+  if (difference === 0) return null
+
+  return {
+    message: difference < 0 ? 'Previous month' : 'Future month',
+    action: `Tap to return to ${monthPickerLabel(current, now)}`,
+    current,
+  }
+}

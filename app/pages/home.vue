@@ -298,6 +298,7 @@ const compactCardUi = {
 <template>
   <div class="min-h-screen">
     <AppHeader title="Summary" />
+    <OtherMonthBanner />
 
     <UContainer class="max-w-none">
         <!-- Outside the content below, so a month without data can still be left -->

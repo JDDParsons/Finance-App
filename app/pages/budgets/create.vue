@@ -123,6 +123,7 @@ function formatCurrency(value: number | string | null | undefined) {
     />
 
     <AppHeader :title="`Add ${budgetType === 'Income' ? 'Income ' : ''}Budget`" />
+    <OtherMonthBanner />
 
     <UContainer class="max-w-none pt-3 pb-24 lg:pb-8">
       <div class="mb-4 flex justify-center">

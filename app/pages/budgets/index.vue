@@ -50,6 +50,7 @@ watch(
 <template>
   <div class="min-h-screen">
     <AppHeader title="Budgets" />
+    <OtherMonthBanner />
 
     <UContainer class="max-w-none lg:px-0">
       <div class="flex justify-center pt-3">

@@ -240,6 +240,7 @@ const compoundProjection = computed(() => {
 <template>
   <div class="min-h-screen">
     <AppHeader title="Savings" />
+    <OtherMonthBanner />
 
     <UContainer class="max-w-none">
       <div class="flex justify-center pt-3">

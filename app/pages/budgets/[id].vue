@@ -104,6 +104,7 @@ async function handleDeleteBudget() {
 <template>
     <div class="min-h-screen">
         <AppHeader title="Budget Details" />
+        <OtherMonthBanner />
 
         <UContainer class="max-w-none pt-3 pb-24 lg:pb-8">
 

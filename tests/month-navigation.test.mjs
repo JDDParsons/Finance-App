@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
-import { adjacentMonth, monthPickerLabel } from '../utils/monthNavigation.ts'
+import { adjacentMonth, monthPickerLabel, otherMonthNotice } from '../utils/monthNavigation.ts'
 
 const now = new Date(2026, 10, 28)
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
@@ -77,4 +77,36 @@ test('a slow month load cannot overwrite a later month change', async () => {
   assert.match(appData, /const monthRequest = \+\+latestMonthRequest/)
   assert.match(appData, /await getBootstrap\(year, month\)\s+if \(isSuperseded\(\)\) return\s+applyPayload/)
   assert.match(appData, /if \(monthRequest !== latestMonthRequest\) return\s+applyPayload/)
+})
+
+test('warns on any month but the current one', () => {
+  assert.equal(otherMonthNotice({ year: 2026, month: 11 }, now), null)
+  assert.deepEqual(otherMonthNotice({ year: 2026, month: 10 }, now), {
+    message: 'Previous month',
+    action: 'Tap to return to November',
+    current: { year: 2026, month: 11 },
+  })
+  assert.equal(otherMonthNotice({ year: 2025, month: 12 }, now).message, 'Previous month')
+  assert.equal(otherMonthNotice({ year: 2027, month: 1 }, now).message, 'Future month')
+  // The same month of another year is not the current month.
+  assert.equal(otherMonthNotice({ year: 2025, month: 11 }, now).message, 'Previous month')
+})
+
+test('every page with the month picker shows the banner between it and the header', async () => {
+  for (const page of ['home', 'budgets/index', 'budgets/[id]', 'budgets/create', 'cashflow/index', 'savings/index']) {
+    const source = await read(`app/pages/${page}.vue`)
+    assert.match(source, /<AppHeader [^\n]*\/>\s+<OtherMonthBanner \/>[\s\S]*<MonthSelector \/>/, page)
+  }
+})
+
+test('tapping the banner returns to the current month, and the sync notice moves out of its way', async () => {
+  const banner = await read('app/components/OtherMonthBanner.vue')
+  const app = await read('app/app.vue')
+  const css = await read('app/assets/css/main.css')
+
+  assert.match(banner, /@click="returnToCurrentMonth"/)
+  assert.match(banner, /appData\.selectMonth\(year, month\)/)
+  assert.match(banner, /bg-yellow-300/)
+  assert.match(app, /data-sync-notice/)
+  assert.match(css, /html:has\(\[data-month-banner\]\) \[data-sync-notice\]/)
 })

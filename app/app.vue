@@ -198,6 +198,7 @@ watch(() => route.path, async (newPath, oldPath) => {
 
     <div
       v-if="isAuthenticated && syncNotice && !isLoading && !loadError"
+      data-sync-notice
       class="fixed left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-b-lg bg-gray-900/90 px-3 py-1.5 text-xs font-medium text-white shadow-lg top-below-header dark:bg-gray-100/90 dark:text-gray-900"
       role="status"
     >
