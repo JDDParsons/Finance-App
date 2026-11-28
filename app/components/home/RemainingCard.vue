@@ -57,8 +57,9 @@ onUnmounted(stopCounting)
       ? 'from-amber-500 to-orange-600 shadow-orange-600/25'
       : 'from-green-500 to-emerald-700 shadow-emerald-600/25'"
   >
-    <!-- A soft light behind the tree -->
-    <div class="pointer-events-none absolute -right-10 -top-16 -z-10 size-52 rounded-full bg-white/15 blur-2xl" />
+    <!-- A soft light behind the tree. A gradient over the whole card, because iOS
+         can cut a blur filter off in a visible rectangle. -->
+    <div class="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_85%_5%,rgb(255_255_255/0.18),transparent_55%)]" />
     <!-- Small enough to stay out from behind the white text, which it would hide -->
     <HomeMoneyTree class="pointer-events-none absolute bottom-0 right-2 -z-10 h-28 text-white max-[359px]:h-20" />
 
