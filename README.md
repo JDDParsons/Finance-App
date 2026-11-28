@@ -10,7 +10,7 @@ Planned work is tracked in [ROADMAP.md](ROADMAP.md).
 
 | Area | Route | What it does |
 | --- | --- | --- |
-| Home | `/home` | Monthly dashboard: spending charts, daily spending calendar/figure, budget usage radar, cumulative spending |
+| Home | `/home` | Monthly dashboard: spending charts, daily spending calendar/figure, cumulative spending |
 | Budgets | `/budgets`, `/budgets/[id]` | Month-based budgets (expense and income), copy previous month, budget history, allocation charts |
 | Cashflow | `/cashflow` | Create and review expenses, income and transfers; daily/weekly grouped table |
 | Profile | `/profile` | Name, email and sync status, with links to Settings and sign-out |
