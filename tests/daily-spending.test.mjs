@@ -85,7 +85,7 @@ test('aligns the 31-day spending window to complete calendar weeks', () => {
   assert.equal(calendarCells.length % 7, 0)
 })
 
-test('home page renders the desktop-only figure across all three columns', async () => {
+test('home page renders the desktop-only figure across both columns', async () => {
   const homePage = await readFile(new URL('../app/pages/home.vue', import.meta.url), 'utf8')
   const figure = await readFile(new URL('../app/components/home/DailySpendingFigure.vue', import.meta.url), 'utf8')
 
@@ -93,7 +93,7 @@ test('home page renders the desktop-only figure across all three columns', async
   assert.match(homePage, /<DailySpendingFigure/)
   assert.match(homePage, /:budgets="store\.budgets"/)
   assert.match(homePage, /\.\.\.store\.prevMonthBudgetHits/)
-  assert.match(figure, /hidden shadow lg:col-span-3 lg:block/)
+  assert.match(figure, /hidden shadow lg:col-span-2 lg:block/)
   assert.match(figure, /Array|cells/)
   assert.match(figure, /Last 31 days/)
   assert.match(figure, /mt-7 grid grid-cols-\[repeat\(31,minmax\(0,1fr\)\)\]/)
@@ -117,12 +117,12 @@ test('home page renders the desktop-only figure across all three columns', async
   assert.match(figure, /\{\{ currency\.format\(cell\.amount\) \}\}/)
 })
 
-test('home page renders a calendar below top budget usage on mobile and tablet', async () => {
+test('home page renders a calendar below cumulative trends on mobile and tablet', async () => {
   const homePage = await readFile(new URL('../app/pages/home.vue', import.meta.url), 'utf8')
   const calendar = await readFile(new URL('../app/components/home/DailySpendingCalendar.vue', import.meta.url), 'utf8')
 
   assert.match(homePage, /import DailySpendingCalendar from '~\/components\/home\/DailySpendingCalendar\.vue'/)
-  assert.match(homePage, /<BudgetUsageRadarChart \/>[\s\S]*<DailySpendingCalendar[\s\S]*<DailySpendingFigure/)
+  assert.match(homePage, /<CumulativeSpendingChart \/>[\s\S]*<DailySpendingCalendar[\s\S]*<DailySpendingFigure/)
   assert.match(homePage, /<DailySpendingCalendar[\s\S]*:hits="dailySpendingHits"[\s\S]*:budgets="store\.budgets"/)
   assert.match(calendar, /col-span-2 shadow lg:hidden/)
   assert.match(calendar, /grid grid-cols-7/)

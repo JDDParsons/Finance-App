@@ -67,7 +67,7 @@ function transactionLabel(transaction: { amount: number, budgetId: string | null
 </script>
 
 <template>
-  <UCard class="hidden shadow lg:col-span-3 lg:block" :ui="{ body: 'p-3 sm:p-4' }">
+  <UCard class="hidden shadow lg:col-span-2 lg:block" :ui="{ body: 'p-3 sm:p-4' }">
     <figure>
       <figcaption class="text-center">
         <h3 class="font-semibold">Daily spending</h3>

@@ -4,7 +4,6 @@ import { useSelectedMonthTitle } from '~/composables/useSelectedMonthTitle'
 import { useStatusMessage } from '~/composables/useStatusMessage'
 // import MonthlyExpensesChart from '~/components/home/MonthlyExpensesChart.vue'
 import CumulativeSpendingChart from '~/components/home/CumulativeSpendingChart.vue'
-import BudgetUsageRadarChart from '~/components/home/BudgetUsageRadarChart.vue'
 import DailySpendingCalendar from '~/components/home/DailySpendingCalendar.vue'
 import DailySpendingFigure from '~/components/home/DailySpendingFigure.vue'
 import { formatDashboardPeriodLabel } from '../../utils/dateFormat'
@@ -102,10 +101,6 @@ const daysRemaining = computed(() => {
   return daysInMonth.value - now.getDate()
 })
 
-const dailyAverage = computed(() =>
-  daysInMonth.value > 0 ? totalExpenses.value / daysInMonth.value : 0
-)
-
 const elapsedDailySpending = computed(() =>
   daysElapsed.value > 0 ? totalExpenses.value / daysElapsed.value : 0
 )
@@ -125,26 +120,6 @@ const periodLabel = computed(() => formatDashboardPeriodLabel(
   store.selectedMonth.month,
   today,
 ))
-const todayDateKey = [
-  today.getFullYear(),
-  String(today.getMonth() + 1).padStart(2, '0'),
-  String(today.getDate()).padStart(2, '0'),
-].join('-')
-
-const spentToday = computed(() => {
-  if (!isCurrentMonth.value) return null
-  return store.budgetHits
-    .filter(hit => String(hit.date ?? '').slice(0, 10) === todayDateKey)
-    .reduce((sum, hit) => sum + (Number(hit.amount) || 0), 0)
-})
-
-const earnedToday = computed(() => {
-  if (!isCurrentMonth.value) return null
-  return store.income
-    .filter(income => String(income.date ?? '').slice(0, 10) === todayDateKey)
-    .reduce((sum, income) => sum + (Number(income.amount) || 0), 0)
-})
-
 const projectedBalance = computed(() => {
   if (daysRemaining.value <= 0) return remaining.value
   const projectedTotalExpenses = elapsedDailySpending.value * daysInMonth.value
@@ -338,54 +313,12 @@ const compactCardUi = {
           :class="{ 'opacity-40 pointer-events-none': store.refreshing }"
         >
         <div class="space-y-2">
-            <div class="grid grid-cols-2 gap-3 pb-20 pt-3 lg:grid-cols-3 lg:grid-rows-[auto_1fr] lg:pb-6">
-                <UCard class="col-span-2 shadow lg:col-span-1" :ui="compactCardUi">
+            <div class="grid grid-cols-2 gap-3 pb-20 pt-3 lg:grid-rows-[auto_1fr] lg:pb-6">
+                <UCard class="col-span-2 shadow" :ui="compactCardUi">
                     <div class="text-center">
                         <p class="text-2xl font-semibold">{{ periodLabel }}</p>
                         <p class="mt-2 text-sm font-semibold">{{ statusMessage.headline }}</p>
                         <p class="mt-0.5 text-sm text-muted">{{ statusMessage.subtitle }}</p>
-                    </div>
-                </UCard>
-
-                <UCard
-                    class="shadow"
-                    :ui="compactCardUi"
-                >
-                    <div class="text-center">
-                        <p class="font-semibold text-warning">Spending</p>
-                        <div class="mt-3 grid grid-cols-2 gap-2">
-                            <div>
-                                <p class="text-sm text-gray-500">Today</p>
-                                <p class="mt-1 font-semibold text-warning">
-                                    {{ spentToday === null ? '—' : `$${spentToday.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` }}
-                                </p>
-                            </div>
-                            <div>
-                                <p class="text-sm text-gray-500">Daily avg.</p>
-                                <p class="mt-1 font-semibold text-warning">${{ dailyAverage.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </UCard>
-
-                <UCard
-                    class="shadow"
-                    :ui="compactCardUi"
-                >
-                    <div class="text-center">
-                        <p class="font-semibold text-green-500">Earning</p>
-                        <div class="mt-3 grid grid-cols-2 gap-2">
-                            <div>
-                                <p class="text-sm text-gray-500">Today</p>
-                                <p class="mt-1 font-semibold text-green-500">
-                                    {{ earnedToday === null ? '—' : `$${earnedToday.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` }}
-                                </p>
-                            </div>
-                            <div>
-                                <p class="text-sm text-gray-500">Daily avg.</p>
-                                <p class="mt-1 font-semibold text-green-500">${{ dailyBudgetedIncome.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</p>
-                            </div>
-                        </div>
                     </div>
                 </UCard>
 
@@ -422,12 +355,6 @@ const compactCardUi = {
                     <h3 class="text-center font-semibold">Cumulative trends</h3>
                     <h4 class="text-center text-sm">Compare your spending to previous months</h4>
                     <CumulativeSpendingChart />
-                </UCard>
-
-                <UCard class="col-span-2 shadow lg:col-span-1" :ui="compactCardUi">
-                    <h3 class="text-center font-semibold">Top budget usage</h3>
-                    <h4 class="text-center text-sm">See how much of your budgets you've used</h4>
-                    <BudgetUsageRadarChart />
                 </UCard>
 
                 <DailySpendingCalendar
