@@ -6,7 +6,8 @@ const shellIconNames = [
   'home-solid',
   'rectangle-stack-solid',
   'plus-solid',
-  'calendar-days-solid',
+  'chevron-left',
+  'chevron-right',
 ]
 
 test('shell navigation and month selector use locally bundled Heroicons', async () => {
@@ -25,7 +26,8 @@ test('shell navigation and month selector use locally bundled Heroicons', async 
     assert.doesNotMatch(source, /(?:fa-solid|material-symbols|pepicons-pop|si):|fa-solid-home/)
   }
 
-  assert.match(monthSelector, /name="heroicons:calendar-days-solid"/)
+  assert.match(monthSelector, /name="heroicons:chevron-left"/)
+  assert.match(monthSelector, /name="heroicons:chevron-right"/)
 
   for (const iconName of shellIconNames) {
     assert.ok(heroicons.icons[iconName] || heroicons.aliases?.[iconName], `${iconName} must exist locally`)

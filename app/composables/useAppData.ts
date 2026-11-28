@@ -33,6 +33,11 @@ const WRITE_ACTIONS = new Set([
   'copyPreviousMonthBudgets',
 ])
 
+// Counts month changes. Month arrows can be tapped faster than months load, so
+// anything fetched before the latest change is dropped instead of undoing it.
+// Shared by every caller of useAppData.
+let latestMonthRequest = 0
+
 export function useAppData() {
   const profileStore = useProfileStore()
   const accountsStore = useAccountsStore()
@@ -198,7 +203,9 @@ export function useAppData() {
       refreshing.value = isReady.value
       try {
         const { year, month } = financeStore.selectedMonth
+        const monthRequest = latestMonthRequest
         const payload = await getBootstrap(year, month)
+        if (monthRequest !== latestMonthRequest) return
         applyPayload(payload)
         await refreshOutboxState(true)
         isOffline.value = false
@@ -298,9 +305,12 @@ export function useAppData() {
 
   async function selectMonth(year: number, month: number) {
     if (!activeUserId.value) throw new Error('Not authenticated')
+    const monthRequest = ++latestMonthRequest
+    const isSuperseded = () => monthRequest !== latestMonthRequest
     if (refreshPromise) await refreshPromise
 
     const cached = await getOfflineFinanceSnapshotForMonth(activeUserId.value, year, month)
+    if (isSuperseded()) return
     if (cached) {
       applyPayload(cached)
       // Cached months do not include changes still waiting to sync.
@@ -308,6 +318,8 @@ export function useAppData() {
     }
 
     if (!navigator.onLine) {
+      // A superseded request may have left this on.
+      refreshing.value = false
       isOffline.value = true
       if (!cached) throw new Error('This month has not been saved for offline use yet.')
       return
@@ -316,15 +328,17 @@ export function useAppData() {
     refreshing.value = true
     try {
       const payload = await getBootstrap(year, month)
+      if (isSuperseded()) return
       applyPayload(payload)
       await refreshOutboxState(true)
       isOffline.value = false
       await persist()
     } catch (error) {
+      if (isSuperseded()) return
       if (!cached) throw error
       isOffline.value = true
     } finally {
-      refreshing.value = false
+      if (!isSuperseded()) refreshing.value = false
     }
   }
 

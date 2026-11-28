@@ -21,18 +21,18 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex items-center gap-3">
+  <div class="flex min-w-0 items-center gap-2.5">
     <UIcon
       :name="isDaytime(now) ? 'heroicons:sun' : 'heroicons:moon'"
-      class="size-10 shrink-0"
+      class="size-8 shrink-0"
       :class="isDaytime(now) ? 'text-amber-500' : 'text-indigo-400'"
       aria-hidden="true"
     />
     <div class="min-w-0">
-      <p class="text-2xl font-semibold break-words">
+      <p class="truncate text-base font-semibold leading-tight sm:text-lg">
         {{ greetingFor(now) }}<template v-if="firstName">, <span class="text-green-500">{{ firstName }}</span></template>
       </p>
-      <p class="text-sm text-muted">{{ formatLongDate(now) }}</p>
+      <p class="truncate text-xs text-muted">{{ formatLongDate(now) }}</p>
     </div>
   </div>
 </template>

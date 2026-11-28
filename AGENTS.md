@@ -59,6 +59,7 @@ The CSV statement upload feature (`/upload`, `/upload/transactions`) and everyth
   - `transactionCreateModal` and `transactionView` hold UI state
 - `app/composables/useAppData.ts` orchestrates loading. It calls `GET /api/bootstrap?year=&month=`, which returns profile, accounts, budgets, income, expenses (budget hits), transfers, available months and savings in one response, and hydrates all stores from it. It also handles refresh/polling, online/offline state, and the offline outbox. The set of write actions it registers is listed in `WRITE_ACTIONS`.
 - Reuse stores for shared state instead of duplicating fetch logic inside pages.
+- The month picker (`MonthSelector.vue`) is a pair of arrows around the month name that step between the months that can be opened (`utils/monthNavigation.ts`). `AppHeader.vue` shows it on the left unless a page fills the `title` slot; the home page puts the greeting there and the picker in the page body. Month loads can overlap, so `selectMonth` and `revalidate` in `useAppData` drop results fetched before the latest month change (`latestMonthRequest`).
 
 ### Data access layers
 

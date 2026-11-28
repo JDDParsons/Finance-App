@@ -298,20 +298,25 @@ const compactCardUi = {
 
 <template>
   <div class="min-h-screen">
-    <AppHeader title="Summary" />
+    <AppHeader title="Summary">
+      <template #title>
+        <HomeGreeting :first-name="profileStore.profile?.first_name" />
+      </template>
+    </AppHeader>
 
     <UContainer class="max-w-none">
+        <!-- Outside the content below, so a month without data can still be left -->
+        <div class="flex justify-center pt-3">
+            <MonthSelector />
+        </div>
+
         <template v-if="store.loading || hasData">
         <div
           class="transition-opacity duration-300"
           :class="{ 'opacity-40 pointer-events-none': store.refreshing }"
         >
         <div class="space-y-2">
-            <div class="grid grid-cols-2 gap-3 pb-20 pt-3 lg:grid-rows-[auto_auto_1fr]lg:pb-6">
-                <div class="col-span-2 py-2">
-                    <HomeGreeting :first-name="profileStore.profile?.first_name" />
-                </div>
-
+            <div class="grid grid-cols-2 gap-3 pb-20 pt-3 lg:grid-rows-[auto_1fr] lg:pb-6">
                 <HomeRemainingCard
                     class="col-span-2"
                     :income="donutIncome.amount"

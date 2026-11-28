@@ -1,20 +1,16 @@
 <script setup lang="ts">
-import { useSelectedMonthTitle } from '~/composables/useSelectedMonthTitle'
 import { useProfileStore } from '~/stores/profile'
 import { storeToRefs } from 'pinia'
 
 const props = withDefaults(defineProps<{
   title?: string
   showMonth?: boolean
-  showMonthSelector?: boolean
   showProfile?: boolean
 }>(), {
   showMonth: true,
-  showMonthSelector: true,
   showProfile: true,
 })
 
-const { monthTitle } = useSelectedMonthTitle()
 const profileStore = useProfileStore()
 const { profile } = storeToRefs(profileStore)
 
@@ -31,25 +27,17 @@ const profileInitial = computed(() => {
   <UHeader
     :toggle="false"
     class="lg:-ml-56 lg:w-[calc(100%+14rem)]"
-    :ui="{ container: 'max-w-none lg:pl-6' }"
+    :ui="{ container: 'max-w-none lg:pl-6', left: 'min-w-0', right: 'shrink-0' }"
   >
     <template #left>
-      <div class="flex items-center gap-2.5">
-        <img src="/BudgifyWithLabel.png" alt="" class="h-14 w-14 rounded-lg shrink-0" />
-        <div>
-          <p
-            v-if="showMonth"
-            class="text-4xl text-neutral font-extrabold leading-none tracking-tight sm:text-4xl"
-          >
-            {{ monthTitle }}
-          </p>
-        </div>
-      </div>
+      <!-- The month picker, unless the page puts something else here -->
+      <slot name="title">
+        <MonthSelector v-if="showMonth" />
+      </slot>
     </template>
     <template #right>
       <div class="flex items-center gap-2">
         <slot name="actions" />
-        <MonthSelector v-if="showMonth && showMonthSelector" plain />
         <UChip
           v-if="showProfile"
           :color="syncStatus.color"
